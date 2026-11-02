@@ -7,12 +7,13 @@ Use Python 3.11 or later. From the repository root:
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-python -m pip install -e '.[test]'
+python -m pip install -e '.[test,validation]'
 python -m pytest -q
 python -m examples.run_sanity_check
 ```
 
-The test extra includes Pillow for the Transformers adapter tests. These use
+The validation extra includes PyYAML for detection dataset tests. The test
+extra includes Pillow for the Transformers adapter tests. These use
 fake weights and a processor; PyTorch, Transformers, provider credentials and
 model downloads are not required. Provider SDKs and local inference runtimes
 are installed separately for live examples.

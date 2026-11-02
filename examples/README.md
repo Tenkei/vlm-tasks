@@ -1,13 +1,15 @@
 # VLM task examples
 
-Run VLM tasks on an image using Amazon Bedrock or local Hugging Face
-Transformers weights. Both runners use the same task configuration and execute
-all five tasks by default, with an independent model request for each task.
+Run VLM tasks on individual images or evaluate classification and detection
+against a labeled dataset. The single-image runners use Amazon Bedrock or
+local Hugging Face Transformers weights and execute all five tasks by default,
+with an independent model request for each task.
 
 | Example | Model execution | Requirements |
 |---|---|---|
 | [Amazon Bedrock](#amazon-bedrock) — [run_bedrock.py](run_bedrock.py) | Bedrock Converse API | Provider SDK, AWS credentials and model access |
 | [Hugging Face Transformers](#hugging-face-transformers) — [run_transformers.py](run_transformers.py) | Weights loaded in the local Python process | PyTorch, Transformers, Pillow and a compatible model |
+| [Dataset validation](#dataset-validation) — [run_validation.py](run_validation.py) | Bedrock Converse API, one task call per image | Validation extra, provider SDK, AWS credentials and labeled local data |
 
 To check task execution with synthetic responses, run the
 [sanity check](#sanity-check).
@@ -118,10 +120,79 @@ generation and loads the model once for all selected tasks.
 See the [Hugging Face Transformers guide](../docs/guides/huggingface-transformers.md)
 for adapter details, supported models and reuse of already-loaded objects.
 
+## Dataset validation
+
+[run_validation.py](run_validation.py) configures a `Classify` or `Detect` task
+and calls its `.val()` method on a local labeled dataset. It reuses the Bedrock
+backend setup described above. The validation API also works with any existing
+backend, including the Transformers setup.
+
+Install the validation extra and Bedrock provider dependencies:
+
+```bash
+python -m pip install -e '.[validation]'
+python -m pip install 'pydantic-ai-slim[bedrock]==2.61.0'
+```
+
+Create a task configuration whose labels match the property or objects your
+dataset annotates. For example, save this as `/path/to/tasks.json`:
+
+```json
+{
+  "classify": {
+    "labels": ["cat", "dog"],
+    "context": "Classify the animal shown in the image."
+  },
+  "detect": {
+    "labels": {"pedestrian": "A visible person"},
+    "context": "Locate every visible person."
+  }
+}
+```
+
+For classification, provide a root containing `val/cat/` and `val/dog/` images:
+
+```bash
+python -m examples.run_validation \
+  --task classify --data /path/to/classification-dataset \
+  --config /path/to/tasks.json --max-samples 100 \
+  --model us.amazon.nova-pro-v1:0 --profile YOUR_PROFILE --region us-east-1
+```
+
+For detection, provide a YOLO dataset YAML and its image/label files. If its
+class name is `person`, save `{"person": "pedestrian"}` as
+`/path/to/class-map.json` to align it with the example task:
+
+```bash
+python -m examples.run_validation \
+  --task detect --data /path/to/dataset.yaml \
+  --config /path/to/tasks.json --class-map /path/to/class-map.json \
+  --match-iou 0.5 --max-samples 100 \
+  --model us.amazon.nova-pro-v1:0 --profile YOUR_PROFILE --region us-east-1
+```
+
+`--split` defaults to `val`. `--max-samples` limits evaluated images in
+deterministic order. `--class-map` selects and aliases dataset classes.
+`--match-iou` is detection-only. The backend options `--output-mode`,
+`--retries` and `--max-tokens` have the same meaning as in the Bedrock runner.
+The default configuration path remains `image_tasks.json`; use `--config` to
+match your dataset's annotations.
+
+The runner prints JSON with aggregate metrics, per-class results, failure
+records, dataset label-file counts and timings. Progress goes to stderr;
+`--no-verbose` disables it. Exit code 1 means recorded task execution failures;
+code 2 means setup or validation could not complete. Accuracy has no automatic
+pass/fail threshold. Each evaluated image invokes the configured task and can
+incur provider usage, including any configured retries.
+
+See the [validation reference](../docs/reference.md#dataset-validation) for
+dataset paths, class selection, metric definitions, failures and custom
+validators.
+
 ## Shared task configuration
 
-[image_tasks.json](image_tasks.json) contains the default settings for both
-runners:
+[image_tasks.json](image_tasks.json) contains the default task settings shared
+by the runners. Dataset validation supports its `classify` and `detect` entries:
 
 | Task | Default question/target |
 |---|---|
@@ -136,7 +207,7 @@ choices for your image, and pass `--config /path/to/tasks.json`. Keys inside
 each task are passed as that operator's constructor settings. Only selected
 tasks need configuration entries.
 
-Both runners accept these options:
+The two single-image runners accept these options:
 
 | Option | Purpose |
 |---|---|

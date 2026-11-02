@@ -50,6 +50,28 @@ def _choices(labels: LabelChoices) -> dict[str, str]:
 
 
 class _Task:
+    def val(self, validator=None, **kwargs):
+        """Evaluate this configured task and return its validator's metrics.
+
+        ``validator`` accepts a custom validator class. Other keyword arguments
+        are passed to its constructor; see ``ml_pipes.vlm.validation``.
+        """
+        if validator is None:
+            from .validation import ClassificationValidator, DetectionValidator
+
+            if isinstance(self, Classify):
+                validator = ClassificationValidator
+            elif isinstance(self, Detect):
+                validator = DetectionValidator
+            else:
+                raise NotImplementedError(
+                    f"{type(self).__name__} has no default validator; supply validator= explicitly"
+                )
+        runner = validator(**kwargs)
+        runner(task=self)
+        self.metrics = runner.metrics
+        return self.metrics
+
     def _configure(self, model: ModelBackend, context: str | None) -> None:
         if not callable(model):
             raise TypeError("model must be a ModelBackend, such as PydanticAIBackend")

@@ -30,7 +30,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install package and test dependencies
-        run: python -m pip install -e '.[test]'
+        run: python -m pip install -e '.[test,validation]'
 
       - name: Verify resolved dependencies
         run: python -m pip check
