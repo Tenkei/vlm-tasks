@@ -1,0 +1,113 @@
+name: Stage
+
+run-name: "Staging: ${{ github.ref_name }}"
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    name: Validate release tag
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out release tag
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Match tag to package version
+        run: |
+          package_version="$(python -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])')"
+          test "${GITHUB_REF_NAME}" = "v${package_version}"
+
+  ci:
+    needs: validate
+    uses: ./.github/workflows/ci.yml
+
+  stage:
+    name: Build and stage release assets
+    needs: ci
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out release tag
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install build tooling
+        run: python -m pip install --upgrade build twine
+
+      - name: Build and validate artifacts
+        run: |
+          python -m build
+          python -m twine check dist/*
+          cd dist
+          sha256sum *.tar.gz *.whl > SHA256SUMS
+
+      - name: Create or update GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*.tar.gz
+            dist/*.whl
+            dist/SHA256SUMS
+          generate_release_notes: true
+          prerelease: ${{ contains(github.ref_name, 'rc') }}
+
+  publish-testpypi:
+    name: Publish to TestPyPI
+    needs: stage
+    runs-on: ubuntu-latest
+    environment: test-pypi
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Download staged release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir dist
+          gh release download "${GITHUB_REF_NAME}" --repo "${GITHUB_REPOSITORY}" --dir dist --pattern '*.tar.gz' --pattern '*.whl' --pattern SHA256SUMS
+          cd dist
+          sha256sum -c SHA256SUMS
+          mkdir ../publish
+          mv *.tar.gz *.whl ../publish/
+
+      - name: Publish verified artifacts
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: publish
+          repository-url: https://test.pypi.org/legacy/
+
+  verify-testpypi:
+    name: Verify TestPyPI installation
+    needs: publish-testpypi
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out release tag
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install and import the published package
+        run: |
+          package_version="$(python -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])')"
+          python -m venv testpypi-venv
+          testpypi-venv/bin/python -m pip install --upgrade pip
+          testpypi-venv/bin/python -m pip install --retries 5 --timeout 30 --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ "ml-pipes-vlm==${package_version}"
+          testpypi-venv/bin/python -m pip check
+          testpypi-venv/bin/python -c 'import ml_pipes.vlm'

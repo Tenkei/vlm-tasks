@@ -1,0 +1,29 @@
+{
+  "classify": {
+    "labels": {
+      "indoor": "The scene is inside a building",
+      "outdoor": "The scene is outside a building",
+      "unclear": "There is insufficient visual evidence to decide"
+    },
+    "context": "Classify the setting of the overall scene."
+  },
+  "multilabel": {
+    "labels": ["cat", "dog", "person", "sofa", "remote control"],
+    "context": "Select every listed object category visibly present anywhere in the image."
+  },
+  "detect": {
+    "labels": ["cat", "dog", "person", "sofa", "remote control"],
+    "context": "Locate each visible instance of the listed object categories."
+  },
+  "ground": {
+    "target": "the leftmost cat",
+    "context": "Among visible cats, resolve the one whose center is farthest to the left."
+  },
+  "attributes": {
+    "attributes": {
+      "lighting": ["well-lit", "dim", "unclear"],
+      "setting": ["indoor", "outdoor", "unclear"]
+    },
+    "context": "Assess the overall scene. Use unclear when the attribute cannot be determined visually."
+  }
+}

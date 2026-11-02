@@ -1,0 +1,83 @@
+name: CI
+
+run-name: "CI: ${{ github.event.pull_request.title || github.head_ref || github.ref_name }}"
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: "Compat: Python ${{ matrix.python-version }}"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install package and test dependencies
+        run: python -m pip install -e '.[test]'
+
+      - name: Verify resolved dependencies
+        run: python -m pip check
+
+      - name: Run package and example tests
+        run: python -m pytest -q
+
+      - name: Run synthetic task pipelines
+        run: python -m examples.vlm.run_demo
+
+  package:
+    name: Build and validate distribution
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install build tooling
+        run: python -m pip install --upgrade build twine
+
+      - name: Build distribution artifacts
+        run: python -m build
+
+      - name: Check distribution metadata
+        run: python -m twine check dist/*
+
+      - name: Smoke-test the built wheel in a clean environment
+        run: |
+          python -m venv artifact-venv
+          artifact-venv/bin/python -m pip install --upgrade pip
+          artifact-venv/bin/python -m pip install dist/*.whl
+          artifact-venv/bin/python -m pip check
+          artifact-venv/bin/python -c 'import ml_pipes.vlm'
+          artifact-venv/bin/python -m examples.vlm.run_demo
+
+  compatibility-summary:
+    name: "Compat: Gate"
+    needs: test
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify all compatibility jobs succeeded
+        env:
+          TEST_RESULT: ${{ needs.test.result }}
+        run: test "$TEST_RESULT" = success

@@ -1,0 +1,60 @@
+name: Release
+
+run-name: "Releasing: ${{ github.ref_name }}"
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate staged release
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_TAG: ${{ github.ref_name }}
+    steps:
+      - name: Require a tag ref
+        run: test "${GITHUB_REF_TYPE}" = "tag"
+
+      - name: Check out release tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Match tag to package version
+        run: |
+          package_version="$(python -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])')"
+          test "${RELEASE_TAG}" = "v${package_version}"
+
+  publish:
+    name: Publish to PyPI
+    needs: validate
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Download staged release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          mkdir dist
+          gh release download "${RELEASE_TAG}" --repo "${GITHUB_REPOSITORY}" --dir dist --pattern '*.tar.gz' --pattern '*.whl' --pattern SHA256SUMS
+          cd dist
+          sha256sum -c SHA256SUMS
+          mkdir ../publish
+          mv *.tar.gz *.whl ../publish/
+
+      - name: Publish verified artifacts
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: publish
