@@ -5,7 +5,7 @@ Repository: `vlm-tasks`. Distribution: `ml-pipes-vlm`. Import: `ml_pipes.vlm`.
 Task operators for vision-language models, using PydanticAI for model
 communication and structured output execution.
 
-**MVP:** Classify, ClassifyMultiLabel, Detect, Ground, and PredictAttributes.
+**MVP:** Classify, ClassifyMultiLabel, Detect, Ground, and Attributes.
 Requires Python 3.11+. Import operators from `ml_pipes.vlm`.
 
 ## Installation

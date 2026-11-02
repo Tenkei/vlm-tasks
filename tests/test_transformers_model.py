@@ -13,7 +13,7 @@ import pytest
 from ml_pipes.core import Pipeline
 from ml_pipes.vision import ImagePayload
 from ml_pipes.vlm import (
-    Classify, ClassifyMultiLabel, Detect, Ground, PredictAttributes,
+    Attributes, Classify, ClassifyMultiLabel, Detect, Ground,
     InvalidModelResponseError, ModelExecutionError, PydanticAIBackend,
 )
 from ml_pipes.vlm import TransformersModel
@@ -86,7 +86,7 @@ def test_all_tasks_receive_schema_and_rgb_image_with_fresh_history(adapter, imag
     backend, processor = adapter([json.dumps(value) for value in outputs])
     tasks = [Classify(backend, ["clean", "dirty"]), ClassifyMultiLabel(backend, ["clean", "intact"]),
              Detect(backend, ["window"]), Ground(backend, "the window"),
-             PredictAttributes(backend, {"state": ["clean", "dirty"]})]
+             Attributes(backend, {"state": ["clean", "dirty"]})]
     results = []
     for task in tasks:
         pipeline = Pipeline([task])

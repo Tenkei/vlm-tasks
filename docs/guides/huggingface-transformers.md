@@ -23,7 +23,7 @@ validate the result, and the task converts coordinates to input-image pixels.
 
 The adapter is shared by all tasks. Loading, device selection and Hugging Face
 authentication remain application concerns. The example uses the existing
-Classify, ClassifyMultiLabel, Detect, Ground and PredictAttributes operators.
+Classify, ClassifyMultiLabel, Detect, Ground and Attributes operators.
 
 ## Setup
 

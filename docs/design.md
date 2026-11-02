@@ -1,7 +1,7 @@
-# VLM design decisions
+# VLM Task Design
 
 Status: five-operator MVP with accepted geometry extensions pending implementation.
-Recorded 2026-10-25; updated 2026-10-26.
+Recorded 2026-10-25; updated 2026-11-03.
 
 ## Goal
 
@@ -18,7 +18,7 @@ are distinct from continuous scores.
 
 ## Task catalog
 
-Only the first five rows are implemented. The remaining contracts describe
+The first five task contracts are implemented. The remaining contracts describe
 the intended direction, not exported placeholders or finalized signatures.
 
 | Task | User intent and inputs | Result |
@@ -27,12 +27,12 @@ the intended direction, not exported placeholders or finalized signatures.
 | ClassifyMultiLabel | Image, independently applicable label choices, context | Zero or more labels |
 | Detect | Image, labels and context; exhaustive instance search | Collection of labeled boxes, possibly empty |
 | Ground | Image, one target and context; resolve one match | One location (box; point mode planned), not found, or ambiguity |
-| PredictAttributes | Image, named categorical attributes and their choices | One allowed value per attribute |
+| Attributes | Image, named categorical attributes and their choices | One allowed value per attribute |
 | Verify | Image and statement | Typed verification decision |
 | Score | Image and an assessment criterion with a defined continuous scale | Value in that scale; not a confidence probability |
 | Count | Image and target | Nonnegative count |
 | ReadText | Image, optional reading constraints | Text and applicable layout information |
-| AnswerQuestion | Image and question | Free-text answer |
+| Answer | Image and question | Free-text answer |
 | Caption | Image; predefined caption instruction | Factual caption without a required question |
 | Embed | Image or text through a suitable representation model | Vector with modality and embedding-space identity |
 | Compare | Compatible embeddings | Similarity; initially cosine |
@@ -42,38 +42,62 @@ Segmentation, semantic segmentation, pose/keypoints, oriented boxes, physical
 measurement, ordinal ratings, document field extraction, scene graphs, and
 video are deferred.
 
-## Classification and attributes
+### Naming
 
-Classify and ClassifyMultiLabel are separate operators, following the classical
-distinction between an exclusive decision and independent label applicability.
-A previous proposal merged them using a multi_label flag; that proposal is
-superseded. Top-k alternatives are not multi-label predictions. Classical
-softmax and independent sigmoid heads motivate this distinction but are not
-required execution mechanisms for VLMs.
+Prefer concise task names with clear input and output contracts:
+- `Attributes` predicts configured categorical properties; its plural noun is
+  an intentional exception to action-based names.
+- `Answer` is clear from its question input.
+- `ReadText` makes text extraction explicit.
+- `ClassifyMultiLabel` distinguishes independent labels from exclusive classification.
 
-Labels can be names or name-to-description mappings. Names such as clean/dirty
-do not identify the subject: context supplies that meaning, for example
+## Classify vs ClassifyMultiLabel vs Attributes
+
+All three tasks predict categorical properties from an image using configured
+choices. Context identifies the subject and property being assessed: choices
+such as clean/dirty alone do not identify the subject, so supply context such as
 "Assess cleanliness of the visible windows." Context should also specify an
 aggregation rule where several subjects appear. An image-level task does not
 implicitly become per-instance classification.
 
-PredictAttributes is named after attribute prediction/recognition. "Feature
+The distinction is how choices are organized and returned:
+
+- `Classify` chooses exactly one label from one configured set, such as
+  clean/dirty for window cleanliness. Labels can be names or name-to-description
+  mappings.
+- `ClassifyMultiLabel` returns zero or more independently applicable labels
+  from one configured set, such as glass, reflective, and dirty. Labels can
+  also have descriptions; choices are not grouped into named attributes.
+- `Attributes` returns one categorical value for each named attribute, each
+  with its own choices, such as cleanliness: clean/dirty and material: glass/wood.
+  Binary attributes use explicit choices such as yes/no.
+
+Top-k alternatives to an exclusive decision are not multi-label predictions.
+Classify and ClassifyMultiLabel remain separate; the previous proposal to merge
+them using a multi_label flag is superseded. Classical softmax and independent
+sigmoid heads motivate this distinction but are not required execution
+mechanisms for VLMs.
+
+Attributes performs categorical attribute prediction/recognition. "Feature
 extraction" commonly means numerical representations, so ExtractFeatures would
-be misleading for categorical attributes. Each attribute has one categorical
-value in the MVP; binary attributes use explicit choices such as yes/no.
+be misleading for categorical attributes.
 
-## Detection and grounding
+## Detection vs Grounding
 
-The distinction is requested cardinality:
+Both tasks localize image content using caller-defined vocabularies,
+descriptions, and context. Descriptions may include attributes and relationships;
+how a target is expressed does not define the task. Both currently return boxes.
 
-- Detect requests all matching instances of supplied labels.
-- Ground requests resolution of one target.
+The distinction is requested cardinality and how multiple matches are handled:
 
-How a target is expressed does not define the task. Both support caller-defined
-vocabularies, descriptions, and context. Finding only one actual instance does
-not turn exhaustive detection into grounding. Several plausible grounding
-matches require an ambiguous result unless context resolves the choice.
-Ground does not have a selection="all" mode.
+- `Detect` requests all matching instances of supplied labels and returns a
+  collection of labeled boxes, possibly empty.
+- `Ground` requests resolution of one target and returns one location,
+  not_found, or ambiguous. Several plausible matches require ambiguity unless
+  context resolves the choice; there is no selection="all" mode.
+
+Finding only one actual instance does not turn exhaustive detection into
+grounding. The requested behavior determines the task.
 
 For a busy scene, "person wearing a black backpack" can describe several
 instances. Requesting every such person is Detect, with a descriptive label:
@@ -91,8 +115,8 @@ Detect(
 ```
 
 Each matching person receives a separate box with the same label. The result
-can be empty, contain one instance, or contain several. Descriptions may include
-attributes and relationships; labels need not be bare object categories.
+can be empty, contain one instance, or contain several; labels need not be bare
+object categories.
 Localizing backpacks themselves would require a different description and box
 scope. A dark shirt or a backpack of indeterminate color does not establish
 that a person meets the black-backpack criterion.
@@ -135,32 +159,30 @@ proposals, and text concept segmentation are different capabilities. They
 should map to the corresponding task contract when implemented; model family
 names are not sufficient capability declarations.
 
-The current MVP requests normalized xyxy geometry and converts it to input-image
-pixels. The accepted box configuration extension below adds explicit coordinate
-formats for Detect and Ground. Overlapping instances are valid.
+Overlapping detected instances are valid. Coordinate and geometry options are
+specified under [Task Configuration](#task-configuration).
+
+## Task Configuration
+
+The following geometry extensions are accepted designs, pending implementation.
+The current operators use normalized model coordinates and return pixel boxes.
 
 ### Box configuration
 
-Decision: accepted design; implementation pending. The existing constructors
-currently use normalized model coordinates. Their planned signatures are:
+`box_scale` selects the model-facing coordinate convention for Detect and
+Ground. The default is `"normalized"`; select a scale by evaluating the chosen
+model. Ground's geometry selector is described under
+[grounding method](#grounding-method).
 
 ```python
 Detect(model, labels, *, context=None, box_scale="normalized")
-Ground(model, target, *, context=None, box_scale="normalized")
+Ground(model, target, *, context=None, geometry="box", box_scale="normalized")
 ```
 
-The planned Ground signature is extended with a geometry selector in
-[point grounding](#point-grounding). The signature above describes its box path.
-
-box_scale belongs to the operator's box configuration. Users select the
-model-facing coordinate convention based on evaluation of their chosen model.
-The same setting and semantics apply to both operators. The default is
-"normalized".
-
-Let W and H be the width and height of the ImagePayload submitted to the task.
-All modes use xyxy boxes with numeric coordinates; fractional values are valid
-even in pixel mode. Coordinate limits describe image boundaries, so a box may
-end at W or H.
+Let W and H be the submitted ImagePayload's width and height. All modes request
+xyxy boxes and return floating-point pixel boxes with image_size = (W, H).
+Fractional coordinates are valid, including in pixel mode; image boundaries
+include W and H.
 
 | box_scale | Model-facing bounds | Conversion to public pixel coordinates |
 |---|---|---|
@@ -168,53 +190,17 @@ end at W or H.
 | "1000" | x and y in [0, 1000] | x_pixel = x * W / 1000; y_pixel = y * H / 1000 |
 | "pixels" | x in [0, W]; y in [0, H] | Use coordinates directly |
 
-For "1000", each axis spans the full image independently: 1000 identifies
-the right boundary for x and the bottom boundary for y. For "pixels", bounds
-are determined from each call's image dimensions.
+- Each axis spans the full image independently; in `"1000"` mode, 1000 is
+  the right boundary for x and the bottom boundary for y.
+- The selected scale controls coordinate instructions, schema bounds,
+  validation and conversion. Every box requires finite coordinates within those
+  bounds, with x1 < x2 and y1 < y2.
+- Conversion uses the configured scale exactly, without guessing units,
+  clipping boxes, swapping coordinates or repairing malformed geometry.
+- Unsupported `box_scale` values are invalid configuration.
 
-#### Task constraints and validation
-
-The task and its configuration define the expected model response. The selected
-box_scale must control both the generated coordinate instruction and the response
-schema bounds. The task supplies the corresponding validator through
-ResponseSpec; the backend executes that specification. The task also validates
-returned data at its own boundary before conversion.
-
-- Detect validates allowed class names, the detection collection, box fields,
-  configured coordinate bounds and geometry. An empty collection is valid.
-- Ground validates its status and box consistency, plus the same configured
-  coordinate bounds and geometry when a box is present. A box is required
-  exactly when status is found.
-- Every box requires finite numeric coordinates, x1 < x2 and y1 < y2. All
-  coordinates must lie within the bounds of the selected mode.
-- Unsupported box_scale values are invalid task configuration. Malformed or
-  task-invalid model responses follow the existing InvalidModelResponseError
-  and configured correction-retry behavior.
-
-Conversion follows the configured scale exactly. Out-of-range coordinates are
-rejected; validation does not guess a scale, clip boxes, swap coordinates or
-repair malformed output. Values within the bounds can still describe the wrong
-location or reflect unintended units, so visual accuracy requires evaluation
-after conversion.
-
-#### Public results and model integration
-
-DetectionResult and GroundingResult in box mode expose floating-point xyxy
-boxes in input-image pixels, with image_size = (W, H). The model-facing scale
-does not alter the public box representation or the task's cardinality semantics.
-The planned point mode adds a distinct point representation described below.
-
-The backend remains shared across tasks and receives the task-generated
-instruction, schema and validator. Coordinate semantics and conversion belong
-to the task; adapters do not select a scale or implement task-specific geometry
-parsers.
-
-The three-model experiment on the cat image motivates making this configuration
-explicit: "1000" improved Nemotron's accepted predictions and matching, while
-the other models did not show the same benefit. Qwen's malformed responses also
-showed that coordinate scale and output-format reliability are separate concerns.
-These observations support evaluating the setting per model; they do not define
-an automatic model-to-scale mapping.
+<details>
+<summary>Experiment: box coordinate scale across three models</summary>
 
 #### Grounding scale experiment: central remote
 
@@ -258,58 +244,39 @@ The [full protocol and raw results](https://github.com/trained-by-humans/vlm-tas
 include prompts, per-model responses, box coordinates and summaries. Use the
 [examples](../examples/README.md) for new runs.
 
-### Point grounding
+</details>
 
-Decision: accept a point output option for Ground; implementation pending.
-The proposed constructor combines the existing box configuration with an
-independent choice of output geometry:
+### Grounding method
 
-```python
-Ground(
-    model, target, *, context=None,
-    geometry="box", box_scale="normalized",
-)
-```
+`geometry` selects Ground's output shape without changing its single-target
+semantics. The planned signature above combines it with `box_scale`.
 
-- geometry="box" is the default and requests one bounding box. box_scale
-  selects normalized, 1000 or pixel coordinates as specified above.
-- geometry="point" requests one point inside the selected target, preferably
-  near the center of its visible body. For a person, prefer the visible torso.
-  It identifies a location without estimating the object's extent.
-- The initial point mode uses normalized model coordinates x and y in [0, 1],
-  relative to the full image. The origin is the top-left corner; x increases
-  rightward and y downward. Return public floating-point input-image pixels:
-  x_pixel = x * W and y_pixel = y * H.
-- box_scale applies only to box geometry. Point mode uses its fixed normalized
-  convention; reject a nondefault box_scale with geometry="point" so a caller
-  does not mistakenly expect scaled point coordinates. Additional point scales
-  can be evaluated separately before being added to the interface.
-- The task predicts the point from the image and target description. No input
-  point hint, segmentation pass or inferred bounding box is part of this mode.
-  Detect retains its collection-of-boxes contract.
+- `geometry="box"` is the default and requests one bounding box using the
+  selected `box_scale`.
+- `geometry="point"` requests one point inside the target, preferably near
+  the center of its visible body (the visible torso for a person). It predicts
+  location directly from the image and description, without a point hint,
+  segmentation pass or inferred box.
+- Point mode uses finite normalized x and y in [0, 1], relative to the full
+  image. The origin is top-left; x increases rightward and y downward. Public
+  coordinates are floating-point pixels: x_pixel = x * W, y_pixel = y * H.
+- `box_scale` applies only to boxes. Reject a nondefault `box_scale` in point
+  mode and reject unsupported `geometry` values.
 
-#### Response contract and validation
-
-The planned public GroundingResult carries status, geometry, box, point and
-image_size. A Point value has numeric x and y in input-image pixels. For found,
-exactly the selected geometry is present: box for box mode, point for point
-mode. For not_found or ambiguous, both are null. All public types remain plain
-framework-independent values. This extends the current box-only result; these
-new fields and Point are not yet implemented or exported.
-
-The model-facing point schema requests status and point (an object with x and
-y, or null), without box fields. A point is required exactly when status is
-found. Coordinates must be finite and within [0, 1]; reject extra fields,
-invalid status/point combinations and out-of-range values. The task owns the
-instruction, schema, validation and pixel conversion; the shared backend is
-unchanged. Unsupported geometry values fail task configuration. Correction
-budgets and invalid-response errors follow the existing task policy.
-
-Range validation does not prove that a point is inside the right object.
-Evaluate point location against target masks or point annotations where
-available, separately from box IoU. A point does not provide a box or mask.
+The planned GroundingResult adds geometry and point to the existing status,
+box and image_size fields. Point contains numeric pixel x and y. For found,
+exactly the selected geometry is present; for not_found or ambiguous, both box
+and point are null. The point response schema requests status and point only,
+with no box or extra fields. These result extensions are not yet exported.
 
 ### Visual example: effect of geometry and coordinate scale
+
+Geometry and coordinate scale affected localization and output validity
+differently across models. Evaluate these settings for the chosen model
+and task.
+
+<details>
+<summary>Show the screenshot and comparison across three models</summary>
 
 This experiment repeated grounding of **"a person wearing a black backpack"**
 with all three models and all four output modes. Each request explicitly
@@ -347,6 +314,8 @@ and [grounding modes archive](https://github.com/trained-by-humans/vlm-tasks/blo
 The two comparison figures are also available under `docs/assets/`.
 See the [experiment index](https://github.com/trained-by-humans/vlm-tasks/blob/main/experiments/README.md) for all recorded runs.
 
+</details>
+
 ## Public and model-facing boundaries
 
     ImagePayload
@@ -361,6 +330,11 @@ Tasks share a communication envelope. Request content and output schemas vary
 by task; adapters do not dispatch on task names or own task-specific parsers.
 ResponseSpec carries a JSON Schema and a validator; ModelResponse contains
 plain structured data. These integration types contain no PydanticAI types.
+The task owns instructions, schema constraints, response validation and
+coordinate conversion; the backend executes the supplied specification. Tasks
+also validate returned data at their boundary before conversion. Malformed or
+task-invalid output follows InvalidModelResponseError and the configured
+correction-retry policy.
 
 Final results are dedicated dataclasses, not TensorRegistry values. Registries
 serve mutable tensor processing; these predictions are finalized outcomes.
@@ -452,7 +426,10 @@ for a future quality score; ICDAR/IAM for OCR; VQAv2/GQA for QA; and
 Flickr30k/COCO retrieval for embedding comparison. Grounding evaluation needs
 explicit absent and ambiguous cases in addition to successful references.
 Use task-appropriate accuracy, precision/recall, IoU/mAP and attribute metrics.
-Calibration needs separate evidence. Dataset ingestion and live comparative
+Evaluate point locations against target masks or point annotations separately
+from box IoU; a point does not describe an object's extent. Valid geometry and
+coordinate bounds cannot establish that the model found the right target or
+used the requested units. Calibration needs separate evidence. Dataset ingestion and live comparative
 benchmarks are future work.
 
 ## Sources

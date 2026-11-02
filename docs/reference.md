@@ -16,7 +16,7 @@ PydanticAIBackend wrapping an initialized PydanticAI Model.
 | ClassifyMultiLabel(model, labels, *, context=None) | `ml_pipes.vision.ImagePayload` | ClassificationResult | Zero or more independently applicable labels |
 | Detect(model, labels, *, context=None) | `ml_pipes.vision.ImagePayload` | DetectionResult | All matching instances; empty detections are valid |
 | Ground(model, target, *, context=None) | `ml_pipes.vision.ImagePayload` | GroundingResult | Resolve one target; found, not_found or ambiguous |
-| PredictAttributes(model, attributes, *, context=None) | `ml_pipes.vision.ImagePayload` | AttributePredictionResult | One allowed value for each requested attribute |
+| Attributes(model, attributes, *, context=None) | `ml_pipes.vision.ImagePayload` | AttributePredictionResult | One allowed value for each requested attribute |
 
 Labels are a sequence of distinct nonempty names or a mapping from names to
 descriptions. A bare string is not a vocabulary. Attribute definitions map
@@ -25,7 +25,7 @@ property, and any aggregation rule. Ground's target is a nonempty description.
 
 Accepted extensions are documented under
 [box configuration](design.md#box-configuration) for Detect and Ground, and
-[point grounding](design.md#point-grounding) for Ground's planned geometry="point"
+[grounding method](design.md#grounding-method) for Ground's planned geometry="point"
 option. Both are pending implementation; the constructors and result types on
 this page describe the current API. See the illustrated comparisons for
 [Detect versus Ground](design.md#visual-example-detect-versus-ground) and

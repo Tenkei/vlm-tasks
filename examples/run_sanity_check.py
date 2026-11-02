@@ -11,7 +11,7 @@ from pydantic_ai.models.function import FunctionModel
 from ml_pipes.core import Pipeline
 from ml_pipes.vision import ImagePayload
 from ml_pipes.vlm import (
-    Classify, ClassifyMultiLabel, Detect, Ground, PredictAttributes, PydanticAIBackend,
+    Attributes, Classify, ClassifyMultiLabel, Detect, Ground, PydanticAIBackend,
 )
 
 
@@ -37,7 +37,7 @@ def main() -> None:
         ClassifyMultiLabel(backend, ["scratched", "cracked", "stained"]),
         Detect(backend, ["window"]),
         Ground(backend, "the window"),
-        PredictAttributes(backend, {
+        Attributes(backend, {
             "condition": ["healthy", "damaged"], "color": ["blue", "red"],
         }),
     ]

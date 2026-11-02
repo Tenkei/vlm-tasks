@@ -15,10 +15,10 @@ from pydantic_ai.profiles import ModelProfile
 from ml_pipes.core import Pipeline
 from ml_pipes.vision import ImagePayload
 from ml_pipes.vlm import (
-    AttributePredictionResult, BoundingBox, ClassificationResult, Classify,
+    AttributePredictionResult, Attributes, BoundingBox, ClassificationResult, Classify,
     ClassifyMultiLabel, Detect, DetectionResult, Ground, GroundingResult,
     InvalidModelResponseError, ModelExecutionError, ModelResponse,
-    PredictAttributes, PydanticAIBackend,
+    PydanticAIBackend,
 )
 
 
@@ -58,7 +58,7 @@ def test_public_exports():
     import ml_pipes.vlm as vlm
 
     expected = {
-        "Classify", "ClassifyMultiLabel", "Detect", "Ground", "PredictAttributes",
+        "Classify", "ClassifyMultiLabel", "Detect", "Ground", "Attributes",
         "PydanticAIBackend", "TransformersModel", "BoundingBox", "ClassificationResult", "Detection",
         "DetectionResult", "GroundingResult", "AttributePredictionResult",
         "ModelBackend", "ModelRequest", "ModelResponse", "ResponseSpec",
@@ -185,7 +185,7 @@ def test_ground_status_and_geometry_must_agree(image, data):
 def test_attributes_require_exact_choices_and_support_arbitrary_names(image):
     values = {"window color": "blue", "model_config": "healthy"}
     backend, _ = backend_for({"attributes": values})
-    result = PredictAttributes(backend, {
+    result = Attributes(backend, {
         "window color": ["blue", "red"],
         "model_config": {"healthy": "Undamaged", "damaged": "Visible damage"},
     }, context="Assess the window.")(image)
@@ -200,7 +200,7 @@ def test_attributes_require_exact_choices_and_support_arbitrary_names(image):
 def test_attributes_reject_missing_extra_or_invalid_values(image, values):
     backend, _ = backend_for({"attributes": values})
     with pytest.raises(InvalidModelResponseError):
-        PredictAttributes(backend, {
+        Attributes(backend, {
             "color": ["blue", "red"], "condition": ["healthy", "damaged"],
         })(image)
 
@@ -258,7 +258,7 @@ def test_shared_backend_does_not_share_task_schema_or_history(image):
     (lambda b: ClassifyMultiLabel(b, ["clean"]), {"labels": []}, ClassificationResult),
     (lambda b: Detect(b, ["window"]), {"detections": []}, DetectionResult),
     (lambda b: Ground(b, "window"), {"status": "not_found", "box": None}, GroundingResult),
-    (lambda b: PredictAttributes(b, {"color": ["red"]}),
+    (lambda b: Attributes(b, {"color": ["red"]}),
      {"attributes": {"color": "red"}}, AttributePredictionResult),
 ])
 def test_operator_runs_and_validates_in_pipeline(image, task, payload, result_type):

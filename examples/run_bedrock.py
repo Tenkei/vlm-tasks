@@ -11,8 +11,8 @@ from time import perf_counter
 from ml_pipes.core import Pipeline
 from ml_pipes.vision import Decode, LoadFile
 from ml_pipes.vlm import (
-    Classify, ClassifyMultiLabel, Detect, Ground, ModelBackend,
-    PredictAttributes, PydanticAIBackend,
+    Attributes, Classify, ClassifyMultiLabel, Detect, Ground, ModelBackend,
+    PydanticAIBackend,
 )
 
 TASKS = {
@@ -20,7 +20,7 @@ TASKS = {
     "multilabel": ClassifyMultiLabel,
     "detect": Detect,
     "ground": Ground,
-    "attributes": PredictAttributes,
+    "attributes": Attributes,
 }
 DEFAULT_CONFIG = Path(__file__).with_name("image_tasks.json")
 

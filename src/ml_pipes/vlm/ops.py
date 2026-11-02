@@ -16,7 +16,7 @@ from .types import (
     ResponseSpec,
 )
 
-__all__ = ["Classify", "ClassifyMultiLabel", "Detect", "Ground", "PredictAttributes"]
+__all__ = ["Classify", "ClassifyMultiLabel", "Detect", "Ground", "Attributes"]
 
 LabelChoices: TypeAlias = Sequence[str] | Mapping[str, str]
 
@@ -197,7 +197,7 @@ class Ground(_Task):
 
 
 @Operator
-class PredictAttributes(_Task):
+class Attributes(_Task):
     def __init__(
         self,
         model: ModelBackend,
