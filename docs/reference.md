@@ -10,13 +10,13 @@ All operators accept one vision.ImagePayload and return a dedicated dataclass.
 Settings are constructor-only. A model is a ModelBackend, normally a
 PydanticAIBackend wrapping an initialized PydanticAI Model.
 
-| Constructor | Output | Contract |
-|---|---|---|
-| Classify(model, labels, *, context=None) | ClassificationResult | Exactly one allowed label |
-| ClassifyMultiLabel(model, labels, *, context=None) | ClassificationResult | Zero or more independently applicable labels |
-| Detect(model, labels, *, context=None) | DetectionResult | All matching instances; empty detections are valid |
-| Ground(model, target, *, context=None) | GroundingResult | Resolve one target; found, not_found or ambiguous |
-| PredictAttributes(model, attributes, *, context=None) | AttributePredictionResult | One allowed value for each requested attribute |
+| Constructor | Input | Output | Contract |
+|---|---|---|---|
+| Classify(model, labels, *, context=None) | `ml_pipes.vision.ImagePayload` | ClassificationResult | Exactly one allowed label |
+| ClassifyMultiLabel(model, labels, *, context=None) | `ml_pipes.vision.ImagePayload` | ClassificationResult | Zero or more independently applicable labels |
+| Detect(model, labels, *, context=None) | `ml_pipes.vision.ImagePayload` | DetectionResult | All matching instances; empty detections are valid |
+| Ground(model, target, *, context=None) | `ml_pipes.vision.ImagePayload` | GroundingResult | Resolve one target; found, not_found or ambiguous |
+| PredictAttributes(model, attributes, *, context=None) | `ml_pipes.vision.ImagePayload` | AttributePredictionResult | One allowed value for each requested attribute |
 
 Labels are a sequence of distinct nonempty names or a mapping from names to
 descriptions. A bare string is not a vocabulary. Attribute definitions map
@@ -68,19 +68,49 @@ PydanticAIBackend requires an initialized pydantic_ai.models.Model. It does not
 accept provider strings, Agents, raw SDK clients or loaded Transformers objects.
 Use the corresponding PydanticAI provider to wrap an SDK client. Backends can be
 shared between operators; requests do not share conversation history.
+For caller-owned Transformers weights and a processor, wrap them in
+`TransformersModel` and pass that model to `PydanticAIBackend`.
 
-output_mode accepts prompted, native, or tool. Native/tool require matching
-model/API capabilities. retries counts correction attempts after the first
-prediction, not provider SDK transport retries.
+`output_mode` accepts `prompted`, `native`, or `tool` and defaults to `prompted`.
+Native/tool require matching model/API capabilities. `retries` must be a
+nonnegative integer and defaults to zero. It counts correction attempts after
+the first prediction. Provider SDK transport retries remain controlled by the
+configured SDK client.
 
 Supported images are nonempty uint8 HWC RGB/BGR (three channels) and uint8 HW
 GRAY. Input data is encoded as lossless PNG; no resizing is performed here.
 Normalized floats, CHW arrays, alpha images and batches are outside the MVP.
 Execution is synchronous and is not supported inside an active asyncio loop.
 
+### TransformersModel
+
+```python
+from ml_pipes.vlm import TransformersModel, PydanticAIBackend
+
+model = TransformersModel(weights, processor, model_name="my-model", max_new_tokens=4096)
+backend = PydanticAIBackend(model)
+```
+
+`TransformersModel(model, processor, *, model_name, max_new_tokens=4096)` is a
+PydanticAI Model adapter for already-loaded, single-device, decoder-only
+image/text models such as Qwen3-VL Instruct. It does not load or move weights.
+The caller supplies a compatible multimodal processor and chooses the device
+and dtype. `max_new_tokens` must be a positive integer.
+
+The adapter translates image messages, schema instructions and correction
+history into multimodal chat, runs greedy generation, and returns only the
+generated tokens. It serializes generation on shared weights. Only prompted
+output is supported; native output, tools, streaming and video are unsupported.
+
+PyTorch and Pillow are needed when generating responses and are imported on
+use. They remain optional dependencies, as does Transformers for loading
+weights and processors. Importing `ml_pipes.vlm` does not import those runtimes.
+See the [Hugging Face Transformers guide](guides/huggingface-transformers.md)
+for setup and a runnable example.
+
 ## Errors
 
-- ValueError: invalid task configuration or image.
+- ValueError: invalid task configuration or image, raised before model execution.
 - InvalidModelResponseError: malformed or task-invalid output after allowed
   correction attempts.
 - ModelExecutionError: execution failure; the original exception is its cause.

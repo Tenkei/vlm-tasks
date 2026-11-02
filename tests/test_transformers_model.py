@@ -9,8 +9,6 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-pytest.importorskip("pydantic_ai")
-pytest.importorskip("PIL")
 
 from ml_pipes.core import Pipeline
 from ml_pipes.vision import ImagePayload
@@ -18,7 +16,7 @@ from ml_pipes.vlm import (
     Classify, ClassifyMultiLabel, Detect, Ground, PredictAttributes,
     InvalidModelResponseError, ModelExecutionError, PydanticAIBackend,
 )
-from examples.vlm.transformers_model import TransformersModel
+from ml_pipes.vlm import TransformersModel
 
 
 class Batch(dict):
@@ -154,7 +152,7 @@ def test_unsupported_output_modes_do_not_call_weights(adapter, image, mode):
 
 def test_cli_continues_after_invalid_task_and_saves_causes(adapter, tmp_path, monkeypatch):
     import cv2
-    from examples.vlm import run_transformers
+    from examples import run_transformers
 
     image = tmp_path / "input.png"
     cv2.imwrite(str(image), np.zeros((10, 20, 3), dtype=np.uint8))
@@ -185,7 +183,7 @@ def test_cli_continues_after_invalid_task_and_saves_causes(adapter, tmp_path, mo
 
 def test_cli_dry_run_never_loads_weights(tmp_path, monkeypatch):
     import cv2
-    from examples.vlm import run_transformers
+    from examples import run_transformers
 
     image = tmp_path / "input.png"
     cv2.imwrite(str(image), np.zeros((10, 20, 3), dtype=np.uint8))

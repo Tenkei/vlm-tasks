@@ -10,17 +10,15 @@ from time import perf_counter
 
 from ml_pipes.core import Pipeline
 from ml_pipes.vision import Decode, LoadFile
-from ml_pipes.vlm import PydanticAIBackend
+from ml_pipes.vlm import PydanticAIBackend, TransformersModel
 
-from examples.vlm.run_bedrock import DEFAULT_CONFIG, TASKS, build_pipelines
+from examples.run_bedrock import DEFAULT_CONFIG, TASKS, build_pipelines
 
 
 def create_backend(args: argparse.Namespace) -> PydanticAIBackend:
     # --dry-run needs neither these optional dependencies nor model weights.
     import torch
     from transformers import AutoModelForImageTextToText, AutoProcessor
-
-    from examples.vlm.transformers_model import TransformersModel
 
     device = args.device
     if device == "auto":

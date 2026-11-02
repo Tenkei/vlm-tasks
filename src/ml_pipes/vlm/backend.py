@@ -1,4 +1,4 @@
-"""The only module that integrates the PydanticAI execution framework."""
+"""PydanticAI execution backend for structured vision-language tasks."""
 from __future__ import annotations
 
 from collections.abc import Mapping

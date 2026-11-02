@@ -254,10 +254,9 @@ with 1000-scale coordinates. Sonnet remained below the matching threshold in
 every mode. This single image and one call per condition measure agreement
 with a YOLO prediction, not ground-truth accuracy or repeatability.
 
-The original checkout kept the full protocol, raw results and annotated
-comparison in the ignored `.example_assets/vlm_remote_grounding/` directory.
-Those generated artifacts were not tracked or included in this extraction.
-The findings above preserve the design rationale independently of them.
+The [full protocol and raw results](https://github.com/trained-by-humans/vlm-tasks/blob/main/experiments/archive/vlm_remote_grounding/README.md)
+include prompts, per-model responses, box coordinates and summaries. Use the
+[examples](../examples/README.md) for new runs.
 
 ### Point grounding
 
@@ -342,11 +341,11 @@ Settings were Bedrock in ap-northeast-1, prompted output, temperature 0,
 max_tokens 4096 and zero correction retries, on the full 1920×1080 image without
 task-side cropping or resizing. Model IDs match the central-remote experiment.
 The experiment used local task preparation and schemas without changing the
-public package. Exact prompts, coordinates and responses remain in the local
-ignored experiment directories `.example_assets/vlm_backpack_people/` and
-`.example_assets/vlm_backpack_grounding_modes/`. The two comparison images above
-are copied into package documentation assets so they are available independently
-of those local artifacts.
+public package. Exact prompts, coordinates and responses are recorded in the
+[Detect versus Ground archive](https://github.com/trained-by-humans/vlm-tasks/blob/main/experiments/archive/vlm_backpack_people/README.md)
+and [grounding modes archive](https://github.com/trained-by-humans/vlm-tasks/blob/main/experiments/archive/vlm_backpack_grounding_modes/README.md).
+The two comparison figures are also available under `docs/assets/`.
+See the [experiment index](https://github.com/trained-by-humans/vlm-tasks/blob/main/experiments/README.md) for all recorded runs.
 
 ## Public and model-facing boundaries
 
@@ -385,8 +384,10 @@ if the execution framework changes.
 
 These are eligible routes, not a compatibility certification or a ranking of
 deployment popularity. The MVP uses the routes supported by a supplied
-PydanticAI Model. Its HF integration accesses inference APIs; it does not
-directly execute a loaded Transformers VLM.
+PydanticAI Model. For directly loaded Transformers weights, the package provides
+`TransformersModel`, a PydanticAI adapter wrapping caller-owned weights and a
+multimodal processor. Model loading, device placement and authentication remain
+application concerns. See the [Transformers guide](guides/huggingface-transformers.md).
 
 A communication implementation usually corresponds to an API/runtime; each
 instance selects a particular model. Qwen and Gemma can share an integration

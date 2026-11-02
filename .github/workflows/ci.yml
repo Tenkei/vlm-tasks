@@ -38,8 +38,8 @@ jobs:
       - name: Run package and example tests
         run: python -m pytest -q
 
-      - name: Run synthetic task pipelines
-        run: python -m examples.vlm.run_demo
+      - name: Run sanity check
+        run: python -m examples.run_sanity_check
 
   package:
     name: Build and validate distribution
@@ -68,8 +68,8 @@ jobs:
           artifact-venv/bin/python -m pip install --upgrade pip
           artifact-venv/bin/python -m pip install dist/*.whl
           artifact-venv/bin/python -m pip check
-          artifact-venv/bin/python -c 'import ml_pipes.vlm'
-          artifact-venv/bin/python -m examples.vlm.run_demo
+          artifact-venv/bin/python -I -c 'from pathlib import Path; import sys; import ml_pipes.vlm as vlm; assert Path(vlm.__file__).resolve().is_relative_to(Path(sys.prefix).resolve())'
+          artifact-venv/bin/python -I examples/run_sanity_check.py
 
   compatibility-summary:
     name: "Compat: Gate"

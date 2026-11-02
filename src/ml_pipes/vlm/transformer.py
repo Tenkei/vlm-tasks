@@ -1,4 +1,4 @@
-"""Example-local PydanticAI adapter for loaded Transformers vision-language models.
+"""PydanticAI adapter for loaded Transformers vision-language models.
 
 Targets single-device, decoder-only image/text models whose processor supports
 multimodal apply_chat_template, such as Qwen3-VL Instruct. No model loading here.
@@ -17,8 +17,10 @@ from pydantic_ai.models.function import AgentInfo, FunctionModel
 from pydantic_ai.profiles import ModelProfile
 from pydantic_ai.usage import RequestUsage
 
+__all__ = ["TransformersModel"]
 
-def chat_messages(messages: list[ModelMessage], instructions: str | None) -> list[dict]:
+
+def _chat_messages(messages: list[ModelMessage], instructions: str | None) -> list[dict]:
     """Translate the supported PydanticAI messages, including correction history."""
     from PIL import Image
 
@@ -97,14 +99,14 @@ class TransformersModel(FunctionModel):
         if unsupported:
             raise ValueError(f"Unsupported Transformers settings: {sorted(unsupported)}")
         if settings.get("temperature", 0) not in (0, 0.0):
-            raise ValueError("This example uses greedy generation; temperature must be zero")
+            raise ValueError("The Transformers adapter uses greedy generation; temperature must be zero")
         limit = settings.get("max_tokens", self.max_new_tokens)
         if isinstance(limit, bool) or not isinstance(limit, int) or limit < 1:
             raise ValueError("max_tokens must be a positive integer")
         if info.output_tools or info.function_tools:
             raise ValueError("The Transformers adapter does not support tools")
 
-        chat = chat_messages(messages, info.instructions)
+        chat = _chat_messages(messages, info.instructions)
         with self._generation_lock, torch.inference_mode():
             inputs = self.processor.apply_chat_template(
                 chat, tokenize=True, add_generation_prompt=True,

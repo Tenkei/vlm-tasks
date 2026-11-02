@@ -31,11 +31,11 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/trained-by-humans/ml-pipes-vlm"
-Documentation = "https://github.com/trained-by-humans/ml-pipes-vlm/blob/main/docs/reference.md"
-Repository = "https://github.com/trained-by-humans/ml-pipes-vlm"
-Issues = "https://github.com/trained-by-humans/ml-pipes-vlm/issues"
-Changelog = "https://github.com/trained-by-humans/ml-pipes-vlm/releases"
+Homepage = "https://github.com/trained-by-humans/vlm-tasks"
+Documentation = "https://github.com/trained-by-humans/vlm-tasks/blob/main/docs/reference.md"
+Repository = "https://github.com/trained-by-humans/vlm-tasks"
+Issues = "https://github.com/trained-by-humans/vlm-tasks/issues"
+Changelog = "https://github.com/trained-by-humans/vlm-tasks/releases"
 
 [project.optional-dependencies]
 test = ["pytest>=8", "Pillow>=10"]
@@ -45,11 +45,12 @@ packages = ["src/ml_pipes"]
 
 [tool.hatch.build.targets.sdist]
 include = [
-    "LICENSE", "README.md", "RELEASING.md", "SECURITY.md",
-    "pyproject.toml", "src/ml_pipes", "docs", "examples", "tests",
-    ".github/CONTRIBUTING.md",
+    "/LICENSE", "/README.md", "/RELEASING.md", "/SECURITY.md",
+    "/pyproject.toml", "/src/ml_pipes", "/docs", "/examples", "/tests",
+    "/.github/CONTRIBUTING.md",
 ]
 
 [tool.pytest.ini_options]
-testpaths = ["tests", "examples/vlm"]
+addopts = "--import-mode=importlib"
+testpaths = ["tests"]
 pythonpath = ["."]

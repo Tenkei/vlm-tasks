@@ -9,13 +9,20 @@ python -m venv .venv
 source .venv/bin/activate
 python -m pip install -e '.[test]'
 python -m pytest -q
-python -m examples.vlm.run_demo
+python -m examples.run_sanity_check
 ```
 
 The test extra includes Pillow for the Transformers adapter tests. These use
 fake weights and a processor; PyTorch, Transformers, provider credentials and
 model downloads are not required. Provider SDKs and local inference runtimes
 are installed separately for live examples.
+
+Tests and the sanity check run without live provider calls.
+
+The Transformers adapter and example CLI tests live in
+`tests/test_transformers_model.py`; run them separately with
+`python -m pytest -q tests/test_transformers_model.py`. CI also checks the built
+wheel in isolated Python mode with published framework dependencies.
 
 ## Changes
 

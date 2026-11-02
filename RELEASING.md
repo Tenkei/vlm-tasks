@@ -1,9 +1,8 @@
 # Releasing ml-pipes-vlm
 
-This distribution is versioned independently under the shared `ml_pipes`
-namespace. The initial standalone version preserves `0.1.2rc1` from the
-original package. Framework dependencies use `>=0.1.3,<0.2.0`; PydanticAI stays
-pinned to the implementation's tested API, `2.61.0`.
+The `ml-pipes-vlm` distribution uses the `ml_pipes.vlm` namespace and is
+versioned independently. Framework dependencies use `>=0.1.3,<0.2.0`;
+PydanticAI is pinned to the tested API version, `2.61.0`.
 
 ## Prepare
 
@@ -24,13 +23,14 @@ After merging, create and push an annotated `v<project.version>` tag, such as
 2. Builds and validates the distributions and records SHA-256 checksums.
 3. Attaches these artifacts to a GitHub Release.
 4. Downloads and verifies those assets, publishes them to TestPyPI via OIDC,
-   and verifies an installation and import.
+   and verifies an installation and import. The package wheel is fetched only
+   from TestPyPI; runtime dependencies are resolved from PyPI.
 
 Configure the TestPyPI trusted publisher with:
 
 ```text
 Owner:       trained-by-humans
-Repository:  ml-pipes-vlm
+Repository:  vlm-tasks
 Workflow:    .github/workflows/stage-release.yml
 Environment: test-pypi
 ```
@@ -40,19 +40,27 @@ when rebuilding a candidate that has already been uploaded.
 
 ## Promote to PyPI
 
-After staging succeeds, dispatch `Release` from the staged tag. It rejects
-branch refs, downloads the existing release assets, verifies their checksums
-and publishes the same artifacts to PyPI. Configure required reviewers on the
-`pypi` environment and configure the PyPI trusted publisher with:
+After staging succeeds, dispatch `Release` from the staged tag. It requires a
+successful Stage run for the same commit, rejects branch refs, downloads the
+existing release assets, verifies their checksums and publishes the same
+artifacts to PyPI. Configure required reviewers on the `pypi` environment and
+configure the PyPI trusted publisher with:
 
 ```text
 Owner:       trained-by-humans
-Repository:  ml-pipes-vlm
+Repository:  vlm-tasks
 Workflow:    .github/workflows/publish-release.yml
 Environment: pypi
 ```
 
 Organization administrators control release tags and deployment approval.
 Protect `v*` tags and require review for changes to package metadata and release
-workflows. Repository creation, trusted publishers and environment protection
-must be configured on GitHub before publishing.
+workflows. Configure trusted publishers and environment protection on GitHub
+before publishing.
+
+## Distribution contents
+
+Wheels contain the `ml_pipes.vlm` package. Source distributions also include
+tests, examples and documentation. Experiment archives and research reports
+are available in the repository and excluded from distribution artifacts.
+CI discovers tests under `tests/`.

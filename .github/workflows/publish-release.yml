@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   validate:
@@ -32,6 +33,17 @@ jobs:
         run: |
           package_version="$(python -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])')"
           test "${RELEASE_TAG}" = "v${package_version}"
+
+      - name: Require successful staging for this commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          release_commit="$(git rev-parse HEAD)"
+          staged="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow stage-release.yml --commit "$release_commit" --event push --limit 100 --json conclusion --jq 'any(.[]; .conclusion == "success")')"
+          if [ "$staged" != true ]; then
+            echo "::error::A successful Stage workflow, including TestPyPI verification, is required for this commit."
+            exit 1
+          fi
 
   publish:
     name: Publish to PyPI

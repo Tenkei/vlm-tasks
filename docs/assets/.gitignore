@@ -1,3 +1,0 @@
-# Keep the documented experiment figures despite the repository's image ignore rules.
-!backpack-detect-vs-ground.jpg
-!backpack-grounding-modes.jpg

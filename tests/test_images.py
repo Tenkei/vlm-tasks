@@ -4,7 +4,6 @@ import cv2
 import numpy as np
 import pytest
 
-pytest.importorskip("pydantic_ai")
 
 from ml_pipes.vision import ImagePayload
 from ml_pipes.vlm._images import encode_image

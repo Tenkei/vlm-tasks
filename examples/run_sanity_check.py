@@ -1,4 +1,4 @@
-"""Credential-free execution demo with synthetic predictions, not accuracy evidence."""
+"""Sanity check for VLM task execution with synthetic model responses."""
 from __future__ import annotations
 
 import json
@@ -41,7 +41,7 @@ def main() -> None:
             "condition": ["healthy", "damaged"], "color": ["blue", "red"],
         }),
     ]
-    print("Synthetic model responses: execution demonstration only.")
+    print("Sanity check: synthetic model responses.")
     for operator in operators:
         pipeline = Pipeline([operator])
         pipeline.validate(strict=True)

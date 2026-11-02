@@ -6,7 +6,6 @@ from dataclasses import is_dataclass
 import numpy as np
 import pytest
 
-pytest.importorskip("pydantic_ai")
 
 from pydantic_ai import models
 from pydantic_ai.messages import ModelResponse as AIResponse, TextPart, ToolCallPart
@@ -60,7 +59,7 @@ def test_public_exports():
 
     expected = {
         "Classify", "ClassifyMultiLabel", "Detect", "Ground", "PredictAttributes",
-        "PydanticAIBackend", "BoundingBox", "ClassificationResult", "Detection",
+        "PydanticAIBackend", "TransformersModel", "BoundingBox", "ClassificationResult", "Detection",
         "DetectionResult", "GroundingResult", "AttributePredictionResult",
         "ModelBackend", "ModelRequest", "ModelResponse", "ResponseSpec",
         "InvalidModelResponseError", "ModelExecutionError",

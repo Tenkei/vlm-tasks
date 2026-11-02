@@ -1,7 +1,7 @@
-# VLM tasks with directly loaded Transformers weights
+# Use Hugging Face Transformers with VLM tasks
 
 Run the five existing VLM tasks with local Hugging Face weights, using
-[run_transformers.py](run_transformers.py). The default checkpoint is
+[run_transformers.py](../../examples/run_transformers.py). The default checkpoint is
 `Qwen/Qwen3-VL-2B-Instruct`; `--model` can select another compatible checkpoint
 or a local weights directory.
 
@@ -12,8 +12,9 @@ ImagePayload → task → PydanticAIBackend → TransformersModel → loaded wei
              ← result ← validation/parsing ← generated text ←
 ```
 
-[TransformersModel](transformers_model.py) is a small example-local adapter
-using PydanticAI's public FunctionModel hook. It accepts already-loaded weights
+[TransformersModel](../reference.md#transformersmodel) is a reusable adapter
+shipped with `ml_pipes.vlm`, using PydanticAI's public FunctionModel hook.
+It accepts already-loaded weights
 and a processor. It translates text, image bytes and correction history into
 the processor's chat format, applies the chat template, runs greedy generation
 and returns only generated tokens. PydanticAI's schema instructions reach the
@@ -38,7 +39,7 @@ The adapter targets the package's pinned `pydantic-ai-slim==2.61.0` API.
 Transformers 4.57+ includes Qwen3-VL support. Qwen's processor also requires
 torchvision for its video processor, even when the task supplies only an image.
 Install a torchvision build compatible with your PyTorch build.
-The local adapter has focused checks with fake weights and a processor through
+The adapter has focused checks with fake weights and a processor through
 the real PydanticAI execution path.
 It was also executed on the cats image with Qwen3-VL-2B-Instruct, using
 PyTorch 2.14.1, torchvision 0.29.1 and Transformers 4.57.6 on Apple MPS in
@@ -64,29 +65,30 @@ Validate the image and task configuration first, without importing PyTorch or
 Transformers or downloading/loading weights:
 
 ```bash
-python -m examples.vlm.run_transformers \
-  --input .example_assets/coco_000000039769.jpg \
+python -m examples.run_transformers \
+  --input experiments/inputs/coco_000000039769.jpg \
   --dry-run
 ```
 
 Run all five tasks:
 
 ```bash
-python -m examples.vlm.run_transformers \
-  --input .example_assets/coco_000000039769.jpg \
+python -m examples.run_transformers \
+  --input experiments/inputs/coco_000000039769.jpg \
   --model Qwen/Qwen3-VL-2B-Instruct \
   --device auto \
   --output .example_assets/qwen3_vl_local_results.json
 ```
 
-Replace the image path with any local image. The cat image used above is a
-downloaded example asset and may not be present in a fresh checkout.
+Run these commands from the repository root. Replace the image path with any
+local image. The cats image is included in repository checkouts under
+`experiments/inputs/`; source distributions exclude that directory.
 `auto` selects CUDA if available, then Apple MPS, then CPU. It loads the entire
 model onto that single device and does not retry on a different device after a
 failure. For CPU execution, an explicit float32 run is available:
 
 ```bash
-python -m examples.vlm.run_transformers \
+python -m examples.run_transformers \
   --input /path/to/image.jpg --device cpu --dtype float32 \
   --tasks classify ground --max-tokens 1024
 ```
@@ -102,7 +104,7 @@ an experiment's model version.
 
 ## Task configuration and results
 
-Use the same [image_tasks.json](image_tasks.json) as the Bedrock example, or pass
+Use the same [image_tasks.json](../../examples/image_tasks.json) as the Bedrock example, or pass
 your own `--config /path/to/tasks.json`. `--tasks` selects one or more tasks;
 all five run by default. Configurations are passed to the current operator
 constructors. Geometry extensions such as box_scale and point output remain
@@ -135,9 +137,8 @@ can still point to the wrong object.
 ## Reuse already-loaded objects
 
 ```python
-from examples.vlm.transformers_model import TransformersModel
 from ml_pipes.core import Pipeline
-from ml_pipes.vlm import Ground, PydanticAIBackend
+from ml_pipes.vlm import Ground, PydanticAIBackend, TransformersModel
 
 # weights and processor were loaded and placed on one device by your application.
 model = TransformersModel(
@@ -155,7 +156,7 @@ result = pipeline(image_payload)
 With the VLM dependencies, Pillow and pytest installed, run:
 
 ```bash
-python -m pytest examples/vlm/test_transformers_model.py -q
+python -m pytest tests/test_transformers_model.py -q
 ```
 
 Tests use fake weights and a processor, without requiring PyTorch or model
