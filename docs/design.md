@@ -1,6 +1,6 @@
 # VLM Task Design
 
-Status: five-operator MVP with accepted geometry extensions pending implementation.
+Status: five-operator MVP with box/point grounding; box-scale extensions remain planned.
 Recorded 2026-10-25; updated 2026-11-03.
 
 ## Goal
@@ -26,7 +26,7 @@ the intended direction, not exported placeholders or finalized signatures.
 | Classify | Image, label choices, subject/property context | Exactly one label |
 | ClassifyMultiLabel | Image, independently applicable label choices, context | Zero or more labels |
 | Detect | Image, labels and context; exhaustive instance search | Collection of labeled boxes, possibly empty |
-| Ground | Image, one target and context; resolve one match | One location (box; point mode planned), not found, or ambiguity |
+| Ground | Image, one target and context; resolve one match | One location (box or point), not found, or ambiguity |
 | Attributes | Image, named categorical attributes and their choices | One allowed value per attribute |
 | Verify | Image and statement | Typed verification decision |
 | Score | Image and an assessment criterion with a defined continuous scale | Value in that scale; not a confidence probability |
@@ -164,8 +164,17 @@ specified under [Task Configuration](#task-configuration).
 
 ## Task Configuration
 
-The following geometry extensions are accepted designs, pending implementation.
-The current operators use normalized model coordinates and return pixel boxes.
+Ground supports a default target, per-call targets and box or point geometry.
+Current operators use normalized model coordinates and return pixel locations.
+The box_scale extension below remains an accepted design pending implementation.
+
+### Grounding target
+
+- `Ground(model, target=None, *, context=None, geometry="box")` stores an optional default target.
+- `task(image)` uses that default; `task((image, target))` supplies or overrides
+  it for one call without changing the stored target or instruction.
+- Targets must be nonempty strings. Calling without either target fails before
+  inference.
 
 ### Box configuration
 
@@ -176,7 +185,7 @@ model. Ground's geometry selector is described under
 
 ```python
 Detect(model, labels, *, context=None, box_scale="normalized")
-Ground(model, target, *, context=None, geometry="box", box_scale="normalized")
+Ground(model, target=None, *, context=None, geometry="box", box_scale="normalized")
 ```
 
 Let W and H be the submitted ImagePayload's width and height. All modes request
@@ -249,7 +258,8 @@ include prompts, per-model responses, box coordinates and summaries. Use the
 ### Grounding method
 
 `geometry` selects Ground's output shape without changing its single-target
-semantics. The planned signature above combines it with `box_scale`.
+semantics. It is implemented; the planned signature above combines it with
+the future `box_scale` option.
 
 - `geometry="box"` is the default and requests one bounding box using the
   selected `box_scale`.
@@ -260,14 +270,14 @@ semantics. The planned signature above combines it with `box_scale`.
 - Point mode uses finite normalized x and y in [0, 1], relative to the full
   image. The origin is top-left; x increases rightward and y downward. Public
   coordinates are floating-point pixels: x_pixel = x * W, y_pixel = y * H.
-- `box_scale` applies only to boxes. Reject a nondefault `box_scale` in point
-  mode and reject unsupported `geometry` values.
+- Unsupported `geometry` values are rejected. The planned `box_scale` option
+  will apply only to boxes and reject a nondefault value in point mode.
 
-The planned GroundingResult adds geometry and point to the existing status,
+GroundingResult adds geometry and point to the existing status,
 box and image_size fields. Point contains numeric pixel x and y. For found,
 exactly the selected geometry is present; for not_found or ambiguous, both box
 and point are null. The point response schema requests status and point only,
-with no box or extra fields. These result extensions are not yet exported.
+with no box or extra fields. `Point(x, y)` is exported with pixel coordinates.
 
 ### Visual example: effect of geometry and coordinate scale
 
@@ -341,11 +351,12 @@ serve mutable tensor processing; these predictions are finalized outcomes.
 Optional scores must have a documented meaning and source. The MVP does not
 request self-reported confidence or invent probabilities.
 
-The initial wish for nullable constructor settings and per-call overrides is
-deferred. The current Pipeline requires fixed positional signatures. The MVP
-therefore uses constructor-only configuration and one ImagePayload argument,
-without changing core dispatch. All operators retain the same public shape
-if the execution framework changes.
+Ground accepts one image or `(image, target)` value. Its pipeline contract
+requires `tuple[ImagePayload, str]` without a constructor target; with a default,
+it accepts either an ImagePayload or that tuple. Pipeline passes the tuple as
+one argument. A tuple always supplies a nonempty string target; image-only calls
+use the constructor default. The task builds each instruction locally. Other
+task settings remain constructor-only.
 
 ## Model communication alternatives
 
@@ -420,6 +431,9 @@ Evaluate checkpoint + task instruction/schema + adapter/backend settings +
 output mode + retry budget + dataset/protocol. Record prompt/parser and
 dependency versions. Unit tests establish contracts, not model proficiency.
 
+See [grounding validation](validation.md#grounding-validation) for the current
+dataset protocol, box and point metrics, and evaluation limits.
+
 Starting points include standard image classification datasets; COCO for
 detection; RefCOCO-style data for grounding; VAW/OVAD for attributes; KonIQ-10k
 for a future quality score; ICDAR/IAM for OCR; VQAv2/GQA for QA; and
@@ -429,8 +443,8 @@ Use task-appropriate accuracy, precision/recall, IoU/mAP and attribute metrics.
 Evaluate point locations against target masks or point annotations separately
 from box IoU; a point does not describe an object's extent. Valid geometry and
 coordinate bounds cannot establish that the model found the right target or
-used the requested units. Calibration needs separate evidence. Dataset ingestion and live comparative
-benchmarks are future work.
+used the requested units. Calibration needs separate evidence. Additional
+dataset adapters and live comparative benchmarks are future work.
 
 ## Sources
 

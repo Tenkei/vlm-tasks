@@ -10,9 +10,9 @@ from time import perf_counter
 import numpy as np
 
 from ..errors import InvalidModelResponseError, ModelExecutionError
-from ..types import ClassificationResult, DetectionResult
-from .data import ClassificationDataset, DataLoader, YOLODataset
-from .metrics import ClassificationMetrics, DetectionMetrics
+from ..types import ClassificationResult, DetectionResult, GroundingResult
+from .data import ClassificationDataset, DataLoader, RefCOCODataset, YOLODataset
+from .metrics import ClassificationMetrics, DetectionMetrics, GroundingMetrics
 
 
 class BaseValidator:
@@ -67,12 +67,13 @@ class BaseValidator:
             self._timings["load"] += perf_counter() - last
             inference_started = perf_counter()
             try:
-                prediction = task(sample["img"])
+                prediction = self.predict_sample(sample)
             except (ModelExecutionError, InvalidModelResponseError) as exc:
                 prediction = None
                 self.metrics.failures.append({
                     "im_file": str(sample["im_file"]),
                     "type": type(exc).__name__, "message": str(exc),
+                    **{key: sample[key] for key in ("sample_id", "target") if key in sample},
                 })
             self._timings["inference"] += perf_counter() - inference_started
             metric_started = perf_counter()
@@ -117,6 +118,9 @@ class BaseValidator:
 
     def init_metrics(self) -> None:
         raise NotImplementedError
+
+    def predict_sample(self, sample: dict):
+        return self.task(sample["img"])
 
     def update_metrics(self, prediction, sample: dict) -> None:
         raise NotImplementedError
@@ -192,4 +196,47 @@ class DetectionValidator(BaseValidator):
         self.metrics.update(
             target_labels, sample["bboxes"][indices],
             [item.label for item in detections], boxes,
+        )
+
+
+class GroundingValidator(BaseValidator):
+    """Evaluate one Ground prediction per RefCOCO referring expression."""
+
+    def __init__(self, *args, images=None, dataset: str = "refcocog", **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        if self._requested_class_map is not None:
+            raise ValueError("class_map is not supported for grounding validation")
+        if self._provided_dataloader is None and images is None:
+            raise ValueError("Grounding validation requires images or a supplied dataloader")
+        self.images = images
+        self.dataset_name = dataset
+
+    def build_dataset(self):
+        return RefCOCODataset(self.data, self.images, dataset=self.dataset_name, split=self.split)
+
+    def _align_classes(self) -> None:
+        # Ground has no task vocabulary: categories are reporting groups only.
+        self.class_map = dict(self.dataset.names)
+        self.names = tuple(self.class_map.values())
+
+    def init_metrics(self) -> None:
+        self.metrics = GroundingMetrics(self.names, geometry=self.task.geometry)
+        self.metrics.dataset_metadata = dict(getattr(self.dataset, "metadata", {}))
+
+    def predict_sample(self, sample: dict):
+        if np.asarray(sample["cls"]).shape != (1,) or np.asarray(sample["bboxes"]).shape != (1, 4):
+            raise ValueError("Grounding validation requires exactly one category and target box")
+        if sample["cls"][0] not in self.class_map:
+            raise ValueError("Unknown grounding category ID")
+        return self.task((sample["img"], sample["target"]))
+
+    def update_metrics(self, prediction, sample: dict) -> None:
+        if prediction is not None:
+            if not isinstance(prediction, GroundingResult):
+                raise TypeError("GroundingValidator requires GroundingResult outputs")
+            if prediction.image_size != sample["img"].size:
+                raise ValueError("Grounding prediction dimensions differ from the input image")
+        self.metrics.update(
+            self.class_map[int(sample["cls"][0])], sample["bboxes"][0],
+            prediction, str(sample["im_file"]),
         )

@@ -8,7 +8,7 @@ from typing import Literal, Protocol
 from ml_pipes.vision import ImagePayload
 
 __all__ = [
-    "BoundingBox", "ClassificationResult", "Detection", "DetectionResult",
+    "BoundingBox", "Point", "ClassificationResult", "Detection", "DetectionResult",
     "GroundingResult", "AttributePredictionResult", "ResponseSpec",
     "ModelRequest", "ModelResponse", "ModelBackend",
 ]
@@ -20,6 +20,12 @@ class BoundingBox:
     y1: float
     x2: float
     y2: float
+
+
+@dataclass(frozen=True)
+class Point:
+    x: float
+    y: float
 
 
 @dataclass(frozen=True)
@@ -46,6 +52,8 @@ class GroundingResult:
     status: Literal["found", "not_found", "ambiguous"]
     box: BoundingBox | None
     image_size: tuple[int, int]
+    geometry: Literal["box", "point"] = "box"
+    point: Point | None = None
 
 
 @dataclass(frozen=True)

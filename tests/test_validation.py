@@ -194,7 +194,7 @@ def test_classification_subset_does_not_decode_excluded_images(tmp_path):
     assert metrics.seen == 1 and metrics.top1 == 1
 
 
-def test_custom_validator_class_and_unsupported_task():
+def test_custom_validator_class():
     class CustomValidator:
         def __init__(self, *, marker):
             self.metrics = marker
@@ -203,8 +203,6 @@ def test_custom_validator_class_and_unsupported_task():
             assert isinstance(task, Ground)
 
     task = Ground(Backend(), "the person")
-    with pytest.raises(NotImplementedError, match="no default validator"):
-        task.val(data="unused")
     assert task.val(validator=CustomValidator, marker="custom metrics") == "custom metrics"
 
 

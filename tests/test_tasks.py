@@ -14,6 +14,7 @@ from pydantic_ai.profiles import ModelProfile
 
 from ml_pipes.core import Pipeline
 from ml_pipes.vision import ImagePayload
+from ml_pipes.validation import PipelineValidationError
 from ml_pipes.vlm import (
     AttributePredictionResult, Attributes, BoundingBox, ClassificationResult, Classify,
     ClassifyMultiLabel, Detect, DetectionResult, Ground, GroundingResult,
@@ -59,7 +60,7 @@ def test_public_exports():
 
     expected = {
         "Classify", "ClassifyMultiLabel", "Detect", "Ground", "Attributes",
-        "PydanticAIBackend", "TransformersModel", "BoundingBox", "ClassificationResult", "Detection",
+        "PydanticAIBackend", "TransformersModel", "BoundingBox", "Point", "ClassificationResult", "Detection",
         "DetectionResult", "GroundingResult", "AttributePredictionResult",
         "ModelBackend", "ModelRequest", "ModelResponse", "ResponseSpec",
         "InvalidModelResponseError", "ModelExecutionError",
@@ -170,6 +171,106 @@ def test_ground_found_returns_one_box(image):
     assert Ground(backend, "left window")(image).box == BoundingBox(0, 0, 100, 100)
 
 
+@pytest.mark.parametrize("default", [None, "the left window"])
+def test_ground_call_targets_do_not_change_configuration(image, default):
+    requests = []
+
+    def backend(request):
+        requests.append(request)
+        return ModelResponse({
+            "status": "found", "box": {"x1": 0, "y1": 0, "x2": 0.5, "y2": 1},
+        })
+
+    task = Ground(backend, default, context="Resolve a whole window.")
+    instruction = task._instruction
+    targets = ["the right window", "the middle window"]
+    for target in targets:
+        assert task((image, target)).box == BoundingBox(0, 0, 100, 100)
+    if default is not None:
+        task(image=image)
+        targets.append(default)
+    else:
+        with pytest.raises(ValueError, match="requires a target"):
+            task(image)
+
+    assert task.target == default
+    assert task._instruction == instruction
+    assert len(requests) == len(targets)
+    for request, target in zip(requests, targets):
+        assert request.image is image
+        assert "Target: " + json.dumps(target) + "\nContext:" in request.instruction
+        assert request.instruction.count("Target: ") == 1
+        assert "Resolve a whole window." in request.instruction
+
+
+@pytest.mark.parametrize("target", ["", " ", 42])
+def test_ground_invalid_call_target_fails_before_inference(image, target):
+    backend, calls = backend_for({"status": "not_found", "box": None})
+    task = Ground(backend, "the window")
+    with pytest.raises(ValueError, match="target"):
+        task((image, target))
+    assert calls == []
+
+
+@pytest.mark.parametrize("target", ["", " ", 42])
+def test_ground_invalid_constructor_target_fails_before_inference(target):
+    backend, calls = backend_for({"status": "not_found", "box": None})
+    with pytest.raises(ValueError, match="target"):
+        Ground(backend, target)
+    assert calls == []
+
+
+def test_ground_tuple_requires_an_explicit_string_target(image):
+    backend, calls = backend_for({"status": "not_found", "box": None})
+    assert Ground(backend, "the cat")(image=image).status == "not_found"
+    with pytest.raises(ValueError, match="requires a target"):
+        Ground(backend)((image, None))
+    with pytest.raises(ValueError, match="requires a target"):
+        Ground(backend, "the cat")((image, None))
+    assert len(calls) == 1
+
+
+def test_ground_default_target_in_pipeline(image):
+    backend, _ = backend_for({"status": "not_found", "box": None})
+    pipeline = Pipeline([Ground(backend, "the cat")])
+    contract = pipeline.validate(strict=True)
+    assert contract.input_type == ImagePayload | tuple[ImagePayload, str]
+    assert contract.output_type is GroundingResult
+    assert pipeline(image).status == "not_found"
+    assert pipeline.validate(pipeline_input_type=ImagePayload, strict=True).input_type is ImagePayload
+    with pytest.raises(PipelineValidationError):
+        pipeline.validate(pipeline_input_type=tuple[ImagePayload, int], strict=True)
+
+
+@pytest.mark.parametrize("default", [None, "the left window"])
+def test_ground_dynamic_target_in_pipeline(image, default):
+    backend, calls = backend_for({"status": "not_found", "box": None})
+
+    def supply_target(image: ImagePayload) -> tuple[ImagePayload, str]:
+        return image, "the right window"
+
+    pipeline = Pipeline([supply_target, Ground(backend, default)])
+    contract = pipeline.validate(strict=True)
+    assert contract.input_type is ImagePayload
+    assert contract.output_type is GroundingResult
+    assert pipeline(image) == GroundingResult("not_found", None, (200, 100))
+    assert len(calls) == 1
+
+
+def test_ground_without_default_requires_target_in_pipeline(image):
+    backend, calls = backend_for({"status": "ambiguous", "box": None})
+    pipeline = Pipeline([Ground(backend)])
+    contract = pipeline.validate(strict=True)
+    assert contract.input_type == tuple[ImagePayload, str]
+    assert contract.output_type is GroundingResult
+    assert pipeline((image, "the window")) == GroundingResult("ambiguous", None, (200, 100))
+    with pytest.raises(PipelineValidationError):
+        pipeline.validate(pipeline_input_type=ImagePayload, strict=True)
+    with pytest.raises(PipelineValidationError):
+        pipeline.validate(pipeline_input_type=tuple[ImagePayload, None], strict=True)
+    assert len(calls) == 1
+
+
 @pytest.mark.parametrize("data", [
     {"status": "found", "box": None},
     {"status": "not_found", "box": {"x1": 0, "y1": 0, "x2": 1, "y2": 1}},
@@ -265,7 +366,10 @@ def test_operator_runs_and_validates_in_pipeline(image, task, payload, result_ty
     backend, _ = backend_for(payload)
     pipeline = Pipeline([task(backend)])
     contract = pipeline.validate(strict=True)
-    assert contract.input_type is ImagePayload
+    expected_input = (
+        ImagePayload | tuple[ImagePayload, str] if result_type is GroundingResult else ImagePayload
+    )
+    assert contract.input_type == expected_input
     assert contract.output_type is result_type
     result = pipeline(image)
     assert isinstance(result, result_type)

@@ -60,9 +60,10 @@ operator = Classify(backend, ["clean", "dirty"], context="Assess the windows.")
 result = operator(image)  # image is an ImagePayload
 ```
 
-All task configuration is constructor-only in the MVP. Every operator accepts
-one ImagePayload and returns its dedicated result. Backends can be shared;
-calls have independent histories.
+Operators accept an ImagePayload and return their dedicated result. Ground also
+accepts `task((image, target))` to supply or override its optional constructor target;
+other settings are configured at construction. Backends can be shared; calls
+have independent histories.
 
 For a local OpenAI-compatible inference server, initialize a PydanticAI model
 in application code:
@@ -78,3 +79,15 @@ in application code:
 
 The server must already be running. API/model support for images and output
 modes is required. A checkpoint name alone is not evidence of task accuracy.
+
+## Validation
+
+Evaluate a configured task on local labeled data:
+
+```python
+metrics = operator.val(data="/path/to/dataset", max_samples=10)
+print(metrics.results_dict)
+```
+
+See the [validation guide](docs/validation.md) for dataset setup, configuration
+and metrics, and the [examples](examples/README.md#dataset-validation) for CLI commands.

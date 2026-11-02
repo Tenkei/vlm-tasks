@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Mapping, Sequence
-from typing import TypeAlias
+from typing import Any, Literal, TypeAlias, overload
 
 from ml_pipes.core import Operator
 from ml_pipes.vision import ImagePayload
@@ -13,7 +13,7 @@ from .errors import InvalidModelResponseError
 from .types import (
     AttributePredictionResult, BoundingBox, ClassificationResult, Detection,
     DetectionResult, GroundingResult, ModelBackend, ModelRequest, ModelResponse,
-    ResponseSpec,
+    Point, ResponseSpec,
 )
 
 __all__ = ["Classify", "ClassifyMultiLabel", "Detect", "Ground", "Attributes"]
@@ -57,12 +57,14 @@ class _Task:
         are passed to its constructor; see ``ml_pipes.vlm.validation``.
         """
         if validator is None:
-            from .validation import ClassificationValidator, DetectionValidator
+            from .validation import ClassificationValidator, DetectionValidator, GroundingValidator
 
             if isinstance(self, Classify):
                 validator = ClassificationValidator
             elif isinstance(self, Detect):
                 validator = DetectionValidator
+            elif isinstance(self, Ground):
+                validator = GroundingValidator
             else:
                 raise NotImplementedError(
                     f"{type(self).__name__} has no default validator; supply validator= explicitly"
@@ -80,9 +82,12 @@ class _Task:
         self.model = model
         self.context = context
 
-    def _predict(self, image: ImagePayload) -> Mapping[str, object]:
+    def _predict(
+        self, image: ImagePayload, *, instruction: str | None = None
+    ) -> Mapping[str, object]:
         validate_image(image)
-        instruction = self._instruction
+        if instruction is None:
+            instruction = self._instruction
         if self.context is not None:
             instruction += "\nContext: " + self.context
         instruction += "\nProvide a prediction matching the requested response schema."
@@ -172,28 +177,72 @@ class Detect(_Task):
 
 @Operator
 class Ground(_Task):
+    """Resolve a target supplied at construction or when calling the task."""
+
     def __init__(
-        self, model: ModelBackend, target: str, *, context: str | None = None
+        self, model: ModelBackend, target: str | None = None, *, context: str | None = None,
+        geometry: Literal["box", "point"] = "box",
     ) -> None:
         self._configure(model, context)
-        self.target = _text(target, "target")
-        self._spec = grounding_spec()
+        self.target = None if target is None else _text(target, "target")
+        self._spec = grounding_spec(geometry)
+        self.geometry = geometry
+        location = "box" if geometry == "box" else "point"
+        coordinates = _GEOMETRY if geometry == "box" else (
+            "Predict one point inside the target, preferably near the center of its visible "
+            "body (the visible torso for a person). Predict the point directly from the image "
+            "and description. Use finite x and y normalized to [0, 1] relative to the whole "
+            "input image. The origin is top-left; x increases rightward and y downward. "
+            "Do not use pixels or a 0..1000 scale."
+        )
         self._instruction = (
             "Resolve exactly one target in the image using the target description "
-            "and context. Return found with one box when uniquely resolved, "
-            "not_found with box=null when absent, or ambiguous with box=null "
+            f"and context. Return found with one {location} when uniquely resolved, "
+            f"not_found with {location}=null when absent, or ambiguous with {location}=null "
             "when several plausible matches remain. Do not arbitrarily pick one. "
-            + _GEOMETRY + "\nTarget: " + json.dumps(self.target)
+            + coordinates
         )
 
-    def __call__(self, image: ImagePayload) -> GroundingResult:
-        data = self._predict(image)
-        box = data["box"]
+    @overload
+    def __call__(self, image: ImagePayload) -> GroundingResult: ...
+
+    @overload
+    def __call__(self, image: tuple[ImagePayload, str]) -> GroundingResult: ...
+
+    def __call__(self, image: Any) -> GroundingResult:
+        target = self.target
+        if isinstance(image, tuple):
+            if len(image) != 2:
+                raise ValueError("Ground requires an image or an (image, target) tuple")
+            image, target = image
+        if target is None:
+            raise ValueError("Ground requires a target at construction or when called")
+        target = _text(target, "target")
+        data = self._predict(
+            image, instruction=self._instruction + "\nTarget: " + json.dumps(target)
+        )
+        box = data.get("box")
+        point = data.get("point")
         return GroundingResult(
             status=data["status"],
             box=None if box is None else _pixel_box(box, image),
             image_size=image.size,
+            geometry=self.geometry,
+            point=None if point is None else Point(
+                point["x"] * image.size[0], point["y"] * image.size[1],
+            ),
         )
+
+    def resolve_contract(
+        self,
+        upstream_annotation: Any,
+        validation_error_type: type[Exception],
+    ) -> tuple[tuple[Any, ...], Any]:
+        # Publish the configured boundary here; overloads describe direct calls.
+        del upstream_annotation, validation_error_type
+        if self.target is None:
+            return (tuple[ImagePayload, str],), GroundingResult
+        return (ImagePayload | tuple[ImagePayload, str],), GroundingResult
 
 
 @Operator

@@ -1,6 +1,7 @@
-"""Minimal local classification and YOLO detection dataset readers."""
+"""Local classification, detection, and referring expression dataset readers."""
 from __future__ import annotations
 
+import json
 from collections.abc import Iterator, Mapping
 from pathlib import Path
 
@@ -195,6 +196,136 @@ class YOLODataset:
         image = _load_image(sample["im_file"])
         scale = np.array([image.width, image.height, image.width, image.height])
         return {**sample, "img": image, "bboxes": sample["bboxes"] * scale}
+
+
+_REFCOCO_SPLITS = {
+    "refcocog": ("train", "val", "test"),
+    "refcoco": ("train", "val", "testA", "testB"),
+    "refcoco+": ("train", "val", "testA", "testB"),
+}
+
+
+def _indexed_records(data: dict, key: str) -> dict[int, dict]:
+    records = data.get(key)
+    if not isinstance(records, list):
+        raise ValueError(f"Grounding annotations must define a {key} list")
+    indexed = {}
+    for record in records:
+        if not isinstance(record, dict) or type(record.get("id")) is not int:
+            raise ValueError(f"Grounding {key} records require integer IDs")
+        if record["id"] in indexed:
+            raise ValueError(f"Duplicate grounding {key} ID: {record['id']}")
+        indexed[record["id"]] = record
+    return indexed
+
+
+class RefCOCODataset:
+    """Read MDETR's local ``finetune_{dataset}_{split}.json`` annotations.
+
+    Each converted image record represents one expression, even when several
+    records share a physical image. Samples contain ``im_file``, ``img``, one
+    ``cls`` ID, one pixel-xyxy ``bboxes`` row, ``target``, and ``sample_id``.
+    Category IDs and expression order are preserved. Images are decoded lazily.
+    """
+
+    def __init__(
+        self, annotations: str | Path, images: str | Path, *,
+        dataset: str = "refcocog", split: str = "val",
+    ) -> None:
+        if not isinstance(dataset, str) or dataset not in _REFCOCO_SPLITS:
+            raise ValueError("dataset must be refcocog, refcoco, or refcoco+")
+        _split_name(split)
+        if split not in _REFCOCO_SPLITS[dataset]:
+            raise ValueError(f"Unsupported {dataset} split: {split!r}")
+        path = Path(annotations).expanduser().resolve() / f"finetune_{dataset}_{split}.json"
+        image_root = Path(images).expanduser().resolve()
+        if not image_root.is_dir():
+            raise FileNotFoundError(f"Grounding image directory not found: {image_root}")
+        with path.open() as stream:
+            data = json.load(stream)
+        if not isinstance(data, dict):
+            raise ValueError(f"Expected a grounding annotation mapping: {path}")
+        queries = _indexed_records(data, "images")
+        categories = _indexed_records(data, "categories")
+        targets = _indexed_records(data, "annotations")
+        self.names = {key: item.get("name") for key, item in categories.items()}
+        if (
+            not self.names
+            or any(not isinstance(name, str) or not name.strip() for name in self.names.values())
+            or len(set(self.names.values())) != len(self.names)
+        ):
+            raise ValueError("Grounding category names must be nonempty and unique")
+        query_targets = {}
+        for annotation in targets.values():
+            query_id = annotation.get("image_id")
+            if type(query_id) is not int or query_id not in queries:
+                raise ValueError(f"Orphan grounding annotation: {annotation['id']}")
+            if query_id in query_targets:
+                raise ValueError(f"Multiple target annotations for grounding query {query_id}")
+            query_targets[query_id] = annotation
+
+        self.samples = []
+        for query_id, query in queries.items():
+            annotation = query_targets.get(query_id)
+            if annotation is None:
+                raise ValueError(f"Missing target annotation for grounding query {query_id}")
+            target = query.get("caption")
+            if not isinstance(target, str) or not target.strip():
+                raise ValueError(f"Invalid expression for grounding query {query_id}")
+            size = (query.get("width"), query.get("height"))
+            if any(type(value) is not int or value <= 0 for value in size):
+                raise ValueError(f"Invalid image dimensions for grounding query {query_id}")
+            filename = query.get("file_name")
+            if not isinstance(filename, str) or not filename.strip():
+                raise ValueError(f"Invalid image filename for grounding query {query_id}")
+            image = _resolve(filename, image_root)
+            if not image.is_file():
+                raise FileNotFoundError(f"Grounding image not found: {image}")
+            category_id = annotation.get("category_id")
+            if type(category_id) is not int or category_id not in self.names:
+                raise ValueError(f"Unknown category for grounding query {query_id}")
+            bbox = annotation.get("bbox")
+            if (
+                not isinstance(bbox, list) or len(bbox) != 4
+                or any(type(value) not in (int, float) for value in bbox)
+            ):
+                raise ValueError(f"Invalid box for grounding query {query_id}: expected numeric xywh")
+            x, y, width, height = bbox
+            box = np.array([[x, y, x + width, y + height]], dtype=np.float64)
+            if (
+                not np.isfinite(box).all() or width <= 0 or height <= 0
+                or box[0, 2] <= box[0, 0] or box[0, 3] <= box[0, 1]
+            ):
+                raise ValueError(f"Invalid box for grounding query {query_id}: expected finite positive dimensions")
+            self.samples.append({
+                "im_file": str(image), "image_size": size,
+                "cls": np.array([category_id], dtype=np.int64), "bboxes": box,
+                "target": target, "sample_id": query_id,
+            })
+        if not self.samples:
+            raise ValueError(f"No grounding expressions found in {path}")
+        self.counts = {
+            "expressions": len(self.samples),
+            "unique_images": len({sample["im_file"] for sample in self.samples}),
+        }
+        self.metadata = {
+            "format": "mdetr", "dataset": dataset, "split": split,
+            "expected_split_by": "umd" if dataset == "refcocog" else "unc",
+            "annotations": str(path), "images": str(image_root),
+        }
+
+    def __len__(self) -> int:
+        return len(self.samples)
+
+    def __getitem__(self, index: int) -> dict:
+        sample = self.samples[index]
+        image = _load_image(sample["im_file"])
+        if image.size != sample["image_size"]:
+            raise ValueError(
+                f"Image dimensions differ from grounding annotation for query {sample['sample_id']}: "
+                f"expected {sample['image_size']}, got {image.size}"
+            )
+        return {**sample, "img": image, "cls": sample["cls"].copy(), "bboxes": sample["bboxes"].copy()}
 
 
 class DataLoader:

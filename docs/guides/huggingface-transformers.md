@@ -102,13 +102,33 @@ to local files. You can also pass a directory with `--model /path/to/checkpoint`
 `--revision` applies to both weights and processor; use a commit ID when fixing
 an experiment's model version.
 
+## Dataset validation
+
+Use `examples.run_validation` with `--backend transformers` to evaluate local
+classification, detection or grounding datasets with this adapter. For example:
+
+```bash
+python -m examples.run_validation \
+  --backend transformers --task ground \
+  --data /path/to/mdetr_annotations --images /path/to/coco/train2014 \
+  --dataset refcocog --split val --max-samples 10 \
+  --model Qwen/Qwen3-VL-2B-Instruct --device mps --dtype float16 \
+  --output /tmp/grounding10.json
+```
+
+The runner accepts the same device, dtype, revision, cached-file and generation
+options. Grounding defaults to empty task settings and uses each dataset
+expression as its target. See [dataset validation](../validation.md)
+for annotation preparation, metrics and report details. Begin with 10 expressions
+to check timing, then evaluate 100 for a preliminary result.
+
 ## Task configuration and results
 
 Use the same [image_tasks.json](../../examples/image_tasks.json) as the Bedrock example, or pass
 your own `--config /path/to/tasks.json`. `--tasks` selects one or more tasks;
 all five run by default. Configurations are passed to the current operator
-constructors. Geometry extensions such as box_scale and point output remain
-design proposals and are not accepted by this CLI's task constructors.
+constructors. Ground accepts `geometry="point"` for direct point output.
+The box_scale extension remains a design proposal.
 
 The model is loaded once and reused across tasks. Each task has a fresh request
 history. A correction retry preserves that task's image, previous response and
@@ -146,9 +166,9 @@ model = TransformersModel(
     max_new_tokens=1024,
 )
 backend = PydanticAIBackend(model, retries=1)
-pipeline = Pipeline([Ground(backend, "the leftmost cat")])
+pipeline = Pipeline([Ground(backend)])
 pipeline.validate(strict=True)
-result = pipeline(image_payload)
+result = pipeline((image_payload, "the leftmost cat"))
 ```
 
 ## Focused verification

@@ -52,6 +52,22 @@ class _Grounding(_WireModel):
         return self
 
 
+class _Point(_WireModel):
+    x: float = Field(ge=0, le=1, allow_inf_nan=False)
+    y: float = Field(ge=0, le=1, allow_inf_nan=False)
+
+
+class _PointGrounding(_WireModel):
+    status: Literal["found", "not_found", "ambiguous"]
+    point: _Point | None
+
+    @model_validator(mode="after")
+    def consistent(self) -> _PointGrounding:
+        if (self.status == "found") != (self.point is not None):
+            raise ValueError("A point is required exactly when status is found")
+        return self
+
+
 def _spec(model: type[BaseModel]) -> ResponseSpec:
     def validate(data: object) -> Mapping[str, object]:
         try:
@@ -93,8 +109,10 @@ def detection_spec(choices: Mapping[str, str]) -> ResponseSpec:
     return _spec(model)
 
 
-def grounding_spec() -> ResponseSpec:
-    return _spec(_Grounding)
+def grounding_spec(geometry: Literal["box", "point"] = "box") -> ResponseSpec:
+    if geometry not in ("box", "point"):
+        raise ValueError("geometry must be 'box' or 'point'")
+    return _spec(_PointGrounding if geometry == "point" else _Grounding)
 
 
 def attributes_spec(attributes: Mapping[str, Mapping[str, str]]) -> ResponseSpec:

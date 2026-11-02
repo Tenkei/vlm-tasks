@@ -6,16 +6,17 @@ See the [README](../README.md) for setup and the
 
 ## Operators
 
-All operators accept one vision.ImagePayload and return a dedicated dataclass.
-Settings are constructor-only. A model is a ModelBackend, normally a
-PydanticAIBackend wrapping an initialized PydanticAI Model.
+Operators accept a vision.ImagePayload and return a dedicated dataclass. Ground
+also accepts an `(image, target)` tuple; other settings are constructor-only.
+A model is a ModelBackend, normally a PydanticAIBackend wrapping an initialized
+PydanticAI Model.
 
 | Constructor | Input | Output | Contract |
 |---|---|---|---|
 | Classify(model, labels, *, context=None) | `ml_pipes.vision.ImagePayload` | ClassificationResult | Exactly one allowed label |
 | ClassifyMultiLabel(model, labels, *, context=None) | `ml_pipes.vision.ImagePayload` | ClassificationResult | Zero or more independently applicable labels |
 | Detect(model, labels, *, context=None) | `ml_pipes.vision.ImagePayload` | DetectionResult | All matching instances; empty detections are valid |
-| Ground(model, target, *, context=None) | `ml_pipes.vision.ImagePayload` | GroundingResult | Resolve one target; found, not_found or ambiguous |
+| Ground(model, target=None, *, context=None, geometry="box") | ImagePayload or tuple[ImagePayload, str] | GroundingResult | Resolve one target as a box or point; found, not_found or ambiguous |
 | Attributes(model, attributes, *, context=None) | `ml_pipes.vision.ImagePayload` | AttributePredictionResult | One allowed value for each requested attribute |
 
 Labels are a sequence of distinct nonempty names or a mapping from names to
@@ -23,19 +24,53 @@ descriptions. A bare string is not a vocabulary. Attribute definitions map
 nonempty attribute names to such vocabularies. Context defines subject,
 property, and any aggregation rule. Ground's target is a nonempty description.
 
-Accepted extensions are documented under
-[box configuration](design.md#box-configuration) for Detect and Ground, and
-[grounding method](design.md#grounding-method) for Ground's planned geometry="point"
-option. Both are pending implementation; the constructors and result types on
-this page describe the current API. See the illustrated comparisons for
+Ground's call target overrides its constructor default for that request without
+changing the stored target or instruction:
+
+```python
+fixed = Ground(backend, target="the leftmost cat")
+fixed(image)
+fixed((image, "the person on the right"))
+
+dynamic = Ground(backend)
+dynamic((image, "the leftmost cat"))
+```
+
+An image-only call uses the constructor default. A tuple requires a nonempty
+string target, including when a constructor default exists. Missing or invalid
+targets raise ValueError before inference.
+
+Ground has one call parameter, so Pipeline passes the tuple as one value. Without
+a constructor target, the pipeline requires `tuple[ImagePayload, str]`. With a
+default, it accepts either an ImagePayload or that tuple:
+
+```python
+from ml_pipes.core import Pipeline
+
+pipeline = Pipeline([fixed])
+pipeline.validate(strict=True)
+result = pipeline(image)  # use the constructor target
+result = pipeline((image, "the person on the right"))
+```
+
+`Ground(..., geometry="point")` requests one interior point, preferably near the
+visible body center (torso for people). The model returns normalized x/y in
+[0, 1]; the public `result.point` contains floating-point input-image pixels.
+For a found response, only the selected location is present. For `not_found`
+and `ambiguous`, both `box` and `point` are null. Point schemas contain only
+`status` and `point`; unsupported geometry values raise ValueError.
+
+The [box_scale extension](design.md#box-configuration) remains planned.
+See the illustrated comparisons for
 [Detect versus Ground](design.md#visual-example-detect-versus-ground) and
 [geometry and coordinate scale](design.md#visual-example-effect-of-geometry-and-coordinate-scale).
 
 ## Dataset validation
 
-`Classify.val()` and `Detect.val()` evaluate the configured task against a
+`Classify.val()`, `Detect.val()`, and `Ground.val()` evaluate the configured task against a
 labeled local dataset. Labels, descriptions, context, backend settings and
-retries come from the task. Each selected image makes an independent task call.
+retries come from the task. Each sample makes an independent task call: one image
+for classification/detection, or one image-expression pair for grounding.
 
 ```python
 from ml_pipes.vlm import Detect
@@ -58,16 +93,18 @@ custom validator.
 
 | Argument | Default | Meaning |
 |---|---|---|
-| `data` | Required unless `dataloader` is supplied | Classification dataset root or detection YAML path |
+| `data` | Required unless `dataloader` is supplied | Classification root, detection YAML, or MDETR annotation directory |
+| `images` | Required for local grounding data | COCO train2014 image directory; grounding only |
+| `dataset` | `"refcocog"` | Grounding dataset: `refcocog`, `refcoco`, or `refcoco+` |
 | `split` | `"val"` | Exact split to read; there is no fallback to another split |
-| `class_map` | `None` | Dataset class name → task label; also selects the evaluated subset |
-| `max_samples` | `None` | Positive maximum number of evaluated images in deterministic order |
+| `class_map` | `None` | Dataset class name → task label; unsupported for grounding |
+| `max_samples` | `None` | Positive maximum number of samples; expressions for grounding |
 | `match_iou` | `0.5` | Detection-only matching IoU, in `(0, 1]` |
 | `verbose` | `True` | Print progress and aggregate metrics to stderr |
 | `validator` | Selected by task | Custom validator class, instantiated with the other arguments |
 | `dataloader` | `None` | Prebuilt loader, supplied instead of `data` |
 
-By default every task label must exist by the same name in the dataset;
+For classification and detection, every task label must exist by the same name in the dataset;
 dataset classes beyond the task vocabulary are excluded from scoring. An
 explicit `class_map` defines aliases and the subset being evaluated. All keys
 must exist in the dataset and all values must be configured task labels.
@@ -132,8 +169,57 @@ Detection YAML requires the optional validation extra:
 python -m pip install 'ml-pipes-vlm[validation]'
 ```
 
-Classification directories and metric calculation use base dependencies.
-Neither validation path requires Ultralytics, PyTorch or torchvision.
+Classification directories, grounding JSON, and metric calculation use base
+dependencies. Validation requires neither Ultralytics, PyTorch, torchvision,
+Hugging Face datasets nor pycocotools.
+
+#### Grounding: RefCOCO family
+
+Prepare local MDETR annotations and COCO train2014 images using the
+[MDETR guide](https://github.com/ashkamath/mdetr/blob/main/.github/refexp.md).
+The [annotation archive](https://zenodo.org/records/4729015) contains data for
+several tasks. Point `data` to the directory containing the requested
+`finetune_{dataset}_{split}.json`, and `images` to the directory containing its
+COCO image files:
+
+```python
+from ml_pipes.vlm import Ground
+
+task = Ground(backend)
+metrics = task.val(
+    data="/datasets/mdetr_annotations",
+    images="/datasets/coco/train2014",
+    dataset="refcocog", split="val", max_samples=100,
+)
+print(metrics.results_dict)
+print(metrics.status_counts)
+```
+
+| Dataset | Expected split protocol | Supported splits |
+|---|---|---|
+| `refcocog` (default) | UMD | train, val, test |
+| `refcoco` | UNC | train, val, testA, testB |
+| `refcoco+` | UNC | train, val, testA, testB |
+
+MDETR's published converter generates train/val files; supply separately prepared
+test annotations when requesting those splits. Missing files raise an error.
+Local filenames cannot establish split provenance: `metrics.dataset_metadata`
+records paths and the **expected** split protocol, rather than certifying it.
+
+Each JSON `images` record is one expression, read from `caption`; its query `id`
+joins the annotation's `image_id`. Each query requires exactly one target with
+`category_id` and pixel `bbox: [x, y, width, height]`. Boxes become pixel xyxy
+without clipping. Category IDs may be sparse. JSON query order and repeated image
+filenames are preserved, so `max_samples` counts expressions, not unique images.
+Duplicate IDs, orphan or missing/multiple annotations, unknown categories,
+invalid expressions, and invalid boxes raise errors. Decoded image dimensions
+must match the JSON dimensions.
+
+`metrics.dataset_counts` contains full-split `expressions` and `unique_images`;
+`results_dict` counts only evaluated samples and unique images. Categories are
+reporting groups, not a task vocabulary; `class_map` is unsupported. Each dataset
+expression overrides any constructor target. Explicit task context is preserved;
+use neutral context for standard benchmark comparisons.
 
 ### Metrics and failures
 
@@ -149,14 +235,38 @@ candidate pairs are considered in descending IoU order, with ties ordered by
 target index then prediction index. AP and mAP require confidence-ranked
 predictions, which the current tasks do not provide. Undefined ratios are zero.
 
-Both metric objects expose:
+`GroundingMetrics` exposes `accuracy_iou_0.5`, `accuracy_iou_0.75`,
+`accuracy_iou_0.9`, `mean_iou`, and evaluated `unique_images` through
+`results_dict`. Accuracy is the fraction of expressions whose found box reaches
+the threshold, using ordinary continuous-coordinate IoU and inclusive `>=`.
+Every expression contributes to accuracy and mean-IoU denominators. Valid
+`not_found` and `ambiguous` responses and execution failures contribute zero IoU.
+`status_counts` counts valid responses separately from failures. `summary()`
+reports each category's support, accuracies and mean IoU; empty categories score
+zero. Full-split counts remain separate from evaluated counts.
+
+With `Ground(..., geometry="point")`, the same validator selects point metrics.
+`results_dict` and `summary()` expose `point_in_box_accuracy`: the fraction of
+all expressions whose predicted point lies inside the target's pixel box,
+including its edges. Missing/ambiguous responses and execution failures count
+as misses. Points are predicted directly, rather than derived from boxes.
+No IoU metrics are reported in point mode. Box containment is a coarse proxy
+for target-mask containment and does not establish that a point is on the
+object itself. It cannot be directly compared with box accuracy at IoU >= 0.5.
+
+The RefCOCO family assigns one target per expression. These scores measure box
+localization, not rejection or ambiguity quality. They use MDETR's annotation
+format, not its generalized-IoU scoring. Report prompt context, model settings,
+coordinate configuration, output mode and retries when comparing runs.
+
+All metric objects expose:
 
 - `results_dict`: aggregate metrics, evaluated sample count, failure count and
   failure rate; detection also includes the matching threshold and TP/FP/FN.
 - `failures`: records containing `im_file`, exception `type`, and `message`.
-- `seen`: number of evaluated images, including execution failures.
+- `seen`: number of evaluated samples, including execution failures.
 - `speed`: average `load`, `inference` and `metrics` milliseconds per evaluated
-  image. Load time includes iteration and decoding.
+  sample. Load time includes iteration and decoding.
 - `elapsed_seconds`: total elapsed time, including setup.
 
 `ModelExecutionError` and `InvalidModelResponseError` are recorded and the run
@@ -164,6 +274,8 @@ continues. Classification failures count as incorrect. Detection failures
 contribute no predictions, leaving their targets as false negatives. Failures
 on negative images remain visible in the failure count and rate. Other errors
 stop the run. No extra retry policy is added by validation.
+Grounding failures additionally include `sample_id` and `target` when supplied
+by the loader; failed calls count toward evaluated unique images.
 
 Results measure dataset performance and execution reliability. They do not
 assign an automatic trust threshold or pass/fail decision.
@@ -185,10 +297,11 @@ metrics = task.val(validator=CustomValidator, data="my-source")
 ```
 
 `BaseValidator` owns the loop. Extension methods are `build_dataset()`,
-`get_dataloader(dataset)`, `init_metrics()`, `update_metrics(prediction, sample)`
+`get_dataloader(dataset)`, `init_metrics()`, `predict_sample(sample)`, `update_metrics(prediction, sample)`
 and `finalize_metrics()`. Call the inherited `finalize_metrics()` when overriding
 it to retain timings. Task-specific validators consume structured task results
-directly.
+directly. `predict_sample()` normally calls the task with the image; grounding
+passes `(sample["img"], sample["target"])` as one argument.
 
 The supplied `DataLoader` iterates an indexed dataset, one image at a time.
 A prebuilt loader must expose `.dataset`; datasets expose a `.names` mapping
@@ -199,21 +312,26 @@ original-image pixel xyxy. `ClassificationDataset` and `YOLODataset` also expose
 metadata through `.samples`, used by the default classification loader to
 select indices before decoding. For a different dataset layout, override
 `get_dataloader()` as needed or pass your own loader through `dataloader=`.
+Grounding loaders expose `.dataset.names` for category summaries, and yield one
+`cls` ID, one `(1, 4)` pixel-xyxy `bboxes` array, `target`, and optionally
+`sample_id`, alongside `img` and `im_file`. `RefCOCODataset` also exposes `.samples`,
+`.counts`, and `.metadata`. Supplying `dataloader=` needs no `images` argument.
 
 ## Final values
 
 | Type | Fields |
 |---|---|
 | BoundingBox | x1, y1, x2, y2: float; xyxy input-image pixels |
+| Point | x, y: float; input-image pixels |
 | ClassificationResult | labels: tuple[str, ...]; scores: optional name-to-score mapping |
 | Detection | label: str; box: BoundingBox; score: optional float |
 | DetectionResult | detections: tuple[Detection, ...]; image_size: (width, height) |
-| GroundingResult | status: found/not_found/ambiguous; box: optional BoundingBox; image_size |
+| GroundingResult | status: found/not_found/ambiguous; box: optional BoundingBox; image_size; geometry: box/point (default box); point: optional Point (default None) |
 | AttributePredictionResult | attributes: mapping[str, str] |
 
 The MVP leaves all scores unset. The classification operators share a result
-type but enforce different selection cardinalities. Ground has a box exactly
-when its status is found. Detection boxes may overlap. All geometry is finite,
+type but enforce different selection cardinalities. Ground has exactly the
+selected location when its status is found. Detection boxes may overlap. All geometry is finite,
 ordered and within the input image; normalized model boxes are converted to
 pixel coordinates without clipping or heuristic scale detection.
 

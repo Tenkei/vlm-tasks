@@ -6,12 +6,12 @@ from .transformer import TransformersModel
 from .types import (
     AttributePredictionResult, BoundingBox, ClassificationResult, Detection,
     DetectionResult, GroundingResult, ModelBackend, ModelRequest, ModelResponse,
-    ResponseSpec,
+    Point, ResponseSpec,
 )
 
 __all__ = [
     "Classify", "ClassifyMultiLabel", "Detect", "Ground", "Attributes",
-    "PydanticAIBackend", "TransformersModel", "BoundingBox", "ClassificationResult", "Detection",
+    "PydanticAIBackend", "TransformersModel", "BoundingBox", "Point", "ClassificationResult", "Detection",
     "DetectionResult", "GroundingResult", "AttributePredictionResult",
     "ModelBackend", "ModelRequest", "ModelResponse", "ResponseSpec",
     "InvalidModelResponseError", "ModelExecutionError",

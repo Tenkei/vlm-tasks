@@ -1,7 +1,7 @@
 # VLM task examples
 
-Run VLM tasks on individual images or evaluate classification and detection
-against a labeled dataset. The single-image runners use Amazon Bedrock or
+Run VLM tasks on individual images or evaluate classification, detection and
+grounding against a labeled dataset. The single-image runners use Amazon Bedrock or
 local Hugging Face Transformers weights and execute all five tasks by default,
 with an independent model request for each task.
 
@@ -9,7 +9,7 @@ with an independent model request for each task.
 |---|---|---|
 | [Amazon Bedrock](#amazon-bedrock) — [run_bedrock.py](run_bedrock.py) | Bedrock Converse API | Provider SDK, AWS credentials and model access |
 | [Hugging Face Transformers](#hugging-face-transformers) — [run_transformers.py](run_transformers.py) | Weights loaded in the local Python process | PyTorch, Transformers, Pillow and a compatible model |
-| [Dataset validation](#dataset-validation) — [run_validation.py](run_validation.py) | Bedrock Converse API, one task call per image | Validation extra, provider SDK, AWS credentials and labeled local data |
+| [Dataset validation](#dataset-validation) — [run_validation.py](run_validation.py) | Bedrock or local Transformers, one call per image or grounding expression | Backend dependencies and labeled local data; validation extra for detection YAML |
 
 To check task execution with synthetic responses, run the
 [sanity check](#sanity-check).
@@ -122,35 +122,12 @@ for adapter details, supported models and reuse of already-loaded objects.
 
 ## Dataset validation
 
-[run_validation.py](run_validation.py) configures a `Classify` or `Detect` task
-and calls its `.val()` method on a local labeled dataset. It reuses the Bedrock
-backend setup described above. The validation API also works with any existing
-backend, including the Transformers setup.
+[run_validation.py](run_validation.py) evaluates classification, detection and
+box or point grounding with Bedrock (default) or local Transformers weights.
+Install the backend dependencies described above and prepare local data and
+matching task settings using the [validation guide](../docs/validation.md).
 
-Install the validation extra and Bedrock provider dependencies:
-
-```bash
-python -m pip install -e '.[validation]'
-python -m pip install 'pydantic-ai-slim[bedrock]==2.61.0'
-```
-
-Create a task configuration whose labels match the property or objects your
-dataset annotates. For example, save this as `/path/to/tasks.json`:
-
-```json
-{
-  "classify": {
-    "labels": ["cat", "dog"],
-    "context": "Classify the animal shown in the image."
-  },
-  "detect": {
-    "labels": {"pedestrian": "A visible person"},
-    "context": "Locate every visible person."
-  }
-}
-```
-
-For classification, provide a root containing `val/cat/` and `val/dog/` images:
+Classification:
 
 ```bash
 python -m examples.run_validation \
@@ -159,9 +136,7 @@ python -m examples.run_validation \
   --model us.amazon.nova-pro-v1:0 --profile YOUR_PROFILE --region us-east-1
 ```
 
-For detection, provide a YOLO dataset YAML and its image/label files. If its
-class name is `person`, save `{"person": "pedestrian"}` as
-`/path/to/class-map.json` to align it with the example task:
+Detection, using the guide's task settings and class map:
 
 ```bash
 python -m examples.run_validation \
@@ -171,28 +146,27 @@ python -m examples.run_validation \
   --model us.amazon.nova-pro-v1:0 --profile YOUR_PROFILE --region us-east-1
 ```
 
-`--split` defaults to `val`. `--max-samples` limits evaluated images in
-deterministic order. `--class-map` selects and aliases dataset classes.
-`--match-iou` is detection-only. The backend options `--output-mode`,
-`--retries` and `--max-tokens` have the same meaning as in the Bedrock runner.
-The default configuration path remains `image_tasks.json`; use `--config` to
-match your dataset's annotations.
+Grounding with local Qwen3-VL:
 
-The runner prints JSON with aggregate metrics, per-class results, failure
-records, dataset label-file counts and timings. Progress goes to stderr;
-`--no-verbose` disables it. Exit code 1 means recorded task execution failures;
-code 2 means setup or validation could not complete. Accuracy has no automatic
-pass/fail threshold. Each evaluated image invokes the configured task and can
-incur provider usage, including any configured retries.
+```bash
+python -m examples.run_validation \
+  --backend transformers --task ground \
+  --data /path/to/mdetr_annotations --images /path/to/coco/train2014 \
+  --dataset refcocog --split val --max-samples 10 \
+  --model Qwen/Qwen3-VL-2B-Instruct --device mps --dtype float16 \
+  --retries 0 --max-tokens 4096 --output /tmp/grounding10.json
+```
 
-See the [validation reference](../docs/reference.md#dataset-validation) for
-dataset paths, class selection, metric definitions, failures and custom
-validators.
+For point output, add `--config /path/to/point.json` containing
+`{"ground": {"geometry": "point"}}`. See the [validation guide](../docs/validation.md)
+for dataset preparation, metrics, sample limits and reports, or use
+`python -m examples.run_validation --help` for all CLI options.
 
 ## Shared task configuration
 
 [image_tasks.json](image_tasks.json) contains the default task settings shared
-by the runners. Dataset validation supports its `classify` and `detect` entries:
+by the runners. Dataset validation uses its `classify` and `detect` entries by
+default; grounding reads a `ground` entry only with an explicit `--config`:
 
 | Task | Default question/target |
 |---|---|
@@ -239,8 +213,8 @@ Reports include image size, model settings, task configuration, predictions
 and elapsed time per task. Progress goes to stderr. The Transformers report
 also records model loading time, device, dtype and error cause chains.
 
-Detection and grounding coordinates are floating-point xyxy pixels in the
-input image. Scores remain unset. Valid output structure does not establish
+Detection and box grounding use floating-point xyxy pixels in the input image;
+point grounding uses floating-point x/y pixels. Scores remain unset. Valid output structure does not establish
 visual accuracy or benchmark performance.
 
 If one task fails, its error is recorded and the other tasks still run. Exit

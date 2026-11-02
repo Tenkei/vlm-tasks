@@ -2,9 +2,12 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from pathlib import Path
+from typing import Literal
 
 import numpy as np
 
+from ..types import GroundingResult
 
 def _ratios(tp: int, fp: int, fn: int) -> dict[str, float]:
     return {
@@ -24,7 +27,7 @@ class _RunMetrics:
         ):
             raise ValueError("Metric names must be nonempty and unique")
         self.seen = 0
-        self.failures: list[dict[str, str]] = []
+        self.failures: list[dict[str, object]] = []
         self.dataset_counts: dict[str, int] = {}
         self.speed: dict[str, float] = {}
         self.elapsed_seconds = 0.0
@@ -186,3 +189,112 @@ class DetectionMetrics(_RunMetrics):
                 **_ratios(tp, fp, fn),
             })
         return result
+
+
+class GroundingMetrics(_RunMetrics):
+    """Box IoU or point-in-box accuracy, counting every evaluated expression.
+
+    Point containment includes the target box edges. It is a coarse proxy for
+    target-mask containment and does not measure the object's extent.
+    """
+
+    thresholds = (0.5, 0.75, 0.9)
+
+    def __init__(self, names: Sequence[str], *, geometry: Literal["box", "point"] = "box") -> None:
+        super().__init__(names)
+        if geometry not in ("box", "point"):
+            raise ValueError("geometry must be 'box' or 'point'")
+        self.geometry = geometry
+        self._ids = {name: i for i, name in enumerate(self.names)}
+        self.support = np.zeros(len(self.names), dtype=np.int64)
+        self._iou_sums = np.zeros(len(self.names), dtype=np.float64)
+        self._hits = np.zeros((len(self.names), len(self.thresholds)), dtype=np.int64)
+        self._point_hits = np.zeros(len(self.names), dtype=np.int64)
+        self._images: set[Path] = set()
+        self.status_counts = dict.fromkeys(("found", "not_found", "ambiguous"), 0)
+        self.dataset_metadata: dict[str, object] = {}
+
+    def update(
+        self, target: str, target_box, prediction: GroundingResult | None, im_file: str,
+    ) -> None:
+        index = self._ids[target]
+        box = np.asarray(target_box, dtype=np.float64)
+        if (
+            box.shape != (4,) or not np.isfinite(box).all()
+            or (box[2:] <= box[:2]).any()
+        ):
+            raise ValueError("Grounding metrics require one finite positive-area target box")
+        iou = 0.0
+        point_hit = False
+        if prediction is not None:
+            if not isinstance(prediction, GroundingResult):
+                raise TypeError("GroundingMetrics requires GroundingResult outputs")
+            if prediction.geometry != self.geometry:
+                raise ValueError("Grounding prediction geometry differs from metric geometry")
+            location = prediction.box if self.geometry == "box" else prediction.point
+            other = prediction.point if self.geometry == "box" else prediction.box
+            if prediction.status not in self.status_counts or other is not None or (
+                (prediction.status == "found") != (location is not None)
+            ):
+                raise ValueError("Invalid grounding status/geometry combination")
+            if self.geometry == "box" and location is not None:
+                predicted = np.array([
+                    prediction.box.x1, prediction.box.y1, prediction.box.x2, prediction.box.y2,
+                ], dtype=np.float64)
+                if not np.isfinite(predicted).all() or (predicted[2:] <= predicted[:2]).any():
+                    raise ValueError("Grounding predictions require finite positive-area boxes")
+                iou = float(_box_iou(box[None, :], predicted[None, :])[0, 0])
+            elif self.geometry == "point" and location is not None:
+                point = np.array([location.x, location.y], dtype=np.float64)
+                size = np.asarray(prediction.image_size, dtype=np.float64)
+                if (
+                    not np.isfinite(point).all() or size.shape != (2,)
+                    or not np.isfinite(size).all() or (size <= 0).any()
+                    or (point < 0).any() or (point > size).any()
+                ):
+                    raise ValueError("Grounding predictions require finite points inside the image")
+                point_hit = bool((point >= box[:2]).all() and (point <= box[2:]).all())
+            self.status_counts[prediction.status] += 1
+        self.support[index] += 1
+        self._iou_sums[index] += iou
+        self._hits[index] += iou >= np.asarray(self.thresholds)
+        self._point_hits[index] += point_hit
+        self._images.add(Path(im_file).expanduser().resolve())
+        self.seen += 1
+
+    @property
+    def unique_images(self) -> int:
+        return len(self._images)
+
+    @property
+    def mean_iou(self) -> float:
+        if self.geometry != "box":
+            raise ValueError("mean_iou applies only to box grounding")
+        return float(self._iou_sums.sum()) / self.seen if self.seen else 0.0
+
+    def _scores(self, hits, iou_sum: float, support: int, point_hits: int = 0) -> dict[str, float]:
+        if self.geometry == "point":
+            return {"point_in_box_accuracy": int(point_hits) / support if support else 0.0}
+        return {
+            **{
+                f"accuracy_iou_{threshold}": int(hit) / support if support else 0.0
+                for threshold, hit in zip(self.thresholds, hits)
+            },
+            "mean_iou": float(iou_sum) / support if support else 0.0,
+        }
+
+    @property
+    def results_dict(self) -> dict[str, int | float]:
+        return {
+            **self._run_results(), "unique_images": self.unique_images,
+            **self._scores(self._hits.sum(axis=0), self._iou_sums.sum(), self.seen, self._point_hits.sum()),
+        }
+
+    def summary(self) -> list[dict[str, str | int | float]]:
+        return [
+            {
+                "class": name, "support": int(self.support[i]),
+                **self._scores(self._hits[i], self._iou_sums[i], int(self.support[i]), self._point_hits[i]),
+            }
+            for i, name in enumerate(self.names)
+        ]

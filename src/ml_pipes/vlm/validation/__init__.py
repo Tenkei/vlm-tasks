@@ -1,11 +1,11 @@
 """Local dataset validation for configured VLM tasks."""
 
-from .data import ClassificationDataset, DataLoader, YOLODataset
-from .metrics import ClassificationMetrics, DetectionMetrics
-from .validator import BaseValidator, ClassificationValidator, DetectionValidator
+from .data import ClassificationDataset, DataLoader, RefCOCODataset, YOLODataset
+from .metrics import ClassificationMetrics, DetectionMetrics, GroundingMetrics
+from .validator import BaseValidator, ClassificationValidator, DetectionValidator, GroundingValidator
 
 __all__ = [
-    "BaseValidator", "ClassificationValidator", "DetectionValidator",
-    "ClassificationDataset", "YOLODataset", "DataLoader",
-    "ClassificationMetrics", "DetectionMetrics",
+    "BaseValidator", "ClassificationValidator", "DetectionValidator", "GroundingValidator",
+    "ClassificationDataset", "YOLODataset", "RefCOCODataset", "DataLoader",
+    "ClassificationMetrics", "DetectionMetrics", "GroundingMetrics",
 ]
