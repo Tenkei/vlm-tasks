@@ -431,7 +431,7 @@ Evaluate checkpoint + task instruction/schema + adapter/backend settings +
 output mode + retry budget + dataset/protocol. Record prompt/parser and
 dependency versions. Unit tests establish contracts, not model proficiency.
 
-See [grounding validation](validation.md#grounding-validation) for the current
+See [validation metrics](validation.md#metric-definitions-and-failures) for the current
 dataset protocol, box and point metrics, and evaluation limits.
 
 Starting points include standard image classification datasets; COCO for

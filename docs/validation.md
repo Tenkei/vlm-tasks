@@ -1,151 +1,426 @@
 # Validation
 
-`Classify.val()`, `Detect.val()`, and `Ground.val()` evaluate configured tasks on
-local labeled data. Each sample makes an independent model call: one image for
-classification/detection, or one image-expression pair for grounding. Task
-labels, descriptions and context come from the operator; model configuration,
-output mode and retries come from its backend.
+Validation runs a configured VLM task on labeled examples and compares its
+predictions with the annotations. It measures task accuracy, inference failures,
+and time per sample. It does not train or update the model.
 
-The [validation runner](../examples/run_validation.py) supports Bedrock
-(default) and local weights with `--backend transformers`. Each backend reuses
-the corresponding single-image runner's setup. See the
-[example commands](../examples/README.md#dataset-validation) and
-[API reference](reference.md#dataset-validation) for usage and custom validators.
+Use it to:
 
-## Dependencies and local data
+- Check that a model, backend, and structured output configuration work together.
+- Compare models, prompts, task context, or generation settings on the same data.
+- Find regressions and inspect failures before using a task in a pipeline.
+- Measure localization or classification quality on your own domain data.
 
-Install the base package and the dependencies for your backend using the
+Each sample makes an independent task call: one image for classification or
+detection, or one image-expression pair for grounding. Start with 10 samples to
+check execution and timing, then 100 for an initial comparison. Use the complete
+validation split for a benchmark result. Ordered subsets and small smoke datasets
+can give unrepresentative scores.
+
+## Calling validation
+
+With an initialized backend, the task's `.val()` method prepares its default
+dataset, runs inference, and returns a metrics object:
+
+```python
+from ml_pipes.vlm import Ground
+
+task = Ground(backend)
+metrics = task.val(split="val", max_samples=100)
+
+print(metrics.results_dict)  # aggregate scores and failure statistics
+print(metrics.summary())    # per-category scores and support
+print(metrics.failures)     # individual inference failures
+```
+
+The result is also stored as `task.metrics`. Each call starts a new evaluation.
+Task settings such as labels, descriptions, context, and grounding geometry come
+from the operator; model settings, output mode, and retries come from its backend.
+
+For command-line usage, see the separate
+[validation example](../examples/README.md#dataset-validation).
+
+## Metric definitions and failures
+
+- **Classification:** top-1 accuracy across evaluated images, plus per-class
+  precision/recall/F1 and a confusion matrix. Class selection happens before
+  evaluation; `class_map` can select and alias dataset classes to task labels.
+- **Detection:** match boxes of the same class one-to-one, in descending IoU
+  order, using inclusive `match_iou`. Aggregate precision/recall/F1 pool TP/FP/FN
+  across classes. Negative images remain in evaluation after class selection.
+  No AP/mAP is computed because predictions have no confidence ranking.
+- **Grounding, box:** ordinary continuous-coordinate intersection over union,
+  scored in original-image pixels, with inclusive thresholds of 0.5, 0.75, and
+  0.9. Result keys are `accuracy_iou_0.5`, `accuracy_iou_0.75`,
+  `accuracy_iou_0.9`, and `mean_iou`.
+- **Grounding, point:** `point_in_box_accuracy` counts a hit when the predicted
+  point lies inside the target box, including its edges. It is a coarse proxy
+  for mask containment and is not directly comparable to box-IoU accuracy.
+
+`ModelExecutionError` and `InvalidModelResponseError` are recorded and evaluation
+continues. Classification failures are incorrect predictions; detection failures
+produce no predicted boxes; grounding failures score zero. They remain included
+in sample counts and relevant score denominators. Data, setup, and programming
+errors stop validation instead of becoming model failures.
+
+For grounding, valid `not_found` and `ambiguous` responses score zero IoU or a
+point miss. `status_counts` tracks valid responses separately from execution
+failures. Every evaluated expression enters the score denominator, and evaluated
+unique-image counts include images whose calls failed. Per-category summaries
+report expression support; categories are reporting groups, not task labels.
+
+RefCOCO-family annotations do not evaluate rejection quality, annotated ambiguity,
+or multiple targets. Point scoring uses target boxes rather than masks. Box
+scoring uses ordinary IoU, not MDETR's generalized-IoU evaluator.
+
+## Available validations
+
+Counts below describe the full source dataset or explicitly named split, before
+class filtering or `max_samples`. **Total size** describes compressed upstream
+archives, excluding model weights and expanded cache files. MB/GB use decimal
+units. Grounding storage depends on which images are selected.
+
+| Tasks | Metrics | Dataset | Number of images / classes / expressions | Splits | Partial download? | Total size |
+|---|---|---|---|---|---|---|
+| `Classify` | Top-1 accuracy; per-class precision, recall, F1; confusion matrix | **CIFAR-10** (`cifar10`, current default) | 60,000 images at 32×32; 10 classes; 50,000 train / 10,000 test | train, val, test; **val aliases test** | Full archive downloaded; only selected split/classes/sample prefix materialized | ≈170 MB (162 MiB) archive |
+| `Detect` | Precision, recall, F1; TP/FP/FN at configurable matching IoU | **COCO128** (`coco128`, default) | 128 images; 941 boxes; 71 represented classes within an 80-class vocabulary | train, val; **same 128 images in both** | Full archive downloaded; only selected image prefix materialized | 6.98 MB archive |
+| `Ground`, box | Accuracy at IoU ≥0.5 / 0.75 / 0.9; mean IoU | **RefCOCOg UMD** (`refcocog`, default) | **val:** 1,300 unique images; 4,896 expressions and target boxes; 80-category reporting vocabulary | train, val, test | Selected split JSON extracted from a streamed shared archive; only distinct images referenced by selected expressions downloaded | 1.08 GB shared annotation archive; val JSON 2.27 MB; selected images add variable bytes |
+| `Ground`, point | Point-in-box accuracy | **RefCOCOg UMD** (`refcocog`, default) | Same expressions and target boxes as box mode; no point annotations required | train, val, test | Same preparation and cache as box mode | Shares the box-mode dataset files |
+| `Ground`, box or point | Same grounding metrics for the selected geometry | **RefCOCO UNC / RefCOCO+ UNC**, local data | Counts depend on supplied manifest; one target box per expression | train, val, testA, testB | No automatic download; supply annotations and images | Depends on supplied files |
+
+CIFAR-10 and COCO128 contain class/object annotations; the task generates the
+model instructions. RefCOCO-family datasets also supply the referring expression
+for every call. COCO128 is a smoke dataset whose images come from COCO training
+data; its scores do not establish held-out COCO performance.
+
+**Planned classification default: Imagenette v2.** It has 13,394 images across
+10 classes: 9,469 train and 3,925 validation, with no official test split.
+Published shared train/val archives are approximately 99.0 MB (160px), 341.7 MB
+(320px), and 1.56 GB (full resolution); the resized variants set the shortest
+side. The automatic downloader currently supports CIFAR-10, not Imagenette, and
+an Imagenette resolution has not yet been selected. Prepared local Imagenette
+class directories already work with the classification reader; map its WordNet
+folder names to readable task labels with `class_map`.
+
+Dataset sources: [CIFAR-10](https://www.cs.toronto.edu/~kriz/cifar.html),
+[COCO128 archive](https://github.com/ultralytics/assets/releases/download/v0.0.0/coco128.zip),
+[MDETR annotation archive](https://zenodo.org/records/4729015),
+[Imagenette variants](https://github.com/fastai/imagenette), and
+[Imagenette counts](https://www.tensorflow.org/datasets/catalog/imagenette).
+COCO128 and RefCOCOg val counts above were checked against the source annotations
+used by the repository's downloader.
+
+## Configuration and setup
+
+### Dependencies and backend
+
+Install the package from the repository root:
+
+```bash
+python -m pip install -e .
+```
+
+Install your backend's dependencies and configure access using the
 [Bedrock example](../examples/README.md#amazon-bedrock) or
-[Transformers guide](guides/huggingface-transformers.md). Detection YAML also
-requires the validation extra:
+[Transformers guide](guides/huggingface-transformers.md). Detection YAML requires
+PyYAML through the validation extra:
 
 ```bash
 python -m pip install -e '.[validation]'
 ```
 
-Grounding JSON uses the base dataset dependencies. The runner reads local data
-and does not download datasets.
+Grounding JSON and dataset preparation use the base dependencies. Downloading
+requires neither a dataset framework nor a model library. Local dataset readers
+do not download data; named-dataset preparation is a separate component.
 
-### Classification and detection
+### Validation options
 
-Classification expects a root containing, for example, `val/cat/` and `val/dog/`
-images. Detection expects a YOLO dataset YAML and its image/label files.
-Configure labels to match the property or objects your dataset annotates. For
-the example commands, save this as `/path/to/tasks.json`:
+These are arguments to `task.val()`:
+
+| Argument | Default and meaning |
+|---|---|
+| `data` | Task default registered dataset; alternatively a registered name or local dataset path |
+| `split` | `"val"`; must exist for the selected source |
+| `max_samples` | `None`, the entire selected split; limits images for Classify/Detect and expressions for Ground |
+| `cache_dir` | Dataset cache location; precedence described below |
+| `class_map` | `None`; mapping of dataset names to task labels for classification/detection |
+| `match_iou` | `0.5`; detection matching threshold, in `(0, 1]` |
+| `images` | Required image directory for local grounding annotations; automatic preparation supplies it |
+| `dataset` | `"refcocog"`; selects the local grounding annotation filename and expected split protocol |
+| `verbose` | `True`; progress and aggregate scores on stderr |
+| `dataloader` | Custom loader instead of `data`; see custom datasets below |
+| `validator` | Custom validator class instead of the task's built-in validator |
+
+Set `labels`, `context`, and `geometry` on the task constructor. For example:
+
+```python
+task = Ground(backend, geometry="point", context="Resolve the whole object.")
+metrics = task.val(max_samples=100)
+```
+
+Classification/detection retain their configured labels; match dataset names or
+use `class_map` for aliases and class selection. Each grounding expression
+supplies its target, and grounding rejects `class_map`.
+
+Configure model settings, output mode, and correction retries on the backend.
+Backend/transport retry policies are separate from structured-output correction.
+Transformers supports prompted output and greedy generation; Bedrock supports
+prompted, native, or tool output where the model/API permits.
+
+## Default datasets and downloads
+
+Omit `data` to use the task default, or select a registered name
+explicitly, such as `task.val(data="refcocog", max_samples=100)`. Local paths and
+custom loaders bypass automatic preparation. Use `./cifar10` or
+`Path("cifar10")` to identify a local directory whose name matches a registry key.
+
+Prepare data separately without loading a model:
+
+```python
+from ml_pipes.vlm.validation import prepare_dataset
+
+prepared = prepare_dataset("refcocog", split="val", max_samples=100)
+print(prepared.data, prepared.images)
+print(prepared.metadata)
+```
+
+Cache location precedence is `cache_dir`, then
+`VLM_TASKS_DATASETS_DIR`, then `~/.cache/vlm-tasks/datasets`. Matching requests
+verify and reuse prepared files. CIFAR-10 and COCO128 archives have pinned
+checksums; prepared files have SHA256 hashes. RefCOCOg records the extracted
+annotation's SHA256, but streaming does not verify the full MDETR archive hash.
+Writes are atomic, transient download failures are retried, and preparation
+never executes dataset download scripts.
+
+**Partial preparation does not always mean partial network transfer.** CIFAR-10
+and COCO128 download and retain a shared archive even for a small request.
+RefCOCOg streams the shared MDETR archive until it finds the requested annotation
+file, which can require reading unrelated bytes; it then downloads only the
+selected distinct images. Larger requests reuse cached annotations and images.
+RefCOCOg val/test expressions refer to **COCO train2014** images.
+
+Selection is deterministic: classification filters task classes before applying
+the limit and uses class-name/source-record order; detection uses image-filename
+order; grounding uses JSON expression order. Repeated images with different
+expressions make separate calls. Preparation metadata retains full-source
+counts; the prepared manifest and evaluated counts can be smaller.
+
+## Validation architecture
+
+The validator runs validation: it gets samples, calls the configured task, and
+accumulates evaluation results. It coordinates two main components:
+
+- **Data loader:** provides images and ground truth according to the user's
+  dataset configuration, including source/name, split, classes, and sample limit.
+- **Evaluator:** compares a specific task's response with ground truth and
+  computes the relevant metrics, independently of the dataset provider.
+
+A thin **adapter** bridges the dataset's annotation format and the evaluator's
+expected format. For example, it converts source `xywh` or normalized boxes into
+original-image pixel `xyxy` boxes and aligns class IDs with labels. A new dataset
+format needs an adapter; it can reuse the evaluator when task semantics match.
+
+In the current implementation, data provision spans preparation, dataset readers,
+and `DataLoader`. Adaptation happens in dataset readers and validator class
+alignment; evaluation spans task-specific `update_metrics` methods and metric
+classes. The diagram and table below show these implementation components.
+
+```mermaid
+flowchart TD
+    Call["task.val(...)"] --> Validator["Task-specific validator / BaseValidator"]
+    Validator --> Source{"Data source"}
+    Source -->|Registered name or default| Prepare["prepare_dataset: download and cache"]
+    Prepare --> Dataset["Local dataset reader"]
+    Source -->|Local path| Dataset
+    Dataset --> Loader["Synchronous DataLoader"]
+    Source -->|Custom dataloader| Loop["Shared validation loop"]
+    Loader --> Loop
+    Loop --> Task["Configured task"]
+    Task --> Backend["Backend / model"]
+    Backend --> Result["Public task result"]
+    Result --> Metrics["Task-specific metrics"]
+    Loop -->|Ground truth and failure records| Metrics
+    Metrics --> Report["Metrics object"]
+```
+
+| Component | Responsibility |
+|---|---|
+| Task `.val()` in [ops.py](../src/ml_pipes/vlm/ops.py) | Selects `ClassificationValidator`, `DetectionValidator`, or `GroundingValidator`; stores and returns metrics |
+| [prepare.py](../src/ml_pipes/vlm/validation/prepare.py) | Registry, source downloads, checksums, cache, subset materialization, and `PreparedDataset` metadata |
+| Dataset readers in [data.py](../src/ml_pipes/vlm/validation/data.py) | `ClassificationDataset`, `YOLODataset`, and `RefCOCODataset` validate local annotations and decode original images when indexed |
+| `DataLoader` in data.py | Iterates sample dictionaries synchronously; no batching or worker pool |
+| [validator.py](../src/ml_pipes/vlm/validation/validator.py) | `BaseValidator` owns setup, class alignment, iteration, timing, recoverable failures, and finalization; subclasses supply dataset and metric behavior |
+| Configured task and backend | Build requests, perform inference, parse structured responses, and apply backend correction retries |
+| [metrics.py](../src/ml_pipes/vlm/validation/metrics.py) | Compare public task results with annotations, accumulate scores, and summarize categories |
+
+The shared loop loads a sample, calls `predict_sample`, records recoverable
+inference failures, and calls `update_metrics`. Classification/detection pass
+`sample["img"]` to the task; grounding also supplies the expression. Validation
+adds no model preprocessing or inference retries; backend processors own model
+input preparation. Finalization records elapsed time and per-sample loading,
+inference, and metric timings.
+
+## Using your own dataset
+
+Local paths never trigger downloads. You can use a built-in local format, supply
+a custom loader, or extend a validator for another format/task.
+
+### Classification: class directories
+
+```text
+animals/
+  val/
+    cat/a.jpg
+    dog/b.jpg
+```
+
+```python
+from ml_pipes.vlm import Classify
+
+task = Classify(backend, labels=["cat", "dog"])
+metrics = task.val(data="/datasets/animals", split="val", max_samples=100)
+```
+
+Directories define class names. Images are read without dataset-level resizing
+or cropping. Task labels must match dataset names, or supply aliases such as
+`class_map={"cat": "feline"}` for a task configured with the label `feline`.
+An explicit mapping selects the evaluated dataset classes.
+
+### Detection: YOLO YAML and labels
+
+```text
+objects/
+  data.yaml
+  images/val/a.jpg
+  labels/val/a.txt
+```
+
+`data.yaml` defines the split and consecutive class IDs starting at zero:
+
+```yaml
+path: .
+val: images/val
+names:
+  0: person
+```
+
+Each label row is `class_id x_center y_center width height`, with coordinates
+normalized to image dimensions. For example, `0 0.5 0.5 0.5 0.5` describes a
+centered person box spanning half the image's width and height.
+
+```python
+from ml_pipes.vlm import Detect
+
+task = Detect(backend, labels={"pedestrian": "A visible person"})
+metrics = task.val(
+    data="/datasets/objects/data.yaml",
+    class_map={"person": "pedestrian"},
+    match_iou=0.5,
+)
+```
+
+Missing or empty label files represent negative images. Malformed annotations
+or unreadable images stop evaluation. The reader converts normalized boxes into
+original-image pixel `xyxy` coordinates; segmentation polygon rows are unsupported.
+No Ultralytics installation is required.
+
+### Grounding: expression annotations and images
+
+Provide an annotation directory containing the exact filename
+`finetune_{dataset}_{split}.json`, plus an image directory. For example,
+`finetune_refcocog_val.json` can contain:
 
 ```json
 {
-  "classify": {
-    "labels": ["cat", "dog"],
-    "context": "Classify the animal shown in the image."
-  },
-  "detect": {
-    "labels": {"pedestrian": "A visible person"},
-    "context": "Locate every visible person."
-  }
+  "images": [
+    {"id": 91, "file_name": "sample.jpg", "width": 640, "height": 480,
+     "caption": "the person on the right"}
+  ],
+  "annotations": [
+    {"id": 501, "image_id": 91, "category_id": 1,
+     "bbox": [320, 80, 120, 300]}
+  ],
+  "categories": [{"id": 1, "name": "person"}]
 }
 ```
 
-If the detection dataset class is `person`, save
-`{"person": "pedestrian"}` as `/path/to/class-map.json` and pass it with
-`--class-map` to align it with the task above. This option selects and aliases
-dataset classes. `--match-iou` sets the detection matching threshold and applies
-only to detection.
+```python
+from ml_pipes.vlm import Ground
 
-Classification reports top-1 accuracy; detection reports precision, recall and
-F1 from class-aware box matching. See the [metric reference](reference.md#metrics-and-failures)
-for definitions and failure handling.
+task = Ground(backend, geometry="box")  # or geometry="point"
+metrics = task.val(
+    data="/datasets/expressions/annotations",
+    images="/datasets/expressions/images",
+    dataset="refcocog",
+    split="val",
+)
+```
 
-## Grounding validation
+This MDETR-style format uses one `images` record per expression, even when records
+reference the same physical image. `caption` supplies the prompt; annotation
+`image_id` joins the expression record's `id`. Each expression requires exactly
+one category and target box in pixel `xywh`, converted to pixel `xyxy` by the
+reader. IDs may be sparse; duplicate IDs, missing joins, invalid expressions,
+invalid boxes, and decoded dimensions that disagree with the manifest are errors.
+Local images need not use COCO filenames.
 
-Prepare local annotations using the
-[MDETR guide](https://github.com/ashkamath/mdetr/blob/main/.github/refexp.md) and
-[annotation archive](https://zenodo.org/records/4729015), alongside COCO
-train2014 images. Supply the annotation directory with `--data` and the image
-directory with `--images`. The annotation directory must contain the exact file
-`finetune_{dataset}_{split}.json`, such as `finetune_refcocog_val.json`.
+Supported filename/split conventions are RefCOCOg UMD (`train`, `val`, `test`)
+and RefCOCO/RefCOCO+ UNC (`train`, `val`, `testA`, `testB`). MDETR's published
+converter generates train/val annotations; supply any requested test file
+separately if it is absent. See the
+[MDETR preparation guide](https://github.com/ashkamath/mdetr/blob/main/.github/refexp.md).
+Local paths and expected protocol are recorded without certifying the provenance
+of arbitrary user annotations. Your custom expressions can use the same format.
 
-| Dataset | Expected split protocol | Supported splits |
-|---|---|---|
-| `refcocog` (default) | UMD | train, val, test |
-| `refcoco` | UNC | train, val, testA, testB |
-| `refcoco+` | UNC | train, val, testA, testB |
+### Custom loaders and validators
 
-MDETR's published converter generates train/val annotations; requested test
-files must be supplied separately. Select the dataset with `--dataset`.
+A custom loader must expose `.dataset`, whose `.names` maps integer IDs to
+class names, and yield sample dictionaries with the following fields:
 
-`Ground.val()` uses the shared validation loop, with one independent call per
-expression. `RefCOCODataset` reads local MDETR RefCOCO-family JSON and COCO
-train2014 images, defaulting to RefCOCOg UMD. RefCOCO and RefCOCO+ use UNC splits.
-Converted image records represent expressions; repeated filenames stay separate
-and `max_samples` limits expressions. Sparse category IDs are reporting groups,
-without a task vocabulary or class mapping.
+| Task | Required sample fields |
+|---|---|
+| Classify | `im_file`, `img` (`ImagePayload`), `cls` (integer array of shape `(1,)`) |
+| Detect | `im_file`, `img`, `cls` of shape `(N,)`, `bboxes` of shape `(N, 4)` in pixel `xyxy` |
+| Ground | `im_file`, `img`, `cls` of shape `(1,)`, `bboxes` of shape `(1, 4)`, `target` expression; optional `sample_id` preserved in failures |
 
-The runner uses empty grounding task settings by default. Each dataset
-expression supplies the target, overriding any constructor target. To set
-context explicitly, pass a JSON file containing, for example,
-`{"ground": {"context": "Resolve the whole object."}}` with `--config`.
-For point grounding, use `{"ground": {"geometry": "point"}}`. Points are
-predicted directly in normalized coordinates and returned in input-image
-pixels. `--class-map` is unsupported for grounding.
+```python
+metrics = task.val(dataloader=my_loader, max_samples=100)
+```
 
-Use ordinary continuous-coordinate box IoU, inclusive accuracy thresholds of
-0.5, 0.75 and 0.9, and mean IoU across every evaluated expression. Valid
-not_found/ambiguous responses and execution failures contribute zero IoU.
-Status counts distinguish valid outcomes from failures; both evaluated and
-full-split expression/unique-image counts are reported. The annotation format
-comes from MDETR; its generalized-IoU evaluator is not the scoring reference.
-Local paths and the expected split protocol are recorded without certifying
-the provenance of arbitrary local annotation files.
+Pass `dataloader` without `data`; this bypasses both downloading and dataset
+construction. You can use the provided `DataLoader` with an indexed dataset
+implementing `__len__`, `__getitem__`, and `.names`.
 
-Point mode uses the same expressions and reports `point_in_box_accuracy`:
-the fraction whose predicted point falls inside the annotated target box,
-including edges. Non-found statuses and failed calls count as misses. This is
-a coarse proxy for target-mask containment, and cannot be directly compared
-with box IoU accuracy. Point mode reports no IoU scores.
+For other annotations, metrics, or tasks, subclass `BaseValidator` or a concrete
+validator and override hooks such as `build_dataset`, `get_dataloader`,
+`init_metrics`, `predict_sample`, and `update_metrics`. Pass the class as
+`task.val(validator=MyValidator, ...)`. Tasks without a built-in validator need
+this explicit extension. See the
+[custom validator reference](reference.md#custom-validators-and-data-sources).
 
-The validator measures single-target localization. RefCOCO-family
-annotations assign one target per expression, so rejection quality and
-annotated ambiguity require additional datasets. Mask-based point scoring and
-multiple-target evaluation are future extensions. See the [reference](reference.md#grounding-refcoco-family)
-for data preparation, annotation validation, metrics, and custom loaders.
+## Results and reproducibility
 
-## Sample limits and reproducibility
+Python metrics expose `results_dict`, `summary()`, `failures`, `dataset_counts`,
+`speed`, and `elapsed_seconds`. Grounding also exposes status and unique-image
+counts. Named-dataset preparation metadata is available through
+`metrics.dataset_metadata`.
 
-`--split` defaults to `val`. `--max-samples` limits evaluation in deterministic
-dataset order: images for classification/detection, expressions for grounding.
-Start with 10 expressions to check inference and timing, then use 100 for a
-preliminary accuracy estimate. An ordered subset does not establish full-split
-performance. Dataset counts describe all records in the supplied local
-manifest; evaluated expression and unique-image counts are reported separately.
+For named datasets, preparation metadata retains full-source counts while
+`dataset_counts` describes the prepared manifest. Evaluated sample and grounding
+unique-image counts describe only the actual run. Keep these scopes distinct
+when reporting subset results.
 
-Classification and detection use [image_tasks.json](../examples/image_tasks.json)
-by default; pass `--config` to match your annotations. Grounding reads a `ground`
-entry only when an explicit config is supplied. Preserve the same dataset,
-context, backend and generation settings when comparing runs, and report the
-metric definition alongside each result.
+`metrics.elapsed_seconds` includes dataset setup/preparation, cache checks, and
+iteration. `metrics.speed` reports milliseconds per evaluated sample for `load`,
+`inference`, and `metrics`. Its `load` entry means sample loading, not model
+initialization. Backend initialization before `.val()` is outside these timings.
 
-`--retries` controls structured-output correction attempts and defaults to zero.
-`--max-tokens` limits generated tokens per request. Each evaluated sample can
-incur provider usage, including configured retries. Bedrock supports prompted,
-native or tool output when the model/API supports it. Transformers supports
-only prompted output and uses greedy generation.
+Keep dataset version, split, sample/class selection, geometry, context, backend,
+model revision, generation settings, output mode, and retries fixed when comparing
+runs. Report the metric definition alongside the score. Every sample can incur
+provider usage, including configured correction retries.
 
-For local Transformers runs, use `--device auto` for automatic selection or
-select `mps`, `cuda` or `cpu` for your hardware, with a compatible `--dtype`.
-Pin `--revision` to a model commit for reproducibility; `--local-files-only`
-requires cached weights and processor files. See the
-[Transformers guide](guides/huggingface-transformers.md) for runtime details.
-
-## Reports and exit codes
-
-The runner prints JSON containing aggregate metrics, per-class results, failure
-records, dataset counts, paths/expected split protocol, grounding status counts,
-task/model configuration, output mode, retries and timings. `--output` also
-saves the report to a file. Transformers reports the actual device and dtype,
-requested revision and separate model loading time.
-
-Progress goes to stderr; `--no-verbose` disables it. Exit code 0 means validation
-completed without recorded execution failures, 1 means task execution failures
-were recorded, and 2 means setup or validation could not complete. Accuracy has
-no automatic pass/fail threshold.
+Progress goes to stderr; `verbose=False` disables it. Validation returns measured
+scores without an automatic accuracy pass/fail threshold. Report serialization
+and process exit codes belong to the
+[validation example](../examples/README.md#dataset-validation).

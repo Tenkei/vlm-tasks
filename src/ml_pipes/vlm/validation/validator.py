@@ -13,6 +13,7 @@ from ..errors import InvalidModelResponseError, ModelExecutionError
 from ..types import ClassificationResult, DetectionResult, GroundingResult
 from .data import ClassificationDataset, DataLoader, RefCOCODataset, YOLODataset
 from .metrics import ClassificationMetrics, DetectionMetrics, GroundingMetrics
+from .prepare import DATASETS, prepare_dataset
 
 
 class BaseValidator:
@@ -24,11 +25,15 @@ class BaseValidator:
     dictionaries documented by the concrete dataset classes.
     """
 
+    default_dataset: str | None = None
+
     def __init__(
         self, data=None, *, dataloader=None, split: str = "val",
         class_map: Mapping[str, str] | None = None,
-        max_samples: int | None = None, verbose: bool = True,
+        max_samples: int | None = None, verbose: bool = True, cache_dir=None,
     ) -> None:
+        if data is None and dataloader is None:
+            data = self.default_dataset
         if (data is None) == (dataloader is None):
             raise ValueError("Supply exactly one of data or dataloader")
         if max_samples is not None and (type(max_samples) is not int or max_samples < 1):
@@ -43,12 +48,14 @@ class BaseValidator:
         self.split = split
         self.max_samples = max_samples
         self.verbose = verbose
+        self.cache_dir = cache_dir
         self._provided_dataloader = dataloader
         self._requested_class_map = None if class_map is None else dict(class_map)
 
     def __call__(self, task):
         started = perf_counter()
         self.task = task
+        self.prepared_dataset = None
         self.dataset = (
             self.build_dataset() if self._provided_dataloader is None
             else self._provided_dataloader.dataset
@@ -60,6 +67,12 @@ class BaseValidator:
         )
         self.init_metrics()
         self.metrics.dataset_counts = dict(getattr(self.dataset, "counts", {}))
+        if self.prepared_dataset is not None:
+            self.metrics.dataset_metadata = {
+                **getattr(self.metrics, "dataset_metadata", {}),
+                "data": str(self.prepared_dataset.data),
+                "preparation": self.prepared_dataset.metadata,
+            }
         self._timings = {"load": 0.0, "inference": 0.0, "metrics": 0.0}
         self._started = started
         last = perf_counter()
@@ -113,6 +126,20 @@ class BaseValidator:
     def build_dataset(self):
         raise NotImplementedError
 
+    def prepare_named_dataset(self, task: str):
+        if not isinstance(self.data, str) or self.data not in DATASETS:
+            return None
+        if DATASETS[self.data].task != task:
+            raise ValueError(f"Dataset {self.data!r} does not support {task} validation")
+        classes = None
+        if task == "classify":
+            classes = tuple(self._requested_class_map or self.task.labels)
+        self.prepared_dataset = prepare_dataset(
+            self.data, split=self.split, max_samples=self.max_samples,
+            cache_dir=self.cache_dir, classes=classes,
+        )
+        return self.prepared_dataset
+
     def get_dataloader(self, dataset):
         return DataLoader(dataset)
 
@@ -135,8 +162,11 @@ class BaseValidator:
 class ClassificationValidator(BaseValidator):
     """Validate a single-label Classify task against class directories."""
 
+    default_dataset = "cifar10"
+
     def build_dataset(self):
-        return ClassificationDataset(self.data, split=self.split)
+        prepared = self.prepare_named_dataset("classify")
+        return ClassificationDataset(self.data if prepared is None else prepared.data, split=self.split)
 
     def get_dataloader(self, dataset):
         indices = [
@@ -166,6 +196,8 @@ class ClassificationValidator(BaseValidator):
 class DetectionValidator(BaseValidator):
     """Validate a Detect task against YOLO detection labels."""
 
+    default_dataset = "coco128"
+
     def __init__(self, *args, match_iou: float = 0.5, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         # Validate before dataset setup or any task execution.
@@ -177,7 +209,8 @@ class DetectionValidator(BaseValidator):
         self.match_iou = float(match_iou)
 
     def build_dataset(self):
-        return YOLODataset(self.data, split=self.split)
+        prepared = self.prepare_named_dataset("detect")
+        return YOLODataset(self.data if prepared is None else prepared.data, split=self.split)
 
     def init_metrics(self) -> None:
         self.metrics = DetectionMetrics(self.names, match_iou=self.match_iou)
@@ -202,17 +235,27 @@ class DetectionValidator(BaseValidator):
 class GroundingValidator(BaseValidator):
     """Evaluate one Ground prediction per RefCOCO referring expression."""
 
+    default_dataset = "refcocog"
+
     def __init__(self, *args, images=None, dataset: str = "refcocog", **kwargs) -> None:
         super().__init__(*args, **kwargs)
         if self._requested_class_map is not None:
             raise ValueError("class_map is not supported for grounding validation")
-        if self._provided_dataloader is None and images is None:
+        automatic = isinstance(self.data, str) and self.data in DATASETS
+        if automatic and (images is not None or dataset != "refcocog"):
+            raise ValueError("Automatic grounding preparation supports refcocog; use local data and images for other sources")
+        if self._provided_dataloader is None and images is None and not automatic:
             raise ValueError("Grounding validation requires images or a supplied dataloader")
         self.images = images
         self.dataset_name = dataset
 
     def build_dataset(self):
-        return RefCOCODataset(self.data, self.images, dataset=self.dataset_name, split=self.split)
+        prepared = self.prepare_named_dataset("ground")
+        return RefCOCODataset(
+            self.data if prepared is None else prepared.data,
+            self.images if prepared is None else prepared.images,
+            dataset=self.dataset_name, split=self.split,
+        )
 
     def _align_classes(self) -> None:
         # Ground has no task vocabulary: categories are reporting groups only.

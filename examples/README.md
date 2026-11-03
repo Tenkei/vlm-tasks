@@ -9,7 +9,7 @@ with an independent model request for each task.
 |---|---|---|
 | [Amazon Bedrock](#amazon-bedrock) — [run_bedrock.py](run_bedrock.py) | Bedrock Converse API | Provider SDK, AWS credentials and model access |
 | [Hugging Face Transformers](#hugging-face-transformers) — [run_transformers.py](run_transformers.py) | Weights loaded in the local Python process | PyTorch, Transformers, Pillow and a compatible model |
-| [Dataset validation](#dataset-validation) — [run_validation.py](run_validation.py) | Bedrock or local Transformers, one call per image or grounding expression | Backend dependencies and labeled local data; validation extra for detection YAML |
+| [Dataset validation](#dataset-validation) — [run_validation.py](run_validation.py) | Bedrock or local Transformers, one call per image or grounding expression | Backend dependencies; default datasets download automatically; validation extra for detection YAML |
 
 To check task execution with synthetic responses, run the
 [sanity check](#sanity-check).
@@ -124,25 +124,23 @@ for adapter details, supported models and reuse of already-loaded objects.
 
 [run_validation.py](run_validation.py) evaluates classification, detection and
 box or point grounding with Bedrock (default) or local Transformers weights.
-Install the backend dependencies described above and prepare local data and
-matching task settings using the [validation guide](../docs/validation.md).
+Install the backend dependencies described above. Default datasets download
+automatically; see the [validation guide](../docs/validation.md) for defaults
+and custom local data.
 
 Classification:
 
 ```bash
 python -m examples.run_validation \
-  --task classify --data /path/to/classification-dataset \
-  --config /path/to/tasks.json --max-samples 100 \
+  --task classify --max-samples 100 \
   --model us.amazon.nova-pro-v1:0 --profile YOUR_PROFILE --region us-east-1
 ```
 
-Detection, using the guide's task settings and class map:
+Detection:
 
 ```bash
 python -m examples.run_validation \
-  --task detect --data /path/to/dataset.yaml \
-  --config /path/to/tasks.json --class-map /path/to/class-map.json \
-  --match-iou 0.5 --max-samples 100 \
+  --task detect --max-samples 100 \
   --model us.amazon.nova-pro-v1:0 --profile YOUR_PROFILE --region us-east-1
 ```
 
@@ -151,22 +149,82 @@ Grounding with local Qwen3-VL:
 ```bash
 python -m examples.run_validation \
   --backend transformers --task ground \
-  --data /path/to/mdetr_annotations --images /path/to/coco/train2014 \
-  --dataset refcocog --split val --max-samples 10 \
+  --max-samples 10 \
   --model Qwen/Qwen3-VL-2B-Instruct --device mps --dtype float16 \
   --retries 0 --max-tokens 4096 --output /tmp/grounding10.json
 ```
 
-For point output, add `--config /path/to/point.json` containing
-`{"ground": {"geometry": "point"}}`. See the [validation guide](../docs/validation.md)
-for dataset preparation, metrics, sample limits and reports, or use
-`python -m examples.run_validation --help` for all CLI options.
+### Runner options and configuration
+
+This example script wraps the Python validation API. Its CLI flags, configuration
+defaults, JSON reports, and exit codes are specific to the example. See the
+[validation guide](../docs/validation.md) for datasets, metrics, architecture,
+and custom data formats.
+
+| Option | Purpose and default |
+|---|---|
+| `--task` | Required: `classify`, `detect`, or `ground` |
+| `--backend`, `--model` | Bedrock by default, requiring a model ID; Transformers defaults to `Qwen/Qwen3-VL-2B-Instruct` |
+| `--data` | Registered dataset name or local path; omitted uses the task default |
+| `--split`, `--max-samples` | `val` and no limit; limits images or grounding expressions |
+| `--cache-dir` | Overrides `VLM_TASKS_DATASETS_DIR` and `~/.cache/vlm-tasks/datasets` |
+| `--prepare-only` | Prepare a registered dataset without loading a model or running inference |
+| `--config` | JSON task constructor settings; defaults described below |
+| `--class-map` | JSON file mapping dataset names to task labels; classification/detection only |
+| `--match-iou` | Detection matching threshold; default `0.5` |
+| `--images`, `--dataset` | Local grounding image directory and annotation convention; dataset defaults to `refcocog` |
+| `--output-mode`, `--retries`, `--max-tokens` | Defaults: `prompted`, `0` correction attempts, `4096` generated tokens per request |
+| `--output`, `--no-verbose` | Save the JSON report; disable progress and aggregate score logging on stderr |
+
+Bedrock authentication flags (`--profile`, `--region`) and Transformers loading
+flags (`--device`, `--dtype`, `--revision`, `--local-files-only`) work as described
+in their sections above. Transformers accepts only prompted output and uses
+greedy generation. Backend/transport retry policies are separate from correction
+retries. Use `python -m examples.run_validation --help` for all CLI options.
+
+Without `--config`, registered classification/detection datasets use all dataset
+labels; local classification/detection data uses [image_tasks.json](image_tasks.json),
+so supply matching settings when needed. Grounding defaults to empty task settings
+and gets targets from dataset expressions. Explicit configs retain their labels
+and context. For point grounding, pass `--config /path/to/point.json` containing:
+
+```json
+{"ground": {"geometry": "point", "context": "Resolve the whole object."}}
+```
+
+Prepare a default dataset independently:
+
+```bash
+python -m examples.run_validation --task ground --prepare-only --max-samples 100
+```
+
+The runner prepares named data before model loading. Initial runs download any
+uncached dataset and model files. Local paths bypass dataset downloads; local
+grounding requires `--images`, with `--dataset` selecting the annotation naming
+convention. Automatic grounding preparation supports only `refcocog`.
+
+### Validation reports
+
+JSON goes to stdout and optionally `--output`; progress goes to stderr. Reports
+include aggregate/per-category metrics, failures, dataset counts and provenance,
+grounding statuses, task/model settings, output mode, retries, and timings.
+Transformers also records device, dtype, requested revision, and local-file mode.
+
+`preparation_seconds` measures initial dataset preparation; `load_seconds`
+measures backend/model setup. `elapsed_seconds` includes the validator's own
+dataset setup/cache checks and iteration. `speed_ms_per_sample` separates sample
+loading, inference, and metric updates; its `load` entry is not model loading.
+
+Exit codes are **0** for a completed run without recorded inference failures,
+**1** for a completed run with such failures, and **2** when setup or validation
+cannot complete. Accuracy has no automatic pass/fail threshold.
 
 ## Shared task configuration
 
-[image_tasks.json](image_tasks.json) contains the default task settings shared
-by the runners. Dataset validation uses its `classify` and `detect` entries by
-default; grounding reads a `ground` entry only with an explicit `--config`:
+[image_tasks.json](image_tasks.json) contains the default single-image task
+settings. Dataset runner defaults are described in
+[Runner options and configuration](#runner-options-and-configuration).
+The single-image defaults are:
 
 | Task | Default question/target |
 |---|---|

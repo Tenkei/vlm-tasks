@@ -93,7 +93,7 @@ custom validator.
 
 | Argument | Default | Meaning |
 |---|---|---|
-| `data` | Required unless `dataloader` is supplied | Classification root, detection YAML, or MDETR annotation directory |
+| `data` | Task default unless `dataloader` is supplied | Registered name (`cifar10`, `coco128`, `refcocog`) or classification root, detection YAML, or MDETR annotation directory |
 | `images` | Required for local grounding data | COCO train2014 image directory; grounding only |
 | `dataset` | `"refcocog"` | Grounding dataset: `refcocog`, `refcoco`, or `refcoco+` |
 | `split` | `"val"` | Exact split to read; there is no fallback to another split |
@@ -103,6 +103,17 @@ custom validator.
 | `verbose` | `True` | Print progress and aggregate metrics to stderr |
 | `validator` | Selected by task | Custom validator class, instantiated with the other arguments |
 | `dataloader` | `None` | Prebuilt loader, supplied instead of `data` |
+| `cache_dir` | `VLM_TASKS_DATASETS_DIR` or `~/.cache/vlm-tasks/datasets` | Cache for named dataset preparation |
+
+Omitting `data` prepares CIFAR-10 for classification, COCO128 for detection, or
+RefCOCOg UMD for grounding. `prepare_dataset(name, *, split="val",
+max_samples=None, cache_dir=None, classes=None)` can prepare the same data
+separately and returns a `PreparedDataset` with `dataset`, `split`, `data`,
+`images`, `names` and `metadata`. `classes` optionally selects CIFAR-10 class
+names before the sample limit; validators derive this from task labels or
+class-map keys. See [dataset preparation](validation.md#default-datasets-and-downloads)
+for source, cache, split and download behavior. Local dataset reader classes
+continue to require prepared files.
 
 For classification and detection, every task label must exist by the same name in the dataset;
 dataset classes beyond the task vocabulary are excluded from scoring. An
