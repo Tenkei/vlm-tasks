@@ -19,6 +19,7 @@ from .types import (
 __all__ = ["Classify", "ClassifyMultiLabel", "Detect", "Ground", "Attributes"]
 
 LabelChoices: TypeAlias = Sequence[str] | Mapping[str, str]
+AttributeChoices: TypeAlias = Mapping[str, LabelChoices]
 
 
 def _text(value: str, name: str) -> str:
@@ -49,9 +50,27 @@ def _choices(labels: LabelChoices) -> dict[str, str]:
     return result
 
 
+def _attribute_choices(attributes: AttributeChoices) -> dict[str, dict[str, str]]:
+    if not isinstance(attributes, Mapping) or not attributes:
+        raise ValueError("attributes must be a nonempty mapping")
+    return {
+        _text(name, "Attribute name"): _choices(labels)
+        for name, labels in attributes.items()
+    }
+
+
+def _attributes_instruction(attributes: Mapping[str, Mapping[str, str]]) -> str:
+    return (
+        "Predict all requested categorical attributes of the subject identified "
+        "by context. Select exactly one allowed value for every attribute. "
+        "Include every requested attribute and no extra attributes. "
+        "Attribute choices and descriptions: " + json.dumps(attributes)
+    )
+
+
 class _Task:
     def val(self, validator=None, **kwargs):
-        """Evaluate this configured task and return its validator's metrics.
+        """Evaluate this task and return its validator's metrics.
 
         ``validator`` accepts a custom validator class, constructed with this
         task and the other keyword arguments, then called without arguments.
@@ -86,18 +105,21 @@ class _Task:
         self.context = context
 
     def _predict(
-        self, image: ImagePayload, *, instruction: str | None = None
+        self, image: ImagePayload, *, instruction: str | None = None,
+        response_spec: ResponseSpec | None = None,
     ) -> Mapping[str, object]:
         validate_image(image)
         if instruction is None:
             instruction = self._instruction
+        if response_spec is None:
+            response_spec = self._spec
         if self.context is not None:
             instruction += "\nContext: " + self.context
         instruction += "\nProvide a prediction matching the requested response schema."
-        response = self.model(ModelRequest(image, instruction, self._spec))
+        response = self.model(ModelRequest(image, instruction, response_spec))
         if not isinstance(response, ModelResponse):
             raise InvalidModelResponseError("The backend must return a ModelResponse")
-        return self._spec.validate(response.data)
+        return response_spec.validate(response.data)
 
 
 @Operator
@@ -250,28 +272,46 @@ class Ground(_Task):
 
 @Operator
 class Attributes(_Task):
+    """Predict categorical attributes supplied at construction or per call."""
+
     def __init__(
         self,
         model: ModelBackend,
-        attributes: Mapping[str, LabelChoices],
+        attributes: AttributeChoices | None = None,
         *,
         context: str | None = None,
     ) -> None:
         self._configure(model, context)
-        if not isinstance(attributes, Mapping) or not attributes:
-            raise ValueError("attributes must be a nonempty mapping")
-        self.attributes = {
-            _text(name, "Attribute name"): _choices(labels)
-            for name, labels in attributes.items()
-        }
-        self._spec = attributes_spec(self.attributes)
-        self._instruction = (
-            "Predict all requested categorical attributes of the subject identified "
-            "by context. Select exactly one allowed value for every attribute. "
-            "Include every requested attribute and no extra attributes. "
-            "Attribute choices and descriptions: " + json.dumps(self.attributes)
-        )
+        self.attributes = None if attributes is None else _attribute_choices(attributes)
+        self._spec = None if self.attributes is None else attributes_spec(self.attributes)
+        self._instruction = None if self.attributes is None else _attributes_instruction(self.attributes)
 
-    def __call__(self, image: ImagePayload) -> AttributePredictionResult:
-        data = self._predict(image)
+    @overload
+    def __call__(self, image: ImagePayload) -> AttributePredictionResult: ...
+
+    @overload
+    def __call__(self, image: tuple[ImagePayload, AttributeChoices]) -> AttributePredictionResult: ...
+
+    def __call__(self, image: Any) -> AttributePredictionResult:
+        response_spec, instruction = self._spec, self._instruction
+        if isinstance(image, tuple):
+            if len(image) != 2:
+                raise ValueError("Attributes requires an image or an (image, attributes) tuple")
+            image, choices = image
+            attributes = _attribute_choices(choices)
+            response_spec = attributes_spec(attributes)
+            instruction = _attributes_instruction(attributes)
+        elif self.attributes is None:
+            raise ValueError("Attributes requires attribute choices at construction or when called")
+        data = self._predict(image, instruction=instruction, response_spec=response_spec)
         return AttributePredictionResult(attributes=dict(data["attributes"]))
+
+    def resolve_contract(
+        self,
+        upstream_annotation: Any,
+        validation_error_type: type[Exception],
+    ) -> tuple[tuple[Any, ...], Any]:
+        del upstream_annotation, validation_error_type
+        if self.attributes is None:
+            return (tuple[ImagePayload, AttributeChoices],), AttributePredictionResult
+        return (ImagePayload | tuple[ImagePayload, AttributeChoices],), AttributePredictionResult

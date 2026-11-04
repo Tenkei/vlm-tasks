@@ -135,7 +135,7 @@ class BaseValidator:
         self.prepared_dataset = prepare_dataset(
             self.data, split=self.split, max_samples=self.max_samples,
             cache_dir=self.cache_dir, classes=classes,
-            **({"groups": tuple(self.task.attributes)} if task == "attributes" else {}),
+            **({"groups": tuple(self.task.attributes)} if task == "attributes" and self.task.attributes is not None else {}),
         )
         return self.prepared_dataset
 
@@ -183,28 +183,32 @@ class AttributesValidator(BaseValidator):
         return OVADDataset(
             self.data if prepared is None else prepared.data,
             self.images if prepared is None else prepared.images,
-            split=self.split, groups=tuple(self.task.attributes), max_samples=self.max_samples,
+            split=self.split,
+            groups=None if self.task.attributes is None else tuple(self.task.attributes),
+            max_samples=self.max_samples,
         )
 
     def _align_classes(self) -> None:
-        from ..ops import _choices
+        from ..ops import _attribute_choices, _choices
 
         schema = getattr(self.dataset, "attributes", None)
         if not isinstance(schema, Mapping) or not schema:
             raise ValueError("Attributes datasets must expose a nonempty attributes schema")
-        missing = set(self.task.attributes) - schema.keys()
+        self.attributes = _attribute_choices(schema if self.task.attributes is None else self.task.attributes)
+        missing = self.attributes.keys() - schema.keys()
         if missing:
             raise ValueError(f"Unsupported dataset attribute groups: {sorted(missing)}")
-        self.attributes = {}
-        for group, choices in self.task.attributes.items():
+        for group, choices in self.attributes.items():
             vocabulary = _choices(schema[group])
             if set(choices) != set(vocabulary):
                 raise ValueError(f"Attribute choices for {group} must match the complete dataset vocabulary")
-            self.attributes[group] = vocabulary
 
     def init_metrics(self) -> None:
         self.metrics = AttributesMetrics(self.attributes)
         self.metrics.dataset_metadata = dict(getattr(self.dataset, "metadata", {}))
+
+    def predict_sample(self, sample: dict):
+        return self.task((sample["img"], self.attributes))
 
     def update_metrics(self, prediction, sample: dict) -> None:
         if prediction is not None and not isinstance(prediction, AttributePredictionResult):

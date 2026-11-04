@@ -169,8 +169,9 @@ metrics = task.val(max_samples=100)
 
 Classification/detection retain their configured labels; match dataset names or
 use `class_map` for aliases and class selection. Each grounding expression
-supplies its target. Attributes retain their complete configured schema, and
-their keys select dataset groups. Grounding and attributes reject `class_map`.
+supplies its target. Attributes use their configured choices when present, with
+their keys selecting dataset groups; otherwise validation discovers all dataset
+groups and choices. Grounding and attributes reject `class_map`.
 
 Configure model settings, output mode, and correction retries on the backend.
 Backend/transport retry policies are separate from structured-output correction.
@@ -277,7 +278,8 @@ flowchart TD
 The shared loop loads a sample, calls `predict_sample`, records recoverable
 inference failures, and calls `update_metrics`. Classification/detection pass
 `sample["img"]` to the task; grounding also supplies the expression. Attributes
-pass the cropped `sample["img"]` through the same loop. Validation
+pass `(sample["img"], evaluation_attributes)` with the same complete choices for
+every crop through the same loop. Validation
 adds no model preprocessing or inference retries; backend processors own model
 input preparation. Finalization records elapsed time and per-sample loading,
 inference, and metric timings.
@@ -396,18 +398,33 @@ of arbitrary user annotations. Your custom expressions can use the same format.
 
 ### Attributes: OVAD object crops
 
-Discover the published schema without loading a model, then configure the task:
+Validation prepares the dataset and discovers its schema internally when the
+task has no constructor attributes:
 
 ```python
 from ml_pipes.vlm import Attributes
-from ml_pipes.vlm.validation import prepare_dataset
-
-prepared = prepare_dataset("ovad", max_samples=100)
-task = Attributes(backend, attributes=prepared.attributes)
+task = Attributes(backend)
 metrics = task.val(data="ovad", max_samples=100)
 print(metrics.results_dict)
 print(metrics.summary())
 print(metrics.confusion_matrices["material"])
+```
+
+The task's stored attributes remain `None` throughout and after validation.
+The validator passes the same complete schema with every crop, using the
+per-call override API. Direct calls can also supply choices:
+
+```python
+result = task((image, {"material": ["wood", "metal"]}))
+```
+
+You can still prepare/discover choices separately and configure defaults:
+
+```python
+from ml_pipes.vlm.validation import prepare_dataset
+
+prepared = prepare_dataset("ovad", max_samples=100)
+task = Attributes(backend, attributes=prepared.attributes)
 ```
 
 Local data requires `ovad2000.json` and COCO `val2017` images:
@@ -450,9 +467,13 @@ target. Zero positives supplies no target, including an all-negative group;
 there is no invented “none” choice. Multiple positives in a supported group
 are annotation errors. Keep objects with annotation area ≥50 pixels and at least
 one target among selected groups; apply `max_samples` after filtering, preserving
-annotation order. Every object makes one `task(sample["img"])` call that predicts
-**all configured fields**. Missing targets affect scoring only: task schema,
-descriptions, context, and request structure remain fixed across objects.
+annotation order. Every object makes one
+`task((sample["img"], evaluation_attributes))` call that predicts **all configured
+fields**. The evaluation attributes are the complete dataset schema when no
+constructor choices exist, or the validated constructor schema with its custom
+descriptions and group selection. Missing targets affect scoring only:
+evaluation schema, descriptions, context, and request structure remain fixed
+across objects. Tuple overrides never change the stored task configuration.
 
 The data reader validates IDs, joins, vector lengths/values, image dimensions,
 and boxes. It converts pixel `xywh` boxes to crops using floor for the start and

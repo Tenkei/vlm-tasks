@@ -355,8 +355,17 @@ Ground accepts one image or `(image, target)` value. Its pipeline contract
 requires `tuple[ImagePayload, str]` without a constructor target; with a default,
 it accepts either an ImagePayload or that tuple. Pipeline passes the tuple as
 one argument. A tuple always supplies a nonempty string target; image-only calls
-use the constructor default. The task builds each instruction locally. Other
-task settings remain constructor-only.
+use the constructor default. The task builds each instruction locally.
+
+Attributes uses the same one-value input pattern: `(image, attributes)` supplies
+the complete categorical schema for a call. Constructor attributes are optional;
+image-only calls use them when configured. The Pipeline contract accepts only
+the tuple when no defaults exist, or an ImagePayload or tuple when configured.
+Call-specific choices are validated and used to build request-local instructions
+and response validation, with constructor attributes and context preserved.
+Validation discovers choices from its dataset when the task is unconfigured
+and supplies the same evaluation schema with every object crop. Other task
+settings remain constructor-only.
 
 ## Model communication alternatives
 

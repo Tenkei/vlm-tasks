@@ -12,7 +12,13 @@ import cv2
 import numpy as np
 import pytest
 
-from ml_pipes.vlm import Attributes, AttributePredictionResult, ModelExecutionError, ModelResponse
+from ml_pipes.core import Pipeline
+from ml_pipes.validation import PipelineValidationError
+from ml_pipes.vision import ImagePayload
+from ml_pipes.vlm import (
+    Attributes, AttributePredictionResult, InvalidModelResponseError, ModelExecutionError, ModelResponse,
+)
+from ml_pipes.vlm.ops import AttributeChoices
 from ml_pipes.vlm.validation import (
     AttributesMetrics, AttributesValidator, DataLoader, OVADDataset, prepare_dataset,
 )
@@ -197,8 +203,9 @@ def test_masked_scoring_fixed_schema_and_failures(tmp_path):
     assert metrics.summary()[0]["values"][0]["f1"] == 1
     assert metrics.summary()[1]["values"][0]["precision"] == 0
     assert len(backend.calls) == 3
-    assert all(call.response_spec is task._spec for call in backend.calls)
+    assert all(call.response_spec.schema == task._spec.schema for call in backend.calls)
     assert len({call.instruction for call in backend.calls}) == 1
+    assert all("Custom description" in call.instruction for call in backend.calls)
     assert all(set(call.response_spec.schema["$defs"]["AttributeValues"]["required"]) == set(schema) for call in backend.calls)
     assert (task.attributes, task.context, task._spec, task._instruction) == state
     assert metrics.failures[0]["sample_id"] == 88
@@ -388,3 +395,159 @@ def test_runner_local_automatic_schema(tmp_path, monkeypatch, capsys):
     report = json.loads(capsys.readouterr().out)
     assert report["task_config"]["attributes"] == OVADDataset(path, images).attributes
     assert report["dataset_counts"]["source_objects"] == 5
+
+
+@pytest.mark.parametrize("source", ["named", "local"])
+def test_runner_discovers_explicit_null_attribute_schema(tmp_path, http, monkeypatch, capsys, source):
+    from examples import run_validation
+
+    backend = Backend()
+    monkeypatch.setattr(run_validation, "create_backend", lambda args: backend)
+    config = tmp_path / "task.json"
+    config.write_text(json.dumps({"attributes": {"attributes": None, "context": "Keep this context."}}))
+    args = ["--task", "attributes", "--config", str(config), "--model", "test", "--max-samples", "1", "--no-verbose"]
+    if source == "named":
+        args.extend(["--cache-dir", str(tmp_path)])
+    else:
+        path, images = write_local(tmp_path)
+        args.extend(["--data", str(path), "--images", str(images)])
+    assert run_validation.main(args) == 0
+    report = json.loads(capsys.readouterr().out)
+    assert set(report["task_config"]["attributes"]) == {"cleanliness", "material"}
+    assert report["task_config"]["context"] == "Keep this context."
+    assert "Keep this context." in backend.calls[0].instruction
+
+
+@pytest.mark.parametrize("configured", [False, True])
+def test_call_attributes_override_defaults_without_mutation(configured):
+    backend = Backend(
+        {"attributes": {"window color": "blue", "model_config": "healthy"}},
+        {"attributes": {"size": "large"}},
+        {"attributes": {"material": "wood"}},
+    )
+    defaults = {"material": {"wood": "Constructor description"}} if configured else None
+    task = Attributes(backend, defaults, context="Inspect the cropped subject.")
+    state = (deepcopy(task.attributes), task.context, task._spec, task._instruction)
+    image = ImagePayload(np.zeros((20, 30, 3), np.uint8))
+    override = {
+        "window color": {"blue": "A custom blue description", "red": ""},
+        "model_config": ["healthy", "damaged"],
+    }
+    pipeline = Pipeline([task])
+    contract = pipeline.validate(strict=True)
+    tuple_type = tuple[ImagePayload, AttributeChoices]
+    assert contract.input_type == (ImagePayload | tuple_type if configured else tuple_type)
+    assert contract.output_type is AttributePredictionResult
+    assert pipeline((image, override)).attributes == {"window color": "blue", "model_config": "healthy"}
+    assert task((image, {"size": ["small", "large"]})).attributes == {"size": "large"}
+    assert "custom blue description" in backend.calls[0].instruction
+    assert "Inspect the cropped subject." in backend.calls[0].instruction
+    assert set(backend.calls[0].response_spec.schema["$defs"]["AttributeValues"]["required"]) == set(override)
+    assert (task.attributes, task.context, task._spec, task._instruction) == state
+    if configured:
+        assert pipeline(image).attributes == {"material": "wood"}
+        assert "Constructor description" in backend.calls[-1].instruction
+        assert backend.calls[-1].response_spec is state[2]
+    else:
+        with pytest.raises(ValueError, match="at construction or when called"):
+            task(image)
+        assert len(backend.calls) == 2
+
+
+@pytest.mark.parametrize("override", [None, {}, [], "material", {"": ["wood"]}, {"material": []}, {"material": "wood"}, {"material": ["wood", "wood"]}, {"material": {"wood": 1}}])
+def test_invalid_call_attributes_rejected_before_inference(override):
+    backend = Backend()
+    task = Attributes(backend, {"material": ["wood"]})
+    with pytest.raises(ValueError):
+        task((ImagePayload(np.zeros((2, 2, 3), np.uint8)), override))
+    assert not backend.calls
+    assert task.attributes == {"material": {"wood": ""}}
+
+
+@pytest.mark.parametrize("length", [0, 1, 3])
+def test_attributes_rejects_malformed_call_tuples(length):
+    backend = Backend()
+    with pytest.raises(ValueError, match="tuple"):
+        Attributes(backend)(tuple(None for _ in range(length)))
+    assert not backend.calls
+
+
+def test_call_specific_response_validation_and_failure_preserve_defaults():
+    backend = Backend({"attributes": {"material": "wood"}})
+    task = Attributes(backend, {"material": ["wood"]})
+    image = ImagePayload(np.zeros((2, 2, 3), np.uint8))
+    original_spec, original_instruction = task._spec, task._instruction
+    with pytest.raises(InvalidModelResponseError):
+        task((image, {"material": ["metal"]}))
+    assert task._spec is original_spec and task._instruction == original_instruction
+    assert task.attributes == {"material": {"wood": ""}}
+    assert task(image).attributes == {"material": "wood"}
+    assert backend.calls[0].response_spec.schema != backend.calls[1].response_spec.schema
+
+
+def test_dynamic_attributes_pipeline_composition():
+    backend = Backend({"attributes": {"material": "wood"}})
+    task = Attributes(backend)
+
+    def supply_attributes(image: ImagePayload) -> tuple[ImagePayload, dict[str, list[str]]]:
+        return image, {"material": ["wood"]}
+
+    pipeline = Pipeline([supply_attributes, task])
+    assert pipeline.validate(strict=True).input_type is ImagePayload
+    assert pipeline(ImagePayload(np.zeros((2, 2, 3), np.uint8))).attributes == {"material": "wood"}
+
+    def supply_image(image: ImagePayload) -> ImagePayload:
+        return image
+
+    with pytest.raises(PipelineValidationError):
+        Pipeline([supply_image, task]).validate(strict=True)
+
+
+@pytest.mark.parametrize("source", ["named", "local", "loader"])
+def test_val_discovers_schema_and_keeps_fixed_call_overrides(tmp_path, http, source):
+    inputs = []
+
+    class RecordingAttributes(Attributes):
+        def __call__(self, value):
+            inputs.append(value)
+            return super().__call__(value)
+
+    backend = Backend()
+    task = RecordingAttributes(backend, context="Describe this crop.")
+    if source == "named":
+        settings = {"data": "ovad", "cache_dir": tmp_path}
+    else:
+        path, images = write_local(tmp_path)
+        settings = {"data": path, "images": images}
+        if source == "loader":
+            settings = {"dataloader": DataLoader(OVADDataset(path, images))}
+    validator = AttributesValidator(task, max_samples=2, verbose=False, **settings)
+    first, second = validator(), validator()
+    assert first is not second and first.seen == second.seen == 2
+    assert first.attribute_decisions == second.attribute_decisions == 2
+    assert first.accuracy == second.accuracy == .5
+    assert task.attributes is task._spec is task._instruction is None
+    assert task.context == "Describe this crop."
+    assert all(isinstance(value, tuple) and len(value) == 2 for value in inputs)
+    assert all(value[1] == inputs[0][1] for value in inputs)
+    assert set(inputs[0][1]) == {"cleanliness", "material"}
+    assert all(call.response_spec.schema == backend.calls[0].response_spec.schema for call in backend.calls)
+    assert len({call.instruction for call in backend.calls}) == 1
+    assert len(http[1]) == (2 if source == "named" else 0)
+    metrics = task.val(max_samples=1, verbose=False, **settings)
+    assert task.metrics is metrics and metrics.seen == 1
+    assert task.attributes is None
+
+
+@pytest.mark.parametrize("error", [ModelExecutionError("offline"), RuntimeError("programming error")])
+def test_discovered_validation_schema_is_not_stored_after_errors(tmp_path, error):
+    path, images = write_local(tmp_path)
+    task = Attributes(Backend(error), context="Original context.")
+    if isinstance(error, ModelExecutionError):
+        metrics = task.val(data=path, images=images, verbose=False)
+        assert metrics.failure_rate == 1 and metrics.accuracy == 0
+    else:
+        with pytest.raises(RuntimeError, match="programming error"):
+            task.val(data=path, images=images, verbose=False)
+    assert task.attributes is task._spec is task._instruction is None
+    assert task.context == "Original context."

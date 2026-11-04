@@ -208,7 +208,7 @@ labels; local classification/detection data uses [image_tasks.json](image_tasks.
 so supply matching settings when needed. Grounding defaults to empty task settings
 and gets targets from dataset expressions. Explicit configs retain their labels
 and context. Attributes discovers all supported groups and their complete choices
-from named or local data when no schema is configured. An explicit `attributes`
+from named or local data when no schema is configured (omitted or `null`). An explicit `attributes`
 schema selects groups and retains its descriptions/context; every selected group
 must contain the complete dataset vocabulary. For example, select only material:
 

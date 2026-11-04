@@ -99,10 +99,10 @@ def main(argv: list[str] | None = None) -> int:
             prepared = prepare_dataset(
                 args.data, split=args.split, max_samples=args.max_samples,
                 cache_dir=args.cache_dir, classes=classes,
-                **({"groups": tuple(task_settings["attributes"])} if args.task == "attributes" and "attributes" in task_settings else {}),
+                **({"groups": tuple(task_settings["attributes"])} if args.task == "attributes" and task_settings.get("attributes") is not None else {}),
             )
             preparation_seconds = perf_counter() - started
-            if args.task == "attributes" and "attributes" not in task_settings:
+            if args.task == "attributes" and task_settings.get("attributes") is None:
                 task_settings["attributes"] = prepared.attributes
             if args.prepare_only:
                 serialized = json.dumps({
@@ -117,7 +117,7 @@ def main(argv: list[str] | None = None) -> int:
                     args.output.parent.mkdir(parents=True, exist_ok=True)
                     args.output.write_text(serialized + "\n")
                 return 0
-        elif args.task == "attributes" and "attributes" not in task_settings:
+        elif args.task == "attributes" and task_settings.get("attributes") is None:
             task_settings["attributes"] = OVADDataset(
                 args.data, args.images, split=args.split, max_samples=args.max_samples,
             ).attributes

@@ -7,7 +7,8 @@ See the [README](../README.md) for setup and the
 ## Operators
 
 Operators accept a vision.ImagePayload and return a dedicated dataclass. Ground
-also accepts an `(image, target)` tuple; other settings are constructor-only.
+also accepts an `(image, target)` tuple; Attributes accepts `(image, attributes)`.
+Other settings are constructor-only.
 A model is a ModelBackend, normally a PydanticAIBackend wrapping an initialized
 PydanticAI Model.
 
@@ -17,7 +18,7 @@ PydanticAI Model.
 | ClassifyMultiLabel(model, labels, *, context=None) | `ml_pipes.vision.ImagePayload` | ClassificationResult | Zero or more independently applicable labels |
 | Detect(model, labels, *, context=None) | `ml_pipes.vision.ImagePayload` | DetectionResult | All matching instances; empty detections are valid |
 | Ground(model, target=None, *, context=None, geometry="box") | ImagePayload or tuple[ImagePayload, str] | GroundingResult | Resolve one target as a box or point; found, not_found or ambiguous |
-| Attributes(model, attributes, *, context=None) | `ml_pipes.vision.ImagePayload` | AttributePredictionResult | One allowed value for each requested attribute |
+| Attributes(model, attributes=None, *, context=None) | ImagePayload or tuple[ImagePayload, attribute mapping] | AttributePredictionResult | One allowed value for each requested attribute |
 
 Labels are a sequence of distinct nonempty names or a mapping from names to
 descriptions. A bare string is not a vocabulary. Attribute definitions map
@@ -59,6 +60,29 @@ visible body center (torso for people). The model returns normalized x/y in
 For a found response, only the selected location is present. For `not_found`
 and `ambiguous`, both `box` and `point` are null. Point schemas contain only
 `status` and `point`; unsupported geometry values raise ValueError.
+
+Attributes follows the same call-override pattern:
+
+```python
+fixed = Attributes(backend, attributes={"material": ["wood", "metal"]})
+fixed(image)
+fixed((image, {"color": {"blue": "A blue surface", "red": ""}}))
+
+dynamic = Attributes(backend)
+dynamic((image, {"material": ["wood", "metal"]}))
+```
+
+A call mapping replaces the complete constructor schema for that request;
+image-only calls use the constructor choices. Missing choices and invalid or
+empty call mappings raise ValueError before inference, including when a
+constructor schema exists. Context remains the constructor setting. Each tuple
+call builds its own instructions and response schema without changing stored
+attributes or the constructor's instructions/schema, including on failures.
+
+Pipeline passes `(image, attributes)` as one argument. Without constructor
+choices, the input contract requires that tuple. With constructor choices, it
+accepts either an ImagePayload or the tuple. Attribute choices use the same
+sequence-or-description-mapping format at construction and per call.
 
 The [box_scale extension](design.md#box-configuration) remains planned.
 See the illustrated comparisons for
@@ -239,9 +263,13 @@ use neutral context for standard benchmark comparisons.
 
 `OVADDataset(annotations, images, *, split="val", groups=None, max_samples=None)`
 reads local `ovad2000.json` and COCO val2017 images. Its `.attributes` supplies
-canonical choices and synonym descriptions. The task's attribute keys select
-groups and must retain each selected group's complete vocabulary. Schema and
-context stay fixed across samples; only known categorical targets are scored.
+canonical choices and synonym descriptions. `Attributes(backend).val(data="ovad",
+max_samples=100)` prepares data and discovers the evaluation schema internally.
+The validator passes the same complete attribute mapping with every crop;
+the task's stored attributes remain `None`. Configured task attribute keys select
+groups and must retain each selected group's complete vocabulary; descriptions
+are preserved. Evaluation schema and context stay fixed across samples; only
+known categorical targets are scored.
 Selection and clipping/cropping happen in the data layer. The default uses
 22 groups, excluding color and clothes color, and retains 14,072 eligible objects
 from 14,300 source objects in 2,000 images. `test` and its `val` alias name the

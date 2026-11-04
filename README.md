@@ -61,9 +61,10 @@ result = operator(image)  # image is an ImagePayload
 ```
 
 Operators accept an ImagePayload and return their dedicated result. Ground also
-accepts `task((image, target))` to supply or override its optional constructor target;
-other settings are configured at construction. Backends can be shared; calls
-have independent histories.
+accepts `task((image, target))` to supply or override its optional constructor
+target. Attributes accepts `task((image, attributes))` to supply or override its
+optional attribute choices. Other settings are configured at construction.
+Backends can be shared; calls have independent histories.
 
 For a local OpenAI-compatible inference server, initialize a PydanticAI model
 in application code:

@@ -21,6 +21,7 @@ from ml_pipes.vlm import (
     InvalidModelResponseError, ModelExecutionError, ModelResponse,
     PydanticAIBackend,
 )
+from ml_pipes.vlm.ops import AttributeChoices
 
 
 @pytest.fixture(autouse=True)
@@ -307,6 +308,20 @@ def test_attributes_reject_missing_extra_or_invalid_values(image, values):
 
 
 @pytest.mark.parametrize("mode", ["prompted", "native", "tool"])
+def test_dynamic_attributes_use_current_schema_with_fresh_backend_history(image, mode):
+    backend, calls = backend_for(
+        {"attributes": {"material": "wood"}},
+        {"attributes": {"size": "large"}},
+        output_mode=mode,
+    )
+    task = Attributes(backend)
+    assert task((image, {"material": ["wood", "metal"]})).attributes == {"material": "wood"}
+    assert task((image, {"size": ["small", "large"]})).attributes == {"size": "large"}
+    assert [len(messages) for messages, _ in calls] == [1, 1]
+    assert task.attributes is task._spec is task._instruction is None
+
+
+@pytest.mark.parametrize("mode", ["prompted", "native", "tool"])
 def test_output_modes_validate_task_constraints(image, mode):
     backend, calls = backend_for({"labels": ["clean"]}, output_mode=mode)
     assert Classify(backend, ["clean", "dirty"])(image).labels == ("clean",)
@@ -366,9 +381,11 @@ def test_operator_runs_and_validates_in_pipeline(image, task, payload, result_ty
     backend, _ = backend_for(payload)
     pipeline = Pipeline([task(backend)])
     contract = pipeline.validate(strict=True)
-    expected_input = (
-        ImagePayload | tuple[ImagePayload, str] if result_type is GroundingResult else ImagePayload
-    )
+    expected_input = ImagePayload
+    if result_type is GroundingResult:
+        expected_input = ImagePayload | tuple[ImagePayload, str]
+    elif result_type is AttributePredictionResult:
+        expected_input = ImagePayload | tuple[ImagePayload, AttributeChoices]
     assert contract.input_type == expected_input
     assert contract.output_type is result_type
     result = pipeline(image)
