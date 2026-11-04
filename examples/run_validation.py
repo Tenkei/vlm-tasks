@@ -1,4 +1,4 @@
-"""Validate a configured classification, detection, or grounding task."""
+"""Validate a configured classification, detection, grounding, or attributes task."""
 from __future__ import annotations
 
 import argparse
@@ -8,22 +8,22 @@ import sys
 from time import perf_counter
 
 from examples.run_bedrock import DEFAULT_CONFIG, TASKS, create_backend
-from ml_pipes.vlm.validation import DATASETS, DEFAULT_DATASETS, prepare_dataset
+from ml_pipes.vlm.validation import DATASETS, DEFAULT_DATASETS, OVADDataset, prepare_dataset
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--backend", choices=["bedrock", "transformers"], default="bedrock")
-    parser.add_argument("--task", choices=["classify", "detect", "ground"], required=True)
-    parser.add_argument("--data", help="Registered dataset name or local path; defaults: cifar10, coco128, refcocog")
-    parser.add_argument("--images", type=Path, help="Grounding COCO train2014 image directory")
+    parser.add_argument("--task", choices=["classify", "detect", "ground", "attributes"], required=True)
+    parser.add_argument("--data", help="Registered dataset name or local path; defaults: cifar10, coco128, refcocog, ovad")
+    parser.add_argument("--images", type=Path, help="Local grounding (COCO train2014) or OVAD (COCO val2017) image directory")
     parser.add_argument("--dataset", choices=["refcocog", "refcoco", "refcoco+"], help="Grounding dataset; default refcocog")
     parser.add_argument("--split", default="val")
     parser.add_argument("--cache-dir", type=Path, help="Dataset cache; defaults to VLM_TASKS_DATASETS_DIR or ~/.cache/vlm-tasks/datasets")
     parser.add_argument("--prepare-only", action="store_true", help="Prepare a registered dataset without loading a model or running inference")
-    parser.add_argument("--config", type=Path, help="Task settings JSON; named datasets default to their labels, local classify/detect to image_tasks.json, ground to empty settings")
+    parser.add_argument("--config", type=Path, help="Task settings JSON; attributes discovers the dataset schema, named classify/detect use dataset labels, local classify/detect use image_tasks.json, ground uses empty settings")
     parser.add_argument("--class-map", type=Path, help="JSON mapping of dataset class names to task labels")
-    parser.add_argument("--max-samples", type=int, help="Limit evaluated samples (expressions for grounding)")
+    parser.add_argument("--max-samples", type=int, help="Limit evaluated samples (expressions for grounding; eligible object crops for attributes)")
     parser.add_argument("--match-iou", type=float, help="Detection matching IoU; default 0.5")
     parser.add_argument("--verbose", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--model", help="Bedrock model ID or HF model/local directory; Transformers defaults to Qwen/Qwen3-VL-2B-Instruct")
@@ -68,14 +68,23 @@ def main(argv: list[str] | None = None) -> int:
             parser.error("Automatic grounding preparation supports refcocog; provide local --data and --images for other sources")
         if args.class_map is not None:
             parser.error("--class-map is not supported for grounding")
+    elif args.task == "attributes":
+        if args.images is None and not automatic:
+            parser.error("--images is required for local attributes data")
+        if automatic and args.images is not None:
+            parser.error("Automatic OVAD preparation supplies images; provide local --data with --images")
+        if args.dataset is not None:
+            parser.error("--dataset applies only to grounding")
+        if args.class_map is not None:
+            parser.error("--class-map is not supported for attributes")
     elif args.images is not None or args.dataset is not None:
-        parser.error("--images and --dataset apply only to grounding")
+        parser.error("--images applies only to grounding/attributes; --dataset applies only to grounding")
 
     try:
         task_settings = {}
-        if args.config is None and automatic and args.task != "ground":
+        if args.config is None and automatic and args.task in {"classify", "detect"}:
             task_settings = {"labels": list(DATASETS[args.data].names)}
-        elif args.config is not None or args.task != "ground":
+        elif args.config is not None or args.task in {"classify", "detect"}:
             config = json.loads((args.config or DEFAULT_CONFIG).read_text())
             if not isinstance(config, dict) or not isinstance(config.get(args.task), dict):
                 raise ValueError(f"Configuration must contain an object for task {args.task!r}")
@@ -90,20 +99,28 @@ def main(argv: list[str] | None = None) -> int:
             prepared = prepare_dataset(
                 args.data, split=args.split, max_samples=args.max_samples,
                 cache_dir=args.cache_dir, classes=classes,
+                **({"groups": tuple(task_settings["attributes"])} if args.task == "attributes" and "attributes" in task_settings else {}),
             )
             preparation_seconds = perf_counter() - started
+            if args.task == "attributes" and "attributes" not in task_settings:
+                task_settings["attributes"] = prepared.attributes
             if args.prepare_only:
                 serialized = json.dumps({
                     "dataset": prepared.dataset, "split": prepared.split,
                     "data": str(prepared.data),
                     "images": None if prepared.images is None else str(prepared.images),
                     "metadata": prepared.metadata, "preparation_seconds": preparation_seconds,
+                    "attributes": prepared.attributes,
                 }, indent=2)
                 print(serialized)
                 if args.output:
                     args.output.parent.mkdir(parents=True, exist_ok=True)
                     args.output.write_text(serialized + "\n")
                 return 0
+        elif args.task == "attributes" and "attributes" not in task_settings:
+            task_settings["attributes"] = OVADDataset(
+                args.data, args.images, split=args.split, max_samples=args.max_samples,
+            ).attributes
         started = perf_counter()
         if args.backend == "transformers":
             from examples.run_transformers import create_backend as create_transformers_backend
@@ -122,13 +139,15 @@ def main(argv: list[str] | None = None) -> int:
             settings["match_iou"] = args.match_iou
         if args.task == "ground":
             settings.update(images=args.images, dataset=args.dataset or "refcocog")
+        elif args.task == "attributes":
+            settings["images"] = args.images
         metrics = task.val(**settings)
     except Exception as exc:
         parser.exit(2, f"Validation failed: {exc}\n")
 
     report = {
         "metrics": metrics.results_dict,
-        "per_class": metrics.summary(),
+        "per_attribute" if args.task == "attributes" else "per_class": metrics.summary(),
         "failures": metrics.failures,
         "dataset_counts": metrics.dataset_counts,
         "dataset_metadata": getattr(metrics, "dataset_metadata", {}),
@@ -141,6 +160,11 @@ def main(argv: list[str] | None = None) -> int:
         "speed_ms_per_sample": metrics.speed,
         "elapsed_seconds": metrics.elapsed_seconds,
     }
+    if args.task == "attributes":
+        report.update(
+            protocol=metrics.dataset_metadata["protocol"],
+            selected_groups=list(task.attributes),
+        )
     if args.backend == "transformers":
         report.update(
             revision=args.revision, device=str(backend.model.weights.device),

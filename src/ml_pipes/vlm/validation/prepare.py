@@ -38,6 +38,7 @@ class PreparedDataset:
     images: Path | None
     names: tuple[str, ...]
     metadata: dict
+    attributes: dict[str, dict[str, str]] | None = None
 
 
 _CIFAR_NAMES = (
@@ -59,6 +60,7 @@ DATASETS = {
     "cifar10": DatasetInfo("classify", ("train", "val", "test"), _CIFAR_NAMES),
     "coco128": DatasetInfo("detect", ("train", "val"), _COCO_NAMES),
     "refcocog": DatasetInfo("ground", ("train", "val", "test")),
+    "ovad": DatasetInfo("attributes", ("test", "val")),
 }
 DEFAULT_DATASETS = {info.task: name for name, info in DATASETS.items()}
 
@@ -68,6 +70,9 @@ _COCO_URL = "https://github.com/ultralytics/assets/releases/download/v0.0.0/coco
 _COCO_CHECKSUM = "sha256:61e5e3028863d8ffc3b81d6a514603954889f0edd5e4b44c4ce60b2da99aeb8e"
 _MDETR_URL = "https://zenodo.org/records/4729015/files/mdetr_annotations.tar.gz?download=1"
 _COCO_IMAGE_URL = "https://s3.amazonaws.com/images.cocodataset.org/train2014/"
+_OVAD_URL = "https://lmb.informatik.uni-freiburg.de/resources/datasets/ovad.zip"
+_OVAD_CHECKSUM = "sha256:1716fc5216dd040c3803ca7d91444140d02bc6a98f40a60b85f16c97174dc1ec"
+_OVAD_IMAGE_URL = "https://s3.amazonaws.com/images.cocodataset.org/val2017/"
 _FORMAT_VERSION = 1
 
 
@@ -159,6 +164,7 @@ def _cached(path: Path, cache: Path) -> tuple[PreparedDataset | None, set[Path]]
         return PreparedDataset(
             record["dataset"], record["split"], data, images,
             tuple(record["names"]), record["metadata"],
+            record.get("attributes"),
         ), set()
     except (OSError, ValueError, KeyError, TypeError):
         return None, set()
@@ -321,9 +327,65 @@ def _prepare_ground(root: Path, output: Path, split: str, limit, classes, bad):
     }
 
 
+def _prepare_ovad(root: Path, output: Path, split: str, limit, groups, bad):
+    from .data import OVADDataset, OVAD_PROTOCOL, _ovad_selection
+
+    archive = _download(_OVAD_URL, root / "sources" / "ovad.zip", checksum=_OVAD_CHECKSUM)
+    with ZipFile(archive) as source:
+        if source.namelist().count("ovad2000.json") != 1:
+            raise ValueError("OVAD archive must contain exactly one ovad2000.json")
+        content = source.read("ovad2000.json")
+    original = json.loads(content)
+    attributes, samples, counts = _ovad_selection(original, groups, limit)
+    if not samples:
+        raise ValueError("No eligible OVAD objects for the selected groups")
+    selected_ids = {sample["sample_id"] for sample in samples}
+    image_ids = {sample["image_id"] for sample in samples}
+    subset = {
+        **original,
+        "images": [image for image in original["images"] if image["id"] in image_ids],
+        "annotations": [item for item in original["annotations"] if item["id"] in selected_ids],
+    }
+    dimensions = {}
+    for image in subset["images"]:
+        filename = image["file_name"]
+        if not re.fullmatch(r"[0-9]{12}\.jpg", filename):
+            raise ValueError(f"Invalid COCO val2017 filename: {filename!r}")
+        size = (image["width"], image["height"])
+        if filename in dimensions and dimensions[filename] != size:
+            raise ValueError(f"Inconsistent OVAD image dimensions: {filename}")
+        dimensions[filename] = size
+    images = root / "images" / "val2017"
+    files = []
+    for filename, size in dimensions.items():
+        path = images / filename
+        _download(_OVAD_IMAGE_URL + filename, path, force=path in bad)
+        decoded = cv2.imread(str(path))
+        if decoded is None or (decoded.shape[1], decoded.shape[0]) != size:
+            _download(_OVAD_IMAGE_URL + filename, path, force=True)
+            decoded = cv2.imread(str(path))
+            if decoded is None or (decoded.shape[1], decoded.shape[0]) != size:
+                raise ValueError(f"Downloaded image dimensions differ from OVAD annotation: {filename}")
+        files.append(path)
+    data = output / "ovad2000.json"
+    _write_json(data, subset)
+    OVADDataset(data, images, split=split, groups=groups)
+    files.append(data)
+    return data, images, (), files, {
+        "source_url": _OVAD_URL, "archive_checksum": _OVAD_CHECKSUM,
+        "source_annotation_sha256": hashlib.sha256(content).hexdigest(),
+        "image_url_prefix": _OVAD_IMAGE_URL, "source_split": "test",
+        "split_note": "val is an alias for the published OVAD test benchmark",
+        "protocol": OVAD_PROTOCOL, "selected_groups": list(attributes),
+        "selection": "Source JSON object annotation order, after area and categorical target filtering",
+        "sample_ids": [sample["sample_id"] for sample in samples], "counts": counts,
+    }, attributes
+
+
 def prepare_dataset(
     dataset: str, *, split: str = "val", max_samples: int | None = None,
     cache_dir: str | Path | None = None, classes: tuple[str, ...] | None = None,
+    groups: tuple[str, ...] | None = None,
 ) -> PreparedDataset:
     """Download/cache a supported split and return paths for existing loaders.
 
@@ -331,6 +393,8 @@ def prepare_dataset(
     ``classes`` selects CIFAR-10 classes before the limit, matching class-filtered
     validation. CIFAR-10/COCO128 require their shared source archives; RefCOCOg
     streams a shared annotation archive and fetches only referenced images.
+    OVAD ``groups`` selects categorical groups (all 22 by default) before
+    filtering/limiting objects and fetching distinct COCO val2017 images.
     """
     if not isinstance(dataset, str) or dataset not in DATASETS:
         raise ValueError(f"Supported downloadable datasets: {', '.join(DATASETS)}")
@@ -343,17 +407,31 @@ def prepare_dataset(
         if dataset != "cifar10" or not classes or any(name not in info.names for name in classes):
             raise ValueError("classes must contain supported CIFAR-10 class names")
         classes = tuple(sorted(set(classes)))
+    if groups is not None:
+        from .data import _ovad_groups
+
+        if dataset != "ovad":
+            raise ValueError("groups applies only to OVAD preparation")
+        groups = _ovad_groups(groups)
     location = cache_dir or os.environ.get("VLM_TASKS_DATASETS_DIR") or Path.home() / ".cache" / "vlm-tasks" / "datasets"
     cache = Path(location).expanduser().resolve()
     class_key = "all" if classes is None else hashlib.sha256(json.dumps(classes).encode()).hexdigest()[:16]
+    if groups is not None:
+        from .data import OVAD_GROUPS
+
+        class_key = "all" if groups == OVAD_GROUPS else hashlib.sha256(json.dumps(groups).encode()).hexdigest()[:16]
     root = cache / dataset
     output = root / "prepared" / split / ("all" if max_samples is None else str(max_samples)) / class_key
     manifest = output / "prepared.json"
     cached, bad = _cached(manifest, cache)
     if cached is not None:
         return cached
-    preparer = {"cifar10": _prepare_cifar, "coco128": _prepare_coco, "refcocog": _prepare_ground}[dataset]
-    data, images, names, files, metadata = preparer(root, output, split, max_samples, classes, bad)
+    attributes = None
+    if dataset == "ovad":
+        data, images, names, files, metadata, attributes = _prepare_ovad(root, output, split, max_samples, groups, bad)
+    else:
+        preparer = {"cifar10": _prepare_cifar, "coco128": _prepare_coco, "refcocog": _prepare_ground}[dataset]
+        data, images, names, files, metadata = preparer(root, output, split, max_samples, classes, bad)
     if not files:
         raise ValueError(f"No samples available in {dataset} split {split!r}")
     metadata = {
@@ -364,7 +442,7 @@ def prepare_dataset(
         "format_version": _FORMAT_VERSION, "dataset": dataset, "split": split,
         "data": str(data.relative_to(cache)),
         "images": None if images is None else str(images.relative_to(cache)),
-        "names": names, "metadata": metadata,
+        "names": names, "metadata": metadata, "attributes": attributes,
         "files": {str(path.relative_to(cache)): _hash(path) for path in files},
     })
-    return PreparedDataset(dataset, split, data, images, names, metadata)
+    return PreparedDataset(dataset, split, data, images, names, metadata, attributes)

@@ -10,9 +10,9 @@ from time import perf_counter
 import numpy as np
 
 from ..errors import InvalidModelResponseError, ModelExecutionError
-from ..types import ClassificationResult, DetectionResult, GroundingResult
-from .data import ClassificationDataLoader, ClassificationDataset, DataLoader, RefCOCODataset, YOLODataset
-from .metrics import ClassificationMetrics, DetectionMetrics, GroundingMetrics
+from ..types import AttributePredictionResult, ClassificationResult, DetectionResult, GroundingResult
+from .data import ClassificationDataLoader, ClassificationDataset, DataLoader, OVADDataset, RefCOCODataset, YOLODataset
+from .metrics import AttributesMetrics, ClassificationMetrics, DetectionMetrics, GroundingMetrics
 from .prepare import DATASETS, prepare_dataset
 
 
@@ -21,8 +21,9 @@ class BaseValidator:
 
     Override dataset construction and metric methods for another task or data
     source. A supplied dataloader must expose its dataset through ``.dataset``;
-    the dataset's ``names`` maps class IDs to names. Loaders yield the sample
-    dictionaries documented by the concrete dataset classes.
+    the dataset's ``names`` maps class IDs to names (or ``attributes`` defines
+    categorical choices). Loaders yield the sample dictionaries documented by
+    the concrete dataset classes.
     """
 
     default_dataset: str | None = None
@@ -134,6 +135,7 @@ class BaseValidator:
         self.prepared_dataset = prepare_dataset(
             self.data, split=self.split, max_samples=self.max_samples,
             cache_dir=self.cache_dir, classes=classes,
+            **({"groups": tuple(self.task.attributes)} if task == "attributes" else {}),
         )
         return self.prepared_dataset
 
@@ -154,6 +156,73 @@ class BaseValidator:
             name: elapsed * 1000 / self.metrics.seen for name, elapsed in self._timings.items()
         }
         self.metrics.elapsed_seconds = perf_counter() - self._started
+
+
+class AttributesValidator(BaseValidator):
+    """Evaluate a fixed Attributes schema against categorical object targets.
+
+    Built-in OVAD data owns filtering/cropping. Custom loaders must expose
+    ``dataset.attributes`` and yield already selected crops with known targets.
+    """
+
+    default_dataset = "ovad"
+
+    def __init__(self, *args, images=None, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        if self._requested_class_map is not None:
+            raise ValueError("class_map is not supported for attributes validation")
+        automatic = isinstance(self.data, str) and self.data in DATASETS
+        if automatic and images is not None:
+            raise ValueError("Automatic OVAD preparation supplies images; use local data with images")
+        if self._provided_dataloader is None and images is None and not automatic:
+            raise ValueError("Attributes validation requires images or a supplied dataloader")
+        self.images = images
+
+    def build_dataset(self):
+        prepared = self.prepare_named_dataset("attributes")
+        return OVADDataset(
+            self.data if prepared is None else prepared.data,
+            self.images if prepared is None else prepared.images,
+            split=self.split, groups=tuple(self.task.attributes), max_samples=self.max_samples,
+        )
+
+    def _align_classes(self) -> None:
+        from ..ops import _choices
+
+        schema = getattr(self.dataset, "attributes", None)
+        if not isinstance(schema, Mapping) or not schema:
+            raise ValueError("Attributes datasets must expose a nonempty attributes schema")
+        missing = set(self.task.attributes) - schema.keys()
+        if missing:
+            raise ValueError(f"Unsupported dataset attribute groups: {sorted(missing)}")
+        self.attributes = {}
+        for group, choices in self.task.attributes.items():
+            vocabulary = _choices(schema[group])
+            if set(choices) != set(vocabulary):
+                raise ValueError(f"Attribute choices for {group} must match the complete dataset vocabulary")
+            self.attributes[group] = vocabulary
+
+    def init_metrics(self) -> None:
+        self.metrics = AttributesMetrics(self.attributes)
+        self.metrics.dataset_metadata = dict(getattr(self.dataset, "metadata", {}))
+
+    def update_metrics(self, prediction, sample: dict) -> None:
+        if prediction is not None and not isinstance(prediction, AttributePredictionResult):
+            raise TypeError("AttributesValidator requires AttributePredictionResult outputs")
+        self.metrics.update(
+            sample["attributes"], None if prediction is None else prediction.attributes,
+            sample.get("image_id", str(sample["im_file"])),
+        )
+
+    def finalize_metrics(self) -> None:
+        super().finalize_metrics()
+        if self.prepared_dataset is not None:
+            self.metrics.dataset_counts = dict(self.prepared_dataset.metadata["counts"])
+        self.metrics.dataset_counts.update(
+            evaluated_objects=self.metrics.seen,
+            evaluated_attribute_decisions=self.metrics.attribute_decisions,
+            evaluated_images=self.metrics.unique_images,
+        )
 
 
 class ClassificationValidator(BaseValidator):

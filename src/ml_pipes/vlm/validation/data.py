@@ -1,4 +1,4 @@
-"""Local classification, detection, and referring expression dataset readers."""
+"""Local classification, detection, referring expression, and OVAD readers."""
 from __future__ import annotations
 
 import json
@@ -7,7 +7,7 @@ from pathlib import Path
 
 import cv2
 import numpy as np
-from ml_pipes.vision import Decode, LoadFile
+from ml_pipes.vision import Decode, ImagePayload, LoadFile
 
 _IMAGE_SUFFIXES = {".bmp", ".jpeg", ".jpg", ".png", ".tif", ".tiff", ".webp"}
 
@@ -326,6 +326,191 @@ class RefCOCODataset:
                 f"expected {sample['image_size']}, got {image.size}"
             )
         return {**sample, "img": image, "cls": sample["cls"].copy(), "bboxes": sample["bboxes"].copy()}
+
+
+OVAD_GROUPS = (
+    "cleanliness", "clothes pattern", "color quantity", "cooked", "face expression",
+    "gender", "group", "hair color", "hair length", "hair tone", "hair type", "length",
+    "material", "maturity", "optical property", "order", "pattern", "position", "size",
+    "state", "texture", "tone",
+)
+_OVAD_EXCLUDED = {"color", "clothes color"}
+OVAD_PROTOCOL = "OVAD categorical object attributes (22 groups; excludes color and clothes color); not official mAP"
+
+
+def _ovad_groups(groups) -> tuple[str, ...] | None:
+    if groups is None:
+        return None
+    if isinstance(groups, (str, bytes)):
+        raise ValueError("OVAD groups must be a nonempty collection of supported group names")
+    groups = tuple(groups)
+    if not groups or any(not isinstance(group, str) or group not in OVAD_GROUPS for group in groups):
+        raise ValueError(f"Unsupported OVAD groups; expected a subset of {OVAD_GROUPS}")
+    return tuple(sorted(set(groups)))
+
+
+def _ovad_index(data: dict, key: str) -> dict[int, dict]:
+    records = data.get(key)
+    if not isinstance(records, list) or not records:
+        raise ValueError(f"OVAD annotations require a nonempty {key} list")
+    indexed = {}
+    for item in records:
+        if not isinstance(item, dict) or type(item.get("id")) is not int or item["id"] < 0:
+            raise ValueError(f"OVAD {key} require nonnegative integer IDs")
+        if item["id"] in indexed:
+            raise ValueError(f"Duplicate OVAD {key} ID: {item['id']}")
+        indexed[item["id"]] = item
+    return indexed
+
+
+def _ovad_selection(data: dict, groups=None, max_samples=None):
+    """Validate source annotations and select objects before image I/O."""
+    if not isinstance(data, dict):
+        raise ValueError("Expected an OVAD annotation mapping")
+    groups = _ovad_groups(groups)
+    values = _ovad_index(data, "attributes")
+    if set(values) != set(range(len(values))):
+        raise ValueError("OVAD attribute IDs must be consecutive from zero for att_vec")
+    schema, indices = {}, {}
+    for value_id, value in sorted(values.items()):
+        group, name = value.get("type"), value.get("name")
+        if not isinstance(group, str) or group not in {*OVAD_GROUPS, *_OVAD_EXCLUDED}:
+            raise ValueError(f"Unsupported OVAD attribute type: {group!r}")
+        if not isinstance(name, str) or not name.startswith(group + ":"):
+            raise ValueError(f"Invalid OVAD attribute name: {name!r}")
+        description = name.split(":", 1)[1]
+        synonyms = description.split("/")
+        if any(not synonym.strip() or synonym != synonym.strip() for synonym in synonyms):
+            raise ValueError(f"Invalid OVAD attribute synonyms: {name!r}")
+        if group in _OVAD_EXCLUDED:
+            continue
+        label = synonyms[0]
+        choices = schema.setdefault(group, {})
+        if label in choices:
+            raise ValueError(f"Duplicate OVAD canonical label in {group}: {label}")
+        choices[label] = description
+        indices.setdefault(group, []).append((value_id, label))
+    if not schema:
+        raise ValueError("No supported OVAD attribute groups")
+    if groups is not None and set(groups) - schema.keys():
+        raise ValueError(f"Missing OVAD groups: {sorted(set(groups) - schema.keys())}")
+    selected_schema = {group: choices for group, choices in schema.items() if groups is None or group in groups}
+    images = _ovad_index(data, "images")
+    categories = _ovad_index(data, "categories")
+    annotations = _ovad_index(data, "annotations")
+    for image in images.values():
+        if any(type(image.get(key)) is not int or image[key] <= 0 for key in ("width", "height")):
+            raise ValueError(f"Invalid OVAD image dimensions: {image['id']}")
+        filename = image.get("file_name")
+        if not isinstance(filename, str) or not filename.strip():
+            raise ValueError(f"Invalid OVAD image filename: {image['id']}")
+    selected = []
+    small = unscored = eligible = 0
+    for annotation in annotations.values():
+        sample_id = annotation["id"]
+        image_id, category_id = annotation.get("image_id"), annotation.get("category_id")
+        if type(image_id) is not int or image_id not in images:
+            raise ValueError(f"Orphan OVAD image join for annotation {sample_id}")
+        if type(category_id) is not int or category_id not in categories:
+            raise ValueError(f"Unknown OVAD category for annotation {sample_id}")
+        vector = annotation.get("att_vec")
+        if not isinstance(vector, list) or len(vector) != len(values) or any(
+            type(value) is not int or value not in (-1, 0, 1) for value in vector
+        ):
+            raise ValueError(f"Invalid OVAD att_vec for annotation {sample_id}")
+        targets = {}
+        for group, entries in indices.items():
+            positives = [label for index, label in entries if vector[index] == 1]
+            if len(positives) > 1:
+                raise ValueError(f"Multiple positive OVAD values for {group} in annotation {sample_id}")
+            if positives and group in selected_schema:
+                targets[group] = positives[0]
+        area, bbox = annotation.get("area"), annotation.get("bbox")
+        if type(area) not in (int, float) or not np.isfinite(area) or area < 0:
+            raise ValueError(f"Invalid OVAD area for annotation {sample_id}")
+        if not isinstance(bbox, list) or len(bbox) != 4 or any(type(v) not in (int, float) for v in bbox):
+            raise ValueError(f"Invalid OVAD box for annotation {sample_id}: expected numeric xywh")
+        x, y, width, height = bbox
+        edges = np.array([x, y, x + width, y + height], dtype=np.float64)
+        if not np.isfinite(edges).all() or width <= 0 or height <= 0:
+            raise ValueError(f"Invalid OVAD box for annotation {sample_id}: expected finite positive dimensions")
+        image = images[image_id]
+        size = (image["width"], image["height"])
+        clipped = np.clip(edges, 0, [*size, *size])
+        crop_box = (*np.floor(clipped[:2]).astype(int), *np.ceil(clipped[2:]).astype(int))
+        if crop_box[2] <= crop_box[0] or crop_box[3] <= crop_box[1]:
+            raise ValueError(f"Empty clipped OVAD box for annotation {sample_id}")
+        if area < 50:
+            small += 1
+        elif not targets:
+            unscored += 1
+        else:
+            eligible += 1
+            if max_samples is None or len(selected) < max_samples:
+                selected.append({
+                    "sample_id": sample_id, "image_id": image_id, "category_id": category_id,
+                    "file_name": image["file_name"], "image_size": size,
+                    "bbox": list(bbox), "crop_box": tuple(int(v) for v in crop_box), "attributes": targets,
+                })
+    counts = {
+        "source_objects": len(annotations), "source_images": len(images),
+        "excluded_small_objects": small, "excluded_unscored_objects": unscored,
+        "excluded_objects": small + unscored, "eligible_objects": eligible,
+        "prepared_objects": len(selected), "prepared_images": len({s["image_id"] for s in selected}),
+    }
+    return selected_schema, selected, counts
+
+
+class OVADDataset:
+    """Read OVAD categorical targets and return clipped object crops.
+
+    ``test`` and ``val`` name the same published benchmark. ``groups`` selects
+    complete categorical vocabularies; absent positives are unscored. Filtering
+    (area >=50 and at least one selected target) precedes ``max_samples``.
+    ``attributes`` contains constructor-compatible canonical choices/descriptions.
+    """
+
+    def __init__(
+        self, annotations: str | Path, images: str | Path, *, split: str = "val",
+        groups=None, max_samples: int | None = None,
+    ) -> None:
+        if split not in ("test", "val"):
+            raise ValueError("OVAD supports test and its val alias; training splits are unsupported")
+        if max_samples is not None and (type(max_samples) is not int or max_samples < 1):
+            raise ValueError("max_samples must be a positive integer or None")
+        path = Path(annotations).expanduser().resolve()
+        image_root = Path(images).expanduser().resolve()
+        with path.open() as stream:
+            self.attributes, selected, self.counts = _ovad_selection(json.load(stream), groups, max_samples)
+        if not image_root.is_dir():
+            raise FileNotFoundError(f"OVAD image directory not found: {image_root}")
+        self.samples = []
+        for sample in selected:
+            image = _resolve(sample["file_name"], image_root)
+            if not image.is_relative_to(image_root):
+                raise ValueError(f"OVAD image path escapes image directory: {image}")
+            if not image.is_file():
+                raise FileNotFoundError(f"OVAD image not found: {image}")
+            self.samples.append({**sample, "im_file": str(image)})
+        if not self.samples:
+            raise ValueError("No eligible OVAD objects for the selected groups")
+        self.metadata = {
+            "dataset": "ovad", "protocol": OVAD_PROTOCOL, "split": split, "source_split": "test",
+            "split_note": "val is an alias for the published OVAD test benchmark",
+            "selected_groups": list(self.attributes), "annotations": str(path), "images": str(image_root),
+        }
+
+    def __len__(self) -> int:
+        return len(self.samples)
+
+    def __getitem__(self, index: int) -> dict:
+        sample = self.samples[index]
+        image = _load_image(sample["im_file"])
+        if image.size != sample["image_size"]:
+            raise ValueError(f"Image dimensions differ from OVAD annotation {sample['sample_id']}")
+        x1, y1, x2, y2 = sample["crop_box"]
+        crop = ImagePayload(np.ascontiguousarray(image.array[y1:y2, x1:x2]), image.color_space, image.layout)
+        return {**sample, "img": crop, "bbox": list(sample["bbox"]), "attributes": dict(sample["attributes"])}
 
 
 class DataLoader:

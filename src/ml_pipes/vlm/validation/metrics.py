@@ -1,7 +1,7 @@
 """Metrics for task outputs without confidence scores."""
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Literal
 
@@ -41,6 +41,105 @@ class _RunMetrics:
             "samples": self.seen,
             "failures": len(self.failures),
             "failure_rate": self.failure_rate,
+        }
+
+
+class AttributesMetrics(_RunMetrics):
+    """Categorical scoring masked to known targets, with one matrix per group.
+
+    Matrix rows and columns follow ``attributes[group]``; the final column is
+    reserved for failed calls. Predictions on unscored fields add no support.
+    ``summary()`` reports all choices, including those absent from the run.
+    """
+
+    def __init__(self, attributes: Mapping[str, Sequence[str] | Mapping[str, str]]) -> None:
+        if not isinstance(attributes, Mapping):
+            raise ValueError("Metric attributes must be a nonempty mapping")
+        super().__init__(tuple(attributes))
+        self.attributes = {}
+        for group, choices in attributes.items():
+            if isinstance(choices, (str, bytes)) or not isinstance(choices, (Mapping, Sequence)):
+                raise ValueError("Attribute choices must be a sequence or mapping")
+            self.attributes[group] = _RunMetrics(tuple(choices)).names
+        self._ids = {group: {label: i for i, label in enumerate(choices)} for group, choices in self.attributes.items()}
+        self.confusion_matrices = {
+            group: np.zeros((len(choices), len(choices) + 1), dtype=np.int64)
+            for group, choices in self.attributes.items()
+        }
+        self._images = set()
+
+    def update(self, targets: Mapping[str, str], prediction: Mapping[str, str] | None, image_id) -> None:
+        if not isinstance(targets, Mapping) or not targets or set(targets) - self.attributes.keys():
+            raise ValueError("Attribute targets must be a nonempty subset of the configured groups")
+        for group, target in targets.items():
+            if not isinstance(target, str) or target not in self._ids[group]:
+                raise ValueError(f"Unknown attribute target for {group}: {target!r}")
+        if prediction is not None:
+            if not isinstance(prediction, Mapping) or set(prediction) != self.attributes.keys():
+                raise ValueError("Attribute predictions must contain every configured group exactly once")
+            for group, value in prediction.items():
+                if not isinstance(value, str) or value not in self._ids[group]:
+                    raise ValueError(f"Unsupported attribute prediction for {group}: {value!r}")
+        for group, target in targets.items():
+            column = len(self._ids[group]) if prediction is None else self._ids[group][prediction[group]]
+            self.confusion_matrices[group][self._ids[group][target], column] += 1
+        self.seen += 1
+        self._images.add(image_id)
+
+    @property
+    def attribute_decisions(self) -> int:
+        return sum(int(matrix.sum()) for matrix in self.confusion_matrices.values())
+
+    @property
+    def unique_images(self) -> int:
+        return len(self._images)
+
+    @property
+    def accuracy(self) -> float | None:
+        correct = sum(int(np.trace(matrix[:, :-1])) for matrix in self.confusion_matrices.values())
+        return correct / self.attribute_decisions if self.attribute_decisions else None
+
+    def summary(self) -> list[dict]:
+        result = []
+        for group, choices in self.attributes.items():
+            matrix = self.confusion_matrices[group]
+            support = int(matrix.sum())
+            values, active_f1 = [], []
+            for index, label in enumerate(choices):
+                tp = int(matrix[index, index])
+                target_support = int(matrix[index].sum())
+                prediction_support = int(matrix[:, index].sum())
+                scores = _ratios(tp, prediction_support - tp, target_support - tp)
+                if target_support or prediction_support:
+                    active_f1.append(scores["f1"])
+                values.append({
+                    "value": label, "support": target_support, "prediction_support": prediction_support,
+                    **(scores if support else dict.fromkeys(scores)),
+                })
+            result.append({
+                "attribute": group, "support": support,
+                "accuracy": int(np.trace(matrix[:, :-1])) / support if support else None,
+                "macro_f1": sum(active_f1) / len(active_f1) if active_f1 else None,
+                "values": values,
+            })
+        return result
+
+    @property
+    def mean_attribute_accuracy(self) -> float | None:
+        scores = [group["accuracy"] for group in self.summary() if group["support"]]
+        return sum(scores) / len(scores) if scores else None
+
+    @property
+    def macro_f1(self) -> float | None:
+        scores = [group["macro_f1"] for group in self.summary() if group["support"]]
+        return sum(scores) / len(scores) if scores else None
+
+    @property
+    def results_dict(self) -> dict[str, int | float | None]:
+        return {
+            **self._run_results(), "attribute_decisions": self.attribute_decisions,
+            "unique_images": self.unique_images, "accuracy": self.accuracy,
+            "mean_attribute_accuracy": self.mean_attribute_accuracy, "macro_f1": self.macro_f1,
         }
 
 

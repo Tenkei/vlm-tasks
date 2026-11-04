@@ -122,8 +122,9 @@ for adapter details, supported models and reuse of already-loaded objects.
 
 ## Dataset validation
 
-[run_validation.py](run_validation.py) evaluates classification, detection and
-box or point grounding with Bedrock (default) or local Transformers weights.
+[run_validation.py](run_validation.py) evaluates classification, detection,
+box or point grounding, and categorical object attributes with Bedrock (default)
+or local Transformers weights.
 Install the backend dependencies described above. Default datasets download
 automatically; see the [validation guide](../docs/validation.md) for defaults
 and custom local data.
@@ -154,6 +155,25 @@ python -m examples.run_validation \
   --retries 0 --max-tokens 4096 --output /tmp/grounding10.json
 ```
 
+Attributes with automatic OVAD schema discovery:
+
+```bash
+python -m examples.run_validation \
+  --task attributes --max-samples 100 \
+  --model us.amazon.nova-pro-v1:0 --profile YOUR_PROFILE --region us-east-1
+```
+
+Prepare OVAD and print the constructor-compatible schema without loading a model:
+
+```bash
+python -m examples.run_validation --task attributes --prepare-only --max-samples 100
+```
+
+Use local OVAD annotations with `--data /datasets/ovad/ovad2000.json
+--images /datasets/coco/val2017`. The default `--split val` aliases `test`;
+training splits are unsupported. The runner reports the selected groups and
+categorical protocol, which differs from official OVAD mAP.
+
 ### Runner options and configuration
 
 This example script wraps the Python validation API. Its CLI flags, configuration
@@ -163,16 +183,17 @@ and custom data formats.
 
 | Option | Purpose and default |
 |---|---|
-| `--task` | Required: `classify`, `detect`, or `ground` |
+| `--task` | Required: `classify`, `detect`, `ground`, or `attributes` |
 | `--backend`, `--model` | Bedrock by default, requiring a model ID; Transformers defaults to `Qwen/Qwen3-VL-2B-Instruct` |
 | `--data` | Registered dataset name or local path; omitted uses the task default |
-| `--split`, `--max-samples` | `val` and no limit; limits images or grounding expressions |
+| `--split`, `--max-samples` | `val` and no limit; limits images, grounding expressions, or eligible object crops |
 | `--cache-dir` | Overrides `VLM_TASKS_DATASETS_DIR` and `~/.cache/vlm-tasks/datasets` |
 | `--prepare-only` | Prepare a registered dataset without loading a model or running inference |
 | `--config` | JSON task constructor settings; defaults described below |
 | `--class-map` | JSON file mapping dataset names to task labels; classification/detection only |
 | `--match-iou` | Detection matching threshold; default `0.5` |
-| `--images`, `--dataset` | Local grounding image directory and annotation convention; dataset defaults to `refcocog` |
+| `--images` | Required for local grounding or OVAD images; automatic preparation supplies images |
+| `--dataset` | Local grounding annotation convention; defaults to `refcocog` |
 | `--output-mode`, `--retries`, `--max-tokens` | Defaults: `prompted`, `0` correction attempts, `4096` generated tokens per request |
 | `--output`, `--no-verbose` | Save the JSON report; disable progress and aggregate score logging on stderr |
 
@@ -186,7 +207,17 @@ Without `--config`, registered classification/detection datasets use all dataset
 labels; local classification/detection data uses [image_tasks.json](image_tasks.json),
 so supply matching settings when needed. Grounding defaults to empty task settings
 and gets targets from dataset expressions. Explicit configs retain their labels
-and context. For point grounding, pass `--config /path/to/point.json` containing:
+and context. Attributes discovers all supported groups and their complete choices
+from named or local data when no schema is configured. An explicit `attributes`
+schema selects groups and retains its descriptions/context; every selected group
+must contain the complete dataset vocabulary. For example, select only material:
+
+```json
+{"attributes": {"attributes": {"material": ["asphalt", "ceramic", "glass", "leather", "metal", "paper", "polymers", "stone", "textile", "wood"]}}}
+```
+
+Use the preparation-only output's `attributes` to copy the exact vocabulary.
+For point grounding, pass `--config /path/to/point.json` containing:
 
 ```json
 {"ground": {"geometry": "point", "context": "Resolve the whole object."}}
@@ -202,12 +233,18 @@ The runner prepares named data before model loading. Initial runs download any
 uncached dataset and model files. Local paths bypass dataset downloads; local
 grounding requires `--images`, with `--dataset` selecting the annotation naming
 convention. Automatic grounding preparation supports only `refcocog`.
+Local attributes data also requires `--images`. OVAD's preparation-only JSON
+includes `attributes` with canonical labels and synonym descriptions, plus
+counts and selection metadata.
 
 ### Validation reports
 
 JSON goes to stdout and optionally `--output`; progress goes to stderr. Reports
 include aggregate/per-category metrics, failures, dataset counts and provenance,
 grounding statuses, task/model settings, output mode, retries, and timings.
+Attributes reports use `per_attribute` for group/value summaries and include
+`protocol` and `selected_groups`, with source, excluded, prepared, and evaluated
+object counts. Attribute decisions count only known targets.
 Transformers also records device, dtype, requested revision, and local-file mode.
 
 `preparation_seconds` measures initial dataset preparation; `load_seconds`
