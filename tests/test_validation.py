@@ -16,7 +16,7 @@ from ml_pipes.vlm import (
 )
 from ml_pipes.vlm.validation import (
     BaseValidator, ClassificationDataset, ClassificationMetrics,
-    ClassificationValidator, DataLoader, DetectionMetrics, DetectionValidator,
+    ClassificationValidator, ClassificationDataLoader, DetectionMetrics, DetectionValidator,
     YOLODataset,
 )
 
@@ -175,9 +175,10 @@ def test_sample_limit_and_repeated_validator_runs(tmp_path):
     data = classification_data(tmp_path, per_class=2)
     backend = Backend({"labels": ["cat"]})
     task = Classify(backend, ["cat", "dog"])
-    validator = ClassificationValidator(data=data, max_samples=1, verbose=False)
-    first = validator(task)
-    second = validator(task)
+    validator = ClassificationValidator(task, data=data, max_samples=1, verbose=False)
+    assert validator.task is task
+    first = validator()
+    second = validator()
     assert first is not second
     assert first.seen == second.seen == 1
     assert first.top1 == second.top1 == 1
@@ -187,20 +188,30 @@ def test_sample_limit_and_repeated_validator_runs(tmp_path):
     assert third is task.metrics and third is not second
 
 
-def test_classification_subset_does_not_decode_excluded_images(tmp_path):
+@pytest.mark.parametrize("custom_loader", [False, True])
+def test_classification_subset_does_not_decode_excluded_images(tmp_path, custom_loader):
     data = classification_data(tmp_path)
     (data / "val" / "cat" / "0.png").write_bytes(b"corrupt but outside selected classes")
-    metrics = Classify(Backend({"labels": ["dog"]}), ["dog"]).val(data=data, verbose=False)
+    settings = {"data": data}
+    if custom_loader:
+        dataset = ClassificationDataset(data)
+        dog_ids = [class_id for class_id, name in dataset.names.items() if name == "dog"]
+        loader = ClassificationDataLoader(dataset, class_ids=dog_ids)
+        assert len(loader) == 1
+        settings = {"dataloader": loader}
+    metrics = Classify(Backend({"labels": ["dog"]}), ["dog"]).val(**settings, verbose=False)
     assert metrics.seen == 1 and metrics.top1 == 1
 
 
 def test_custom_validator_class():
     class CustomValidator:
-        def __init__(self, *, marker):
+        def __init__(self, *, task, marker):
+            assert isinstance(task, Ground)
+            self.task = task
             self.metrics = marker
 
-        def __call__(self, *, task):
-            assert isinstance(task, Ground)
+        def __call__(self):
+            assert self.task is task
 
     task = Ground(Backend(), "the person")
     assert task.val(validator=CustomValidator, marker="custom metrics") == "custom metrics"
@@ -208,7 +219,9 @@ def test_custom_validator_class():
 
 def test_injected_loader_and_custom_dataset_construction(tmp_path):
     data = classification_data(tmp_path)
-    loader = DataLoader(ClassificationDataset(data))
+    dataset = ClassificationDataset(data)
+    dog_ids = [class_id for class_id, name in dataset.names.items() if name == "dog"]
+    loader = ClassificationDataLoader(dataset, class_ids=dog_ids)
     task = Classify(Backend({"labels": ["dog"]}), ["dog"])
     metrics = task.val(dataloader=loader, verbose=False)
     assert metrics.seen == 1 and metrics.top1 == 1
@@ -240,13 +253,13 @@ def test_default_alignment_requires_all_task_labels(tmp_path):
 @pytest.mark.parametrize("max_samples", [0, -1, True, 1.5])
 def test_invalid_sample_limits(max_samples):
     with pytest.raises(ValueError, match="max_samples"):
-        BaseValidator(data="unused", max_samples=max_samples)
+        BaseValidator(Classify(Backend(), ["cat"]), data="unused", max_samples=max_samples)
 
 
 @pytest.mark.parametrize("iou", [0, -0.1, 1.1, float("nan"), float("inf"), True, "0.5"])
 def test_invalid_matching_thresholds(iou):
     with pytest.raises(ValueError, match="match_iou"):
-        DetectionValidator(data="unused", match_iou=iou)
+        DetectionValidator(Detect(Backend(), ["person"]), data="unused", match_iou=iou)
     with pytest.raises(ValueError, match="match_iou"):
         DetectionMetrics(["person"], match_iou=iou)
 

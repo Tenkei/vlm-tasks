@@ -53,8 +53,9 @@ class _Task:
     def val(self, validator=None, **kwargs):
         """Evaluate this configured task and return its validator's metrics.
 
-        ``validator`` accepts a custom validator class. Other keyword arguments
-        are passed to its constructor; see ``ml_pipes.vlm.validation``.
+        ``validator`` accepts a custom validator class, constructed with this
+        task and the other keyword arguments, then called without arguments.
+        See ``ml_pipes.vlm.validation``.
         """
         if validator is None:
             from .validation import ClassificationValidator, DetectionValidator, GroundingValidator
@@ -69,8 +70,8 @@ class _Task:
                 raise NotImplementedError(
                     f"{type(self).__name__} has no default validator; supply validator= explicitly"
                 )
-        runner = validator(**kwargs)
-        runner(task=self)
+        runner = validator(task=self, **kwargs)
+        runner()
         self.metrics = runner.metrics
         return self.metrics
 

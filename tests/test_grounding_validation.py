@@ -247,9 +247,10 @@ def test_grounding_uses_ordinary_iou_and_inclusive_thresholds(overlap):
 def test_limit_counts_evaluated_images_and_repeated_runs_reset(tmp_path):
     annotations, images, _, _ = grounding_data(tmp_path)
     backend = Backend(ModelExecutionError("unavailable"))
-    validator = GroundingValidator(data=annotations, images=images, max_samples=2, verbose=False)
     task = Ground(backend)
-    first, second = validator(task), validator(task)
+    validator = GroundingValidator(task, data=annotations, images=images, max_samples=2, verbose=False)
+    assert validator.task is task
+    first, second = validator(), validator()
     assert first is not second
     for metrics in (first, second):
         assert metrics.seen == 2 and metrics.unique_images == 1

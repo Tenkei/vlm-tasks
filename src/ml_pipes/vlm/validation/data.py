@@ -341,3 +341,21 @@ class DataLoader:
     def __iter__(self) -> Iterator[dict]:
         for index in self.indices:
             yield self.dataset[index]
+
+
+class ClassificationDataLoader(DataLoader):
+    """Select classification samples by class ID before decoding images.
+
+    The dataset exposes annotation metadata through ``.samples``. Omit
+    ``class_ids`` to include every class.
+    """
+
+    def __init__(self, dataset, *, class_ids=None) -> None:
+        indices = None
+        if class_ids is not None:
+            selected = set(class_ids)
+            indices = [
+                i for i, sample in enumerate(dataset.samples)
+                if int(sample["cls"][0]) in selected
+            ]
+        super().__init__(dataset, indices=indices)

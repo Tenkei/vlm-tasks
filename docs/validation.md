@@ -207,7 +207,11 @@ counts; the prepared manifest and evaluated counts can be smaller.
 
 ## Validation architecture
 
-The validator runs validation: it gets samples, calls the configured task, and
+The validator binds its task at construction and runs when called without
+arguments: `validator = GroundingValidator(task, ...); metrics = validator()`.
+The task's `.val()` method handles these steps for normal usage.
+
+The validator gets samples, calls its bound task, and
 accumulates evaluation results. It coordinates two main components:
 
 - **Data loader:** provides images and ground truth according to the user's
@@ -248,10 +252,10 @@ flowchart TD
 | Task `.val()` in [ops.py](../src/ml_pipes/vlm/ops.py) | Selects `ClassificationValidator`, `DetectionValidator`, or `GroundingValidator`; stores and returns metrics |
 | [prepare.py](../src/ml_pipes/vlm/validation/prepare.py) | Registry, source downloads, checksums, cache, subset materialization, and `PreparedDataset` metadata |
 | Dataset readers in [data.py](../src/ml_pipes/vlm/validation/data.py) | `ClassificationDataset`, `YOLODataset`, and `RefCOCODataset` validate local annotations and decode original images when indexed |
-| `DataLoader` in data.py | Iterates sample dictionaries synchronously; no batching or worker pool |
-| [validator.py](../src/ml_pipes/vlm/validation/validator.py) | `BaseValidator` owns setup, class alignment, iteration, timing, recoverable failures, and finalization; subclasses supply dataset and metric behavior |
+| Loaders in data.py | `DataLoader` iterates sample dictionaries synchronously; `ClassificationDataLoader` selects classes before decoding images |
+| [validator.py](../src/ml_pipes/vlm/validation/validator.py) | `BaseValidator` owns setup, class alignment, iteration, timing, recoverable failures, and finalization. Task-specific `update_metrics()` methods validate/adapt predictions and ground truth, then delegate comparison and accumulation to the metrics classes. |
 | Configured task and backend | Build requests, perform inference, parse structured responses, and apply backend correction retries |
-| [metrics.py](../src/ml_pipes/vlm/validation/metrics.py) | Compare public task results with annotations, accumulate scores, and summarize categories |
+| [metrics.py](../src/ml_pipes/vlm/validation/metrics.py) | `ClassificationMetrics`, `DetectionMetrics`, and `GroundingMetrics` both perform evaluation and expose results: their `update()` methods compare predictions with ground truth and accumulate statistics; properties and `summary()` calculate scores from those statistics. These are stateful evaluators and result containers, rather than plain result dataclasses. Grounding prediction extraction also currently happens here. |
 
 The shared loop loads a sample, calls `predict_sample`, records recoverable
 inference failures, and calls `update_metrics`. Classification/detection pass
@@ -390,6 +394,13 @@ metrics = task.val(dataloader=my_loader, max_samples=100)
 Pass `dataloader` without `data`; this bypasses both downloading and dataset
 construction. You can use the provided `DataLoader` with an indexed dataset
 implementing `__len__`, `__getitem__`, and `.names`.
+
+Loaders own sample filtering; the validator iterates their output directly.
+For classification datasets exposing `.samples` metadata, use
+`ClassificationDataLoader(dataset, class_ids=...)` to select classes before
+decoding. Custom loaders must yield samples from the intended classes;
+`class_map` aligns labels but does not filter an injected loader. Detection
+retains negative images and filters object annotations during scoring.
 
 For other annotations, metrics, or tasks, subclass `BaseValidator` or a concrete
 validator and override hooks such as `build_dataset`, `get_dataloader`,

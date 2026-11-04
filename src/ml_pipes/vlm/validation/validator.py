@@ -11,13 +11,13 @@ import numpy as np
 
 from ..errors import InvalidModelResponseError, ModelExecutionError
 from ..types import ClassificationResult, DetectionResult, GroundingResult
-from .data import ClassificationDataset, DataLoader, RefCOCODataset, YOLODataset
+from .data import ClassificationDataLoader, ClassificationDataset, DataLoader, RefCOCODataset, YOLODataset
 from .metrics import ClassificationMetrics, DetectionMetrics, GroundingMetrics
 from .prepare import DATASETS, prepare_dataset
 
 
 class BaseValidator:
-    """Set up a dataset, call the configured task, and accumulate metrics.
+    """Bind a task, set up its dataset, and accumulate validation metrics.
 
     Override dataset construction and metric methods for another task or data
     source. A supplied dataloader must expose its dataset through ``.dataset``;
@@ -28,7 +28,7 @@ class BaseValidator:
     default_dataset: str | None = None
 
     def __init__(
-        self, data=None, *, dataloader=None, split: str = "val",
+        self, task, data=None, *, dataloader=None, split: str = "val",
         class_map: Mapping[str, str] | None = None,
         max_samples: int | None = None, verbose: bool = True, cache_dir=None,
     ) -> None:
@@ -44,6 +44,7 @@ class BaseValidator:
             or any(not isinstance(value, str) or not value.strip() for value in class_map.values())
         ):
             raise ValueError("class_map must be a nonempty dataset-name to task-label mapping")
+        self.task = task
         self.data = data
         self.split = split
         self.max_samples = max_samples
@@ -52,9 +53,8 @@ class BaseValidator:
         self._provided_dataloader = dataloader
         self._requested_class_map = None if class_map is None else dict(class_map)
 
-    def __call__(self, task):
+    def __call__(self):
         started = perf_counter()
-        self.task = task
         self.prepared_dataset = None
         self.dataset = (
             self.build_dataset() if self._provided_dataloader is None
@@ -76,7 +76,7 @@ class BaseValidator:
         self._timings = {"load": 0.0, "inference": 0.0, "metrics": 0.0}
         self._started = started
         last = perf_counter()
-        for sample in islice(self._iter_samples(), self.max_samples):
+        for sample in islice(self.dataloader, self.max_samples):
             self._timings["load"] += perf_counter() - last
             inference_started = perf_counter()
             try:
@@ -119,9 +119,6 @@ class BaseValidator:
             class_id: mapping[name] for class_id, name in self.dataset.names.items() if name in mapping
         }
         self.names = tuple(name for name in self.task.labels if name in mapping.values())
-
-    def _iter_samples(self):
-        return iter(self.dataloader)
 
     def build_dataset(self):
         raise NotImplementedError
@@ -169,15 +166,7 @@ class ClassificationValidator(BaseValidator):
         return ClassificationDataset(self.data if prepared is None else prepared.data, split=self.split)
 
     def get_dataloader(self, dataset):
-        indices = [
-            i for i, sample in enumerate(dataset.samples)
-            if int(sample["cls"][0]) in self.class_map
-        ]
-        return DataLoader(dataset, indices=indices)
-
-    def _iter_samples(self):
-        # Also apply selection to an externally supplied dataloader.
-        return (sample for sample in self.dataloader if int(sample["cls"][0]) in self.class_map)
+        return ClassificationDataLoader(dataset, class_ids=self.class_map)
 
     def init_metrics(self) -> None:
         self.metrics = ClassificationMetrics(self.names, prediction_names=tuple(self.task.labels))

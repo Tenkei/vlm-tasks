@@ -101,7 +101,7 @@ custom validator.
 | `max_samples` | `None` | Positive maximum number of samples; expressions for grounding |
 | `match_iou` | `0.5` | Detection-only matching IoU, in `(0, 1]` |
 | `verbose` | `True` | Print progress and aggregate metrics to stderr |
-| `validator` | Selected by task | Custom validator class, instantiated with the other arguments |
+| `validator` | Selected by task | Custom validator class, instantiated with `task=self` and the other arguments |
 | `dataloader` | `None` | Prebuilt loader, supplied instead of `data` |
 | `cache_dir` | `VLM_TASKS_DATASETS_DIR` or `~/.cache/vlm-tasks/datasets` | Cache for named dataset preparation |
 
@@ -307,6 +307,12 @@ task = Classify(backend, labels=["cat", "dog"])
 metrics = task.val(validator=CustomValidator, data="my-source")
 ```
 
+Validators bind their task at construction: `ClassificationValidator(task, ...)`.
+Call `validator()` to run evaluation; repeated calls evaluate the same task with
+fresh metrics. `.val()` constructs the validator with `task=self` and invokes it
+without arguments. Custom constructors must accept `task` and pass it to the
+base constructor when subclassing a built-in validator.
+
 `BaseValidator` owns the loop. Extension methods are `build_dataset()`,
 `get_dataloader(dataset)`, `init_metrics()`, `predict_sample(sample)`, `update_metrics(prediction, sample)`
 and `finalize_metrics()`. Call the inherited `finalize_metrics()` when overriding
@@ -315,6 +321,10 @@ directly. `predict_sample()` normally calls the task with the image; grounding
 passes `(sample["img"], sample["target"])` as one argument.
 
 The supplied `DataLoader` iterates an indexed dataset, one image at a time.
+`ClassificationDataLoader(dataset, class_ids=...)` selects classification samples
+from `.samples` metadata before decoding. The base validator iterates its loader
+directly; prebuilt loaders must yield the selected samples themselves. In
+particular, `class_map` aligns labels but does not filter an injected loader.
 A prebuilt loader must expose `.dataset`; datasets expose a `.names` mapping
 from integer class IDs to strings. Samples are dictionaries with `im_file`,
 `img` (an `ImagePayload`) and `cls` (an integer class-ID array). Classification
