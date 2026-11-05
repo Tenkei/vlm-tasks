@@ -40,9 +40,9 @@ task = Classify(
 ```
 
 `Classify` selects one label; `ClassifyMultiLabel` selects all applicable labels.
-`Detect` finds matching object instances and returns labeled boxes. For a visual
-comparison of finding all instances and locating one described target, see
-[Detect versus Ground](design.md#visual-example-detect-versus-ground).
+`Detect` finds matching object instances and returns labeled boxes. For the
+design distinction between finding all instances and locating one target, see
+[Detection vs grounding](design.md#detection-vs-grounding).
 
 ## Grounding targets and geometry
 
@@ -78,7 +78,7 @@ print(result.status, result.point)
 A found result contains only the requested geometry. `not_found` and `ambiguous`
 results have neither a box nor a point. Points are requested near the visible
 body center (the torso for people). See the
-[geometry comparison](design.md#visual-example-effect-of-geometry-and-coordinate-scale).
+[geometry comparison](design.md#geometry-and-coordinates).
 
 ## Attribute choices
 
