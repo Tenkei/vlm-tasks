@@ -39,21 +39,17 @@ python -m examples.run_transformers \
 
 ## Amazon Bedrock
 
-Configure [AWS credentials](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html) and choose a model available in your account and region.
+Follow the [Bedrock setup guide](../docs/guides/amazon-bedrock.md) to install dependencies, sign in, and choose a vision model available in your account and region.
 
 ```bash
-python -m pip install 'pydantic-ai-slim[bedrock]==2.61.0'
-
 python -m examples.run_bedrock \
-  --region us-east-1 \
+  --region ap-northeast-1 \
   --profile YOUR_PROFILE \
-  --model us.amazon.nova-pro-v1:0 \
+  --model qwen.qwen3-vl-235b-a22b \
   --input /path/to/image.jpg \
   --config /tmp/vlm-tasks.json \
   --output /tmp/vlm-bedrock-results.json
 ```
-
-For an AWS SSO profile, log in first with `aws sso login --profile YOUR_PROFILE`; see the [AWS authentication guide](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html#aws-iam-identity-center).
 
 ## Dataset validation
 
@@ -93,14 +89,14 @@ python -m examples.run_validation \
 
 ### Validate with Bedrock
 
-Use your configured AWS profile and model:
+Use your AWS profile and model from the [Bedrock setup guide](../docs/guides/amazon-bedrock.md):
 
 ```bash
 python -m examples.run_validation \
   --backend bedrock \
-  --region us-east-1 \
+  --region ap-northeast-1 \
   --profile YOUR_PROFILE \
-  --model us.amazon.nova-pro-v1:0 \
+  --model qwen.qwen3-vl-235b-a22b \
   --task attributes \
   --max-samples 10 \
   --output /tmp/vlm-bedrock-validation.json
