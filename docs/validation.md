@@ -37,9 +37,11 @@ print(metrics.failures)     # individual inference failures
 The result is also stored as `task.metrics`. Each call starts a new evaluation.
 Task settings such as labels, descriptions, context, and grounding geometry come
 from the operator; model settings, output mode, and retries come from its backend.
+`ClassifyMultiLabel` has no built-in validator; supply a
+[custom validator](#custom-loaders-and-validators) to evaluate it.
 
 For command-line usage, see the separate
-[validation example](../examples/README.md#dataset-validation).
+[validation example](../examples/README.md#task-validation).
 
 ## Metric definitions and failures
 
@@ -62,6 +64,10 @@ For command-line usage, see the separate
   supported attribute groups, and macro F1 averaged first within each group and
   then across supported groups. This adapts OVAD to categorical predictions;
   it is distinct from OVAD's official attribute mAP protocol.
+
+Detection IoU ties are ordered by target index, then prediction index. Undefined
+classification/detection ratios and scores for empty grounding categories are
+zero. See [results](#results-and-reproducibility) for confusion-matrix ordering.
 
 `ModelExecutionError` and `InvalidModelResponseError` are recorded and evaluation
 continues. Classification failures are incorrect predictions; detection failures
@@ -130,8 +136,8 @@ python -m pip install -e .
 ```
 
 Install your backend's dependencies and configure access using the
-[Bedrock example](../examples/README.md#amazon-bedrock) or
-[Transformers guide](guides/huggingface-transformers.md). Detection YAML requires
+[Bedrock guide](amazon-bedrock.md) or
+[Transformers guide](huggingface-transformers.md). Detection YAML requires
 PyYAML through the validation extra:
 
 ```bash
@@ -173,10 +179,23 @@ supplies its target. Attributes use their configured choices when present, with
 their keys selecting dataset groups; otherwise validation discovers all dataset
 groups and choices. Grounding and attributes reject `class_map`.
 
-Configure model settings, output mode, and correction retries on the backend.
-Backend/transport retry policies are separate from structured-output correction.
-Transformers supports prompted output and greedy generation; Bedrock supports
-prompted, native, or tool output where the model/API permits.
+Configure model settings, output mode, and correction retries on the
+[backend](model-backends.md#output-modes-and-retries). Validation adds no
+correction retry policy of its own.
+
+### Class selection and aliases
+
+For classification and detection, every task label must exist in the dataset
+unless you supply `class_map`. Dataset classes beyond the task vocabulary are
+excluded from scoring. An explicit mapping selects dataset classes and aliases
+them to task labels: all keys must be dataset names, and all values must be
+configured task labels. Several dataset classes can map to one task label.
+
+Classification evaluates images whose target class is selected. A prediction
+outside the evaluated subset still counts as incorrect. Detection retains every
+image, filters both annotations and predictions to the evaluated classes, and
+counts unmatched selected predictions as false positives. Grounding and
+attributes do not accept `class_map`.
 
 ## Default datasets and downloads
 
@@ -310,6 +329,11 @@ or cropping. Task labels must match dataset names, or supply aliases such as
 `class_map={"cat": "feline"}` for a task configured with the label `feline`.
 An explicit mapping selects the evaluated dataset classes.
 
+Class names come from immediate split subdirectories; images can be nested
+within them. Files are read in sorted class and path order. Supported extensions
+are BMP, JPEG, PNG, TIFF, and WebP. The requested split must exist; the reader
+does not fall back to another split.
+
 ### Detection: YOLO YAML and labels
 
 ```text
@@ -347,6 +371,23 @@ Missing or empty label files represent negative images. Malformed annotations
 or unreadable images stop evaluation. The reader converts normalized boxes into
 original-image pixel `xyxy` coordinates; segmentation polygon rows are unsupported.
 No Ultralytics installation is required.
+
+The YAML's `path` is relative to its directory and defaults to that directory.
+A split can name an image directory, a TXT image list, a single image, or a list
+of these sources. Split paths are relative to `path`; entries inside a TXT list
+are relative to that list's directory. Images are deduplicated by resolved path
+and sorted. Only the requested split and class names are required; `names` can
+also be a list of class names.
+
+The final `images` directory component becomes `labels`, and the image suffix
+becomes `.txt`; without an `images` component, label files are beside the images.
+Boxes must have positive area and stay inside the image, allowing `1e-6`
+normalized rounding error at the edges. Annotation coordinates are preserved.
+Class IDs must index `names`; pose and other annotation formats are unsupported.
+
+`metrics.dataset_counts` includes `missing_labels`, `empty_labels`, and
+`labeled_images` across the full dataset before the sample limit. Images retain
+their original dimensions; local readers do not create run directories.
 
 ### Grounding: expression annotations and images
 
@@ -395,6 +436,12 @@ separately if it is absent. See the
 [MDETR preparation guide](https://github.com/ashkamath/mdetr/blob/main/.github/refexp.md).
 Local paths and expected protocol are recorded without certifying the provenance
 of arbitrary user annotations. Your custom expressions can use the same format.
+
+Expression order and repeated image filenames are preserved; `max_samples`
+counts expressions. Full-split `expressions` and `unique_images` appear in
+`dataset_counts`, while aggregate scores count only evaluated samples. Each
+expression overrides the task's constructor target; constructor context remains
+unchanged. Use neutral context when comparing benchmark runs.
 
 ### Attributes: OVAD object crops
 
@@ -550,7 +597,43 @@ validator and override hooks such as `build_dataset`, `get_dataloader`,
 `init_metrics`, `predict_sample`, and `update_metrics`. Pass the class as
 `task.val(validator=MyValidator, ...)`. Tasks without a built-in validator need
 this explicit extension. See the
-[custom validator reference](reference.md#custom-validators-and-data-sources).
+[validator class reference](reference.md#validator-classes).
+
+For example, with a prepared classification dataset `my_dataset`:
+
+```python
+from ml_pipes.vlm import Classify
+from ml_pipes.vlm.validation import ClassificationValidator
+
+class CustomValidator(ClassificationValidator):
+    def build_dataset(self):
+        return my_dataset
+
+task = Classify(backend, labels=["cat", "dog"])
+metrics = task.val(validator=CustomValidator, data="my-source")
+```
+
+Validators bind their task at construction. `.val()` constructs the class with
+`task=self` and the supplied settings, then calls it without arguments. Direct
+`ClassificationValidator(task, ...)()` calls also work; each run starts fresh
+metrics. Custom constructors must accept `task` and forward it to the base
+constructor.
+
+`BaseValidator` owns the loop. `predict_sample()` normally calls the task with
+an image; grounding supplies `(image, target)`, and attributes supplies
+`(crop, evaluation_attributes)`. Task-specific validators consume public task
+results directly. If you override `finalize_metrics()`, call the inherited
+implementation to retain timings.
+
+| Hook | Role |
+|---|---|
+| `build_dataset()` | Return the dataset |
+| `prepare_named_dataset(task)` | Prepare a registered dataset, or return `None` for local data |
+| `get_dataloader(dataset)` | Return a loader; defaults to `DataLoader(dataset)` |
+| `init_metrics()` | Assign `self.metrics` |
+| `predict_sample(sample)` | Return a public task result |
+| `update_metrics(prediction, sample)` | Accumulate a result, or `None` for a failed call |
+| `finalize_metrics()` | Finalize metrics; the base implementation assigns timings |
 
 ## Results and reproducibility
 
@@ -559,6 +642,17 @@ Python metrics expose `results_dict`, `summary()`, `failures`, `dataset_counts`,
 counts. Attributes also expose known decision counts and per-group confusion
 matrices. Named-dataset preparation metadata is available through
 `metrics.dataset_metadata`.
+
+Classification confusion-matrix rows follow `metrics.names` (evaluated labels);
+columns follow `metrics.prediction_names` (all task labels), with a final column
+for failed calls. Detection `tp`, `fp`, and `fn` arrays follow `metrics.names`;
+`summary()` returns per-class counts, support, precision, recall, and F1.
+Grounding summaries report support and the selected geometry's scores per
+category. Attribute matrix ordering and summaries are described in the
+[OVAD scoring section](#attributes-ovad-object-crops).
+
+`metrics.failures` records image path, exception type, and message. When a loader
+supplies `sample_id` or `target`, these are retained in failure records too.
 
 For named datasets, preparation metadata retains full-source counts while
 `dataset_counts` describes the prepared manifest. Evaluated sample and grounding
@@ -578,4 +672,4 @@ provider usage, including configured correction retries.
 Progress goes to stderr; `verbose=False` disables it. Validation returns measured
 scores without an automatic accuracy pass/fail threshold. Report serialization
 and process exit codes belong to the
-[validation example](../examples/README.md#dataset-validation).
+[validation example](../examples/README.md#task-validation).

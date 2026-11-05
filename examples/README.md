@@ -22,7 +22,7 @@ Pass the copy with `--config`; add `--tasks attributes` to run only attribute pr
 
 ## Hugging Face Transformers
 
-Run all five tasks with local Qwen3-VL weights; see the [Transformers guide](../docs/guides/huggingface-transformers.md) for model and device options.
+Run all five tasks with local Qwen3-VL weights; see the [Transformers guide](../docs/huggingface-transformers.md) for model and device options.
 
 ```bash
 python -m pip install \
@@ -39,7 +39,7 @@ python -m examples.run_transformers \
 
 ## Amazon Bedrock
 
-Follow the [Bedrock setup guide](../docs/guides/amazon-bedrock.md) to install dependencies, sign in, and choose a vision model available in your account and region.
+Follow the [Bedrock setup guide](../docs/amazon-bedrock.md) to install dependencies, sign in, and choose a vision model available in your account and region.
 
 ```bash
 python -m examples.run_bedrock \
@@ -51,7 +51,7 @@ python -m examples.run_bedrock \
   --output /tmp/vlm-bedrock-results.json
 ```
 
-## Dataset validation
+## Task validation
 
 Install the validation extra for detection YAML support, plus your backend dependencies above; see the [validation guide](../docs/validation.md) for details.
 
@@ -89,7 +89,7 @@ python -m examples.run_validation \
 
 ### Validate with Bedrock
 
-Use your AWS profile and model from the [Bedrock setup guide](../docs/guides/amazon-bedrock.md):
+Use your AWS profile and model from the [Bedrock setup guide](../docs/amazon-bedrock.md):
 
 ```bash
 python -m examples.run_validation \

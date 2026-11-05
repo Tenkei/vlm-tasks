@@ -53,7 +53,7 @@ backend = PydanticAIBackend(
 )
 ```
 
-See the [Transformers guide](docs/guides/huggingface-transformers.md) for device
+See the [Transformers guide](docs/huggingface-transformers.md) for device
 setup and other checkpoints.
 
 #### vLLM and other providers
@@ -78,7 +78,7 @@ backend = PydanticAIBackend(OpenAIChatModel(
 ```
 
 You can also wrap an existing PydanticAI model with `PydanticAIBackend(model)`.
-See [model integration](docs/reference.md#model-integration) for other providers.
+See the [model backend guide](docs/model-backends.md) for other providers.
 
 ### Run a task
 

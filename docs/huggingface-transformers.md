@@ -1,7 +1,7 @@
 # Use Hugging Face Transformers with VLM tasks
 
 Run the five existing VLM tasks with local Hugging Face weights, using
-[run_transformers.py](../../examples/run_transformers.py). The default checkpoint is
+[run_transformers.py](../examples/run_transformers.py). The default checkpoint is
 `Qwen/Qwen3-VL-2B-Instruct`; `--model` can select another compatible checkpoint
 or a local weights directory.
 
@@ -12,7 +12,7 @@ ImagePayload → task → PydanticAIBackend → TransformersModel → loaded wei
              ← result ← validation/parsing ← generated text ←
 ```
 
-[TransformersModel](../reference.md#transformersmodel) is a reusable adapter
+[TransformersModel](reference.md#model-integration) is a reusable adapter
 shipped with `ml_pipes.vlm`, using PydanticAI's public FunctionModel hook.
 It accepts already-loaded weights
 and a processor. It translates text, image bytes and correction history into
@@ -102,7 +102,7 @@ to local files. You can also pass a directory with `--model /path/to/checkpoint`
 `--revision` applies to both weights and processor; use a commit ID when fixing
 an experiment's model version.
 
-## Dataset validation
+## Task validation
 
 Use `examples.run_validation` with `--backend transformers` to evaluate local
 classification, detection or grounding datasets with this adapter. For example:
@@ -118,13 +118,13 @@ python -m examples.run_validation \
 
 The runner accepts the same device, dtype, revision, cached-file and generation
 options. Grounding defaults to empty task settings and uses each dataset
-expression as its target. See [dataset validation](../validation.md)
+expression as its target. See [task validation](validation.md)
 for annotation preparation, metrics and report details. Begin with 10 expressions
 to check timing, then evaluate 100 for a preliminary result.
 
 ## Task configuration and results
 
-Use the same [image_tasks.json](../../examples/image_tasks.json) as the Bedrock example, or pass
+Use the same [image_tasks.json](../examples/image_tasks.json) as the Bedrock example, or pass
 your own `--config /path/to/tasks.json`. `--tasks` selects one or more tasks;
 all five run by default. Configurations are passed to the current operator
 constructors. Ground accepts `geometry="point"` for direct point output.

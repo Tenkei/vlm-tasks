@@ -381,7 +381,7 @@ deployment popularity. The MVP uses the routes supported by a supplied
 PydanticAI Model. For directly loaded Transformers weights, the package provides
 `TransformersModel`, a PydanticAI adapter wrapping caller-owned weights and a
 multimodal processor. Model loading, device placement and authentication remain
-application concerns. See the [Transformers guide](guides/huggingface-transformers.md).
+application concerns. See the [Transformers guide](huggingface-transformers.md).
 
 A communication implementation usually corresponds to an API/runtime; each
 instance selects a particular model. Qwen and Gemma can share an integration

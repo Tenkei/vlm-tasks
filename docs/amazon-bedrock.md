@@ -63,8 +63,8 @@ print(result.attributes)  # Example: {'setting': 'indoor'}
 ```
 
 Replace the profile and image path with your own values. The same `backend`
-works with any [available task](../../README.md#available-tasks).
+works with any [available task](../README.md#available-tasks).
 
-For command-line examples and dataset validation, see
-[Run the examples](../../examples/README.md#amazon-bedrock). For other credential
+For command-line examples and task validation, see
+[Run the examples](../examples/README.md#amazon-bedrock). For other credential
 methods, see the [Boto3 credentials guide](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html).
