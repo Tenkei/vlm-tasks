@@ -239,7 +239,7 @@ Public imports from `ml_pipes.vlm.validation`:
 | `DataLoader(dataset, indices=None)` | Iterator over all or selected dataset indices |
 
 See [custom loaders and validators](validation.md#custom-loaders-and-validators)
-for sample fields, dataset interfaces, and extension examples.
+for dataset interfaces, extension examples, and hooks.
 
 ## Errors
 

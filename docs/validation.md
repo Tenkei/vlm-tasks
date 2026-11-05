@@ -1,27 +1,126 @@
 # Validation
 
-Validation runs a configured VLM task on labeled examples and compares its
-predictions with the annotations. It measures task accuracy, inference failures,
-and time per sample. It does not train or update the model.
+Validation compares a configured task's predictions with labeled examples. It
+measures task quality, failures, and execution time without training the model.
+This page records the design decisions, summarizes the available validations,
+and explains how to configure a run.
 
-Use it to:
+## Architecture decision record
 
-- Check that a model, backend, and structured output configuration work together.
-- Compare models, prompts, task context, or generation settings on the same data.
-- Find regressions and inspect failures before using a task in a pipeline.
-- Measure localization or classification quality on your own domain data.
+### Context
 
-Each sample makes an independent task call: one image for classification or
-detection, one image-expression pair for grounding, or one object crop for
-attributes. Start with 10 samples to
-check execution and timing, then 100 for an initial comparison. Use the complete
-validation split for a benchmark result. Ordered subsets and small smoke datasets
-can give unrepresentative scores.
+A useful evaluation must exercise the same task semantics as application use.
+Model accuracy, structured-output reliability, and execution failures are
+different concerns; a successful response alone does not establish correctness.
+Dataset formats should not determine task behavior or require separate scoring
+logic for every data source.
 
-## Calling validation
+### Decisions
 
-With an initialized backend, the task's `.val()` method prepares its default
-dataset, runs inference, and returns a metrics object:
+| Decision | Alternatives considered | Rationale and tradeoffs |
+|---|---|---|
+| Evaluate the configured task through its public results | Call the model directly or score raw responses | Measures instructions, parsing, and task behavior together; results describe the complete configuration rather than the model alone |
+| Separate data loading, annotation adaptation, and evaluation | Put dataset-specific parsing and scoring in one runner | Reuses task metrics across datasets; requires consistent labels, geometry, and sample meaning |
+| Provide task defaults with replaceable validators | Require a benchmark framework or a custom runner for every evaluation | Makes reference runs easy while allowing extensions; defaults cannot represent every domain |
+| Target Imagenette for the classification default | Keep CIFAR-10 as the long-term default | Higher-resolution natural images; larger downloads and an unresolved resolution choice |
+| Prepare named datasets separately from inference | Bundle data or make downloading inseparable from execution | Allows caching and preparation before model use; subset preparation may still require large source downloads |
+| Include failed predictions in scoring and report them separately | Drop failures or stop on every model error | Avoids inflating scores by evaluating only successful calls; aggregate quality includes execution reliability |
+| Use task-specific metrics and explicit evaluation scopes | Report one universal score | Preserves the distinction between classification, detection, localization, and attributes; scores across tasks are not interchangeable |
+
+A validator coordinates three responsibilities:
+
+| Responsibility | Purpose |
+|---|---|
+| Data loading | Supply the selected images or crops and their annotations |
+| Annotation adaptation | Align source labels and geometry with the task's evaluation contract |
+| Evaluation | Compare public task results with targets and accumulate metrics |
+
+**Consequences:** keep the task configuration fixed across samples, apart from
+dataset-supplied inputs such as grounding expressions. In particular, missing
+attribute annotations must not change the choices presented to the model.
+Separate correction retries from transport retries, and record both when
+comparing runs. Small deterministic subsets are useful for execution checks;
+claims about quality require representative data and a stated protocol.
+
+## Implementation notes
+
+### Available validations
+
+Sizes and counts below describe the source dataset or named split before class
+selection or sample limits. Download sizes are compressed archives in decimal
+MB/GB, excluding model weights and expanded cache files.
+
+| Task | Default dataset | Dataset scope | Splits | Metrics | Download behavior | Archive size |
+|---|---|---|---|---|---|---|
+| `Classify` | **CIFAR-10** (`cifar10`) | 60,000 images at 32×32; 10 classes; 50,000 train / 10,000 test | train, val, test; **val aliases test** | Top-1 accuracy; per-class precision/recall/F1; confusion matrix | Full archive; prepare only the selected subset | ≈170 MB |
+| `Detect` | **COCO128** (`coco128`) | 128 images; 941 boxes; 71 represented classes in an 80-class vocabulary | train, val; **same images in both** | Precision/recall/F1 and TP/FP/FN at a selected IoU threshold | Full archive; prepare selected images | 6.98 MB |
+| `Ground`, box | **RefCOCOg UMD** (`refcocog`) | **val:** 1,300 unique images; 4,896 expressions; 80-category reporting vocabulary | train, val, test | Accuracy at IoU ≥0.5 / 0.75 / 0.9; mean IoU | Stream shared annotations; download images referenced by selected expressions | 1.08 GB shared archive; val JSON 2.27 MB; images additional |
+| `Ground`, point | **RefCOCOg UMD** (`refcocog`) | Same expressions and target boxes as box mode | train, val, test | Point-in-box accuracy | Shares box-mode data and cache | Same as box mode |
+| `Attributes` | **OVAD** (`ovad`) | 14,300 source objects; 14,072 eligible objects in 2,000 images; 22 categorical groups | test, val; **val aliases the same benchmark**; no train | Categorical accuracy; mean attribute accuracy; macro F1; per-group reports | Download annotations and images referenced by selected objects | 1.13 MB annotations; images additional |
+
+`ClassifyMultiLabel` requires an explicit custom validator. Local
+RefCOCO/RefCOCO+ data can reuse grounding validation; see
+[local data](#using-your-own-dataset).
+
+**Interpretation limits:** CIFAR-10 contains small images, and COCO128 is a smoke
+dataset drawn from COCO training data. Neither an ordered subset nor a smoke
+dataset establishes general model performance. RefCOCO-family targets do not
+measure annotated ambiguity, rejection quality, or multiple-target resolution.
+The OVAD protocol here adapts independent attribute annotations to categorical
+decisions; it is distinct from official OVAD attribute mAP.
+
+Dataset sources: [CIFAR-10](https://www.cs.toronto.edu/~kriz/cifar.html),
+[COCO128](https://github.com/ultralytics/assets/releases/download/v0.0.0/coco128.zip),
+[MDETR RefCOCO annotations](https://zenodo.org/records/4729015), and
+[OVAD](https://lmb.informatik.uni-freiburg.de/resources/datasets/ovad.zip).
+The classification design target is [Imagenette](https://github.com/fastai/imagenette);
+the available automatic default in the table remains CIFAR-10.
+
+### Metric definitions and failures
+
+| Task | Scoring rule |
+|---|---|
+| Classification | Top-1 accuracy over selected examples, with per-class precision, recall, F1, and a confusion matrix |
+| Detection | Match same-class boxes one-to-one in descending IoU order at an inclusive `match_iou` threshold; pool TP/FP/FN across classes for aggregate precision/recall/F1 |
+| Grounding, box | Continuous-coordinate IoU in original-image pixels; report mean IoU and accuracy at inclusive thresholds of 0.5, 0.75, and 0.9 |
+| Grounding, point | A hit when the point lies inside the target box, including its edges; a coarse proxy for object containment, distinct from box-IoU accuracy |
+| Attributes | Score only known targets; report accuracy across decisions, mean accuracy across supported groups, and macro F1 averaged within then across supported groups |
+
+Detection does not report AP/mAP because predictions have no confidence ranking.
+Attribute groups without target support do not contribute to group averages;
+values with neither target nor scored prediction support do not contribute to
+macro F1. Unknown targets are unscored, rather than an invented “none” category.
+
+`ModelExecutionError` and `InvalidModelResponseError` are recorded and evaluation
+continues. Failed classification calls are incorrect; failed detection calls
+produce no boxes; failed grounding calls score zero; failed attribute calls are
+incorrect for every known target. Failures remain in sample counts and relevant
+score denominators. Data, setup, and programming errors stop the run.
+
+Valid grounding absence and ambiguity responses also score zero against a
+positive target, but remain separate from execution failures in
+`status_counts`. Each referring expression is evaluated independently, even
+when several expressions use the same image.
+
+## Run validation
+
+### Setup
+
+Install validation dependencies from the repository root:
+
+```bash
+python -m pip install -e '.[validation]'
+```
+
+This includes PyYAML for detection dataset configuration. Initialize a
+[model backend](model-backends.md) using, for example, the
+[Bedrock guide](amazon-bedrock.md) or
+[Transformers guide](huggingface-transformers.md). The examples below assume
+`backend` is ready.
+
+### Calling validation
+
+Call `.val()` on a configured task:
 
 ```python
 from ml_pipes.vlm import Ground
@@ -29,585 +128,184 @@ from ml_pipes.vlm import Ground
 task = Ground(backend)
 metrics = task.val(split="val", max_samples=100)
 
-print(metrics.results_dict)  # aggregate scores and failure statistics
-print(metrics.summary())    # per-category scores and support
-print(metrics.failures)     # individual inference failures
+print(metrics.results_dict)
+print(metrics.summary())
+print(metrics.failures)
 ```
 
-The result is also stored as `task.metrics`. Each call starts a new evaluation.
-Task settings such as labels, descriptions, context, and grounding geometry come
-from the operator; model settings, output mode, and retries come from its backend.
-`ClassifyMultiLabel` has no built-in validator; supply a
-[custom validator](#custom-loaders-and-validators) to evaluate it.
+Omitting `data` selects the task's default dataset and prepares it automatically.
+Each call starts fresh metrics, returns them, and stores them as `task.metrics`.
+Start with `max_samples=10` to check execution and timing. Use
+`max_samples=None`, the default, to evaluate the complete selected split.
+Limits count images for classification/detection, expressions for grounding,
+and eligible objects for attributes. Selection is deterministic, not a random
+sample.
 
-For command-line usage, see the separate
-[validation example](../examples/README.md#task-validation).
-
-## Metric definitions and failures
-
-- **Classification:** top-1 accuracy across evaluated images, plus per-class
-  precision/recall/F1 and a confusion matrix. Class selection happens before
-  evaluation; `class_map` can select and alias dataset classes to task labels.
-- **Detection:** match boxes of the same class one-to-one, in descending IoU
-  order, using inclusive `match_iou`. Aggregate precision/recall/F1 pool TP/FP/FN
-  across classes. Negative images remain in evaluation after class selection.
-  No AP/mAP is computed because predictions have no confidence ranking.
-- **Grounding, box:** ordinary continuous-coordinate intersection over union,
-  scored in original-image pixels, with inclusive thresholds of 0.5, 0.75, and
-  0.9. Result keys are `accuracy_iou_0.5`, `accuracy_iou_0.75`,
-  `accuracy_iou_0.9`, and `mean_iou`.
-- **Grounding, point:** `point_in_box_accuracy` counts a hit when the predicted
-  point lies inside the target box, including its edges. It is a coarse proxy
-  for mask containment and is not directly comparable to box-IoU accuracy.
-
-- **Attributes:** categorical accuracy over known targets, mean accuracy across
-  supported attribute groups, and macro F1 averaged first within each group and
-  then across supported groups. This adapts OVAD to categorical predictions;
-  it is distinct from OVAD's official attribute mAP protocol.
-
-Detection IoU ties are ordered by target index, then prediction index. Undefined
-classification/detection ratios and scores for empty grounding categories are
-zero. See [results](#results-and-reproducibility) for confusion-matrix ordering.
-
-`ModelExecutionError` and `InvalidModelResponseError` are recorded and evaluation
-continues. Classification failures are incorrect predictions; detection failures
-produce no predicted boxes; grounding failures score zero; attribute failures
-count as incorrect for every known target on that object. They remain included
-in sample counts and relevant score denominators. Data, setup, and programming
-errors stop validation instead of becoming model failures.
-
-For grounding, valid `not_found` and `ambiguous` responses score zero IoU or a
-point miss. `status_counts` tracks valid responses separately from execution
-failures. Every evaluated expression enters the score denominator, and evaluated
-unique-image counts include images whose calls failed. Per-category summaries
-report expression support; categories are reporting groups, not task labels.
-
-RefCOCO-family annotations do not evaluate rejection quality, annotated ambiguity,
-or multiple targets. Point scoring uses target boxes rather than masks. Box
-scoring uses ordinary IoU, not MDETR's generalized-IoU evaluator.
-
-## Available validations
-
-Counts below describe the full source dataset or explicitly named split, before
-class filtering or `max_samples`. **Total size** describes compressed upstream
-archives, excluding model weights and expanded cache files. MB/GB use decimal
-units. Grounding storage depends on which images are selected.
-
-| Tasks | Metrics | Dataset | Number of images / classes / expressions | Splits | Partial download? | Total size |
-|---|---|---|---|---|---|---|
-| `Classify` | Top-1 accuracy; per-class precision, recall, F1; confusion matrix | **CIFAR-10** (`cifar10`, current default) | 60,000 images at 32×32; 10 classes; 50,000 train / 10,000 test | train, val, test; **val aliases test** | Full archive downloaded; only selected split/classes/sample prefix materialized | ≈170 MB (162 MiB) archive |
-| `Detect` | Precision, recall, F1; TP/FP/FN at configurable matching IoU | **COCO128** (`coco128`, default) | 128 images; 941 boxes; 71 represented classes within an 80-class vocabulary | train, val; **same 128 images in both** | Full archive downloaded; only selected image prefix materialized | 6.98 MB archive |
-| `Ground`, box | Accuracy at IoU ≥0.5 / 0.75 / 0.9; mean IoU | **RefCOCOg UMD** (`refcocog`, default) | **val:** 1,300 unique images; 4,896 expressions and target boxes; 80-category reporting vocabulary | train, val, test | Selected split JSON extracted from a streamed shared archive; only distinct images referenced by selected expressions downloaded | 1.08 GB shared annotation archive; val JSON 2.27 MB; selected images add variable bytes |
-| `Ground`, point | Point-in-box accuracy | **RefCOCOg UMD** (`refcocog`, default) | Same expressions and target boxes as box mode; no point annotations required | train, val, test | Same preparation and cache as box mode | Shares the box-mode dataset files |
-| `Ground`, box or point | Same grounding metrics for the selected geometry | **RefCOCO UNC / RefCOCO+ UNC**, local data | Counts depend on supplied manifest; one target box per expression | train, val, testA, testB | No automatic download; supply annotations and images | Depends on supplied files |
-| `Attributes` | Categorical accuracy; mean attribute accuracy; macro F1; per-group matrices and per-value precision/recall/F1 | **OVAD** (`ovad`, default) | 14,300 source objects; **14,072 eligible objects across 2,000 images**; 22 groups excluding color and clothes color | test; **val aliases the same benchmark**; no train | Pinned annotation archive; only distinct images referenced by selected objects downloaded | 1.13 MB annotation archive; selected COCO val2017 images add variable bytes |
-
-CIFAR-10 and COCO128 contain class/object annotations; the task generates the
-model instructions. RefCOCO-family datasets also supply the referring expression
-for every call. COCO128 is a smoke dataset whose images come from COCO training
-data; its scores do not establish held-out COCO performance.
-
-**Planned classification default: Imagenette v2.** It has 13,394 images across
-10 classes: 9,469 train and 3,925 validation, with no official test split.
-Published shared train/val archives are approximately 99.0 MB (160px), 341.7 MB
-(320px), and 1.56 GB (full resolution); the resized variants set the shortest
-side. The automatic downloader currently supports CIFAR-10, not Imagenette, and
-an Imagenette resolution has not yet been selected. Prepared local Imagenette
-class directories already work with the classification reader; map its WordNet
-folder names to readable task labels with `class_map`.
-
-Dataset sources: [CIFAR-10](https://www.cs.toronto.edu/~kriz/cifar.html),
-[COCO128 archive](https://github.com/ultralytics/assets/releases/download/v0.0.0/coco128.zip),
-[MDETR annotation archive](https://zenodo.org/records/4729015),
-[OVAD annotation archive](https://lmb.informatik.uni-freiburg.de/resources/datasets/ovad.zip),
-[Imagenette variants](https://github.com/fastai/imagenette), and
-[Imagenette counts](https://www.tensorflow.org/datasets/catalog/imagenette).
-COCO128, RefCOCOg val, and OVAD counts above were checked against the source annotations
-used by the repository's downloader.
-
-## Configuration and setup
-
-### Dependencies and backend
-
-Install the package from the repository root:
-
-```bash
-python -m pip install -e .
-```
-
-Install your backend's dependencies and configure access using the
-[Bedrock guide](amazon-bedrock.md) or
-[Transformers guide](huggingface-transformers.md). Detection YAML requires
-PyYAML through the validation extra:
-
-```bash
-python -m pip install -e '.[validation]'
-```
-
-Grounding/OVAD JSON and dataset preparation use the base dependencies. Downloading
-requires neither a dataset framework nor a model library. Local dataset readers
-do not download data; named-dataset preparation is a separate component.
-
-### Validation options
-
-These are arguments to `task.val()`:
-
-| Argument | Default and meaning |
-|---|---|
-| `data` | Task default registered dataset; alternatively a registered name or local dataset path |
-| `split` | `"val"`; must exist for the selected source |
-| `max_samples` | `None`, the entire selected split; limits images for Classify/Detect, expressions for Ground, and eligible objects for Attributes |
-| `cache_dir` | Dataset cache location; precedence described below |
-| `class_map` | `None`; mapping of dataset names to task labels for classification/detection |
-| `match_iou` | `0.5`; detection matching threshold, in `(0, 1]` |
-| `images` | Required image directory for local grounding or OVAD annotations; automatic preparation supplies it |
-| `dataset` | `"refcocog"`; selects the local grounding annotation filename and expected split protocol |
-| `verbose` | `True`; progress and aggregate scores on stderr |
-| `dataloader` | Custom loader instead of `data`; see custom datasets below |
-| `validator` | Custom validator class instead of the task's built-in validator |
-
-Set `labels`, `context`, and `geometry` on the task constructor. For example:
-
-```python
-task = Ground(backend, geometry="point", context="Resolve the whole object.")
-metrics = task.val(max_samples=100)
-```
-
-Classification/detection retain their configured labels; match dataset names or
-use `class_map` for aliases and class selection. Each grounding expression
-supplies its target. Attributes use their configured choices when present, with
-their keys selecting dataset groups; otherwise validation discovers all dataset
-groups and choices. Grounding and attributes reject `class_map`.
-
-Configure model settings, output mode, and correction retries on the
+Configure labels, descriptions, context, and geometry on the task. Configure
+model settings, output mode, and correction retries on the
 [backend](model-backends.md#output-modes-and-retries). Validation adds no
-correction retry policy of its own.
+correction retry policy.
+
+| Validation setting | Purpose |
+|---|---|
+| `data` | Registered name or local path; omitted for the task default |
+| `split` | Dataset split; defaults to `"val"` |
+| `max_samples` | Positive sample limit, or `None` for the full selection |
+| `class_map` | Dataset class names to task labels; classification/detection only |
+| `match_iou` | Detection matching threshold; defaults to `0.5` |
+| `cache_dir` | Override the named-dataset cache |
+| `images`, `dataset` | Local annotation configuration; see [local data](#using-your-own-dataset) |
+| `verbose=False` | Disable progress and aggregate output on stderr |
+
+For the complete argument contracts, see the
+[API reference](reference.md#task-validation).
 
 ### Class selection and aliases
 
-For classification and detection, every task label must exist in the dataset
-unless you supply `class_map`. Dataset classes beyond the task vocabulary are
-excluded from scoring. An explicit mapping selects dataset classes and aliases
-them to task labels: all keys must be dataset names, and all values must be
-configured task labels. Several dataset classes can map to one task label.
-
-Classification evaluates images whose target class is selected. A prediction
-outside the evaluated subset still counts as incorrect. Detection retains every
-image, filters both annotations and predictions to the evaluated classes, and
-counts unmatched selected predictions as false positives. Grounding and
-attributes do not accept `class_map`.
-
-## Default datasets and downloads
-
-Omit `data` to use the task default, or select a registered name
-explicitly, such as `task.val(data="refcocog", max_samples=100)`. Local paths and
-custom loaders bypass automatic preparation. Use `./cifar10` or
-`Path("cifar10")` to identify a local directory whose name matches a registry key.
-
-Prepare data separately without loading a model:
-
-```python
-from ml_pipes.vlm.validation import prepare_dataset
-
-prepared = prepare_dataset("refcocog", split="val", max_samples=100)
-print(prepared.data, prepared.images)
-print(prepared.metadata)
-```
-
-Cache location precedence is `cache_dir`, then
-`VLM_TASKS_DATASETS_DIR`, then `~/.cache/vlm-tasks/datasets`. Matching requests
-verify and reuse prepared files. CIFAR-10 and COCO128 archives have pinned
-checksums, as does OVAD; prepared files have SHA256 hashes. RefCOCOg records the extracted
-annotation's SHA256, but streaming does not verify the full MDETR archive hash.
-Writes are atomic, transient download failures are retried, and preparation
-never executes dataset download scripts.
-
-**Partial preparation does not always mean partial network transfer.** CIFAR-10
-and COCO128 download and retain a shared archive even for a small request.
-RefCOCOg streams the shared MDETR archive until it finds the requested annotation
-file, which can require reading unrelated bytes; it then downloads only the
-selected distinct images. Larger requests reuse cached annotations and images.
-RefCOCOg val/test expressions refer to **COCO train2014** images.
-OVAD uses **COCO val2017** images, filters objects before selecting the sample
-prefix, and downloads only distinct selected images. Its cache identity includes
-selected groups, split, and sample limit. `PreparedDataset.attributes` provides
-constructor-compatible choices and descriptions for OVAD; it is `None` for the
-other registered sources.
-
-Selection is deterministic: classification filters task classes before applying
-the limit and uses class-name/source-record order; detection uses image-filename
-order; grounding uses JSON expression order. Repeated images with different
-expressions make separate calls. Preparation metadata retains full-source
-counts; the prepared manifest and evaluated counts can be smaller.
-OVAD preserves source annotation order; different objects in a repeated image
-make separate crop calls.
-
-## Validation architecture
-
-The validator binds its task at construction and runs when called without
-arguments: `validator = GroundingValidator(task, ...); metrics = validator()`.
-The task's `.val()` method handles these steps for normal usage.
-
-The validator gets samples, calls its bound task, and
-accumulates evaluation results. It coordinates two main components:
-
-- **Data loader:** provides images and ground truth according to the user's
-  dataset configuration, including source/name, split, classes, and sample limit.
-- **Evaluator:** compares a specific task's response with ground truth and
-  computes the relevant metrics, independently of the dataset provider.
-
-A thin **adapter** bridges the dataset's annotation format and the evaluator's
-expected format. For example, it converts source `xywh` or normalized boxes into
-original-image pixel `xyxy` boxes and aligns class IDs with labels. A new dataset
-format needs an adapter; it can reuse the evaluator when task semantics match.
-
-In the current implementation, data provision spans preparation, dataset readers,
-and `DataLoader`. Adaptation happens in dataset readers and validator class
-alignment; evaluation spans task-specific `update_metrics` methods and metric
-classes. The diagram and table below show these implementation components.
-
-```mermaid
-flowchart TD
-    Call["task.val(...)"] --> Validator["Task-specific validator / BaseValidator"]
-    Validator --> Source{"Data source"}
-    Source -->|Registered name or default| Prepare["prepare_dataset: download and cache"]
-    Prepare --> Dataset["Local dataset reader"]
-    Source -->|Local path| Dataset
-    Dataset --> Loader["Synchronous DataLoader"]
-    Source -->|Custom dataloader| Loop["Shared validation loop"]
-    Loader --> Loop
-    Loop --> Task["Configured task"]
-    Task --> Backend["Backend / model"]
-    Backend --> Result["Public task result"]
-    Result --> Metrics["Task-specific metrics"]
-    Loop -->|Ground truth and failure records| Metrics
-    Metrics --> Report["Metrics object"]
-```
-
-| Component | Responsibility |
-|---|---|
-| Task `.val()` in [ops.py](../src/ml_pipes/vlm/ops.py) | Selects `ClassificationValidator`, `DetectionValidator`, `GroundingValidator`, or `AttributesValidator`; stores and returns metrics |
-| [prepare.py](../src/ml_pipes/vlm/validation/prepare.py) | Registry, source downloads, checksums, cache, subset materialization, and `PreparedDataset` metadata |
-| Dataset readers in [data.py](../src/ml_pipes/vlm/validation/data.py) | `ClassificationDataset`, `YOLODataset`, `RefCOCODataset`, and `OVADDataset` validate local annotations and decode images when indexed. Classification owns class filtering. OVAD owns group selection, categorical adaptation, object filtering, and cropping. |
-| Loader in data.py | `DataLoader` iterates the selected dataset samples synchronously |
-| [validator.py](../src/ml_pipes/vlm/validation/validator.py) | `BaseValidator` owns setup, class alignment, iteration, timing, recoverable failures, and finalization. Task-specific `update_metrics()` methods validate/adapt predictions and ground truth, then delegate comparison and accumulation to the metrics classes. |
-| Configured task and backend | Build requests, perform inference, parse structured responses, and apply backend correction retries |
-| [metrics.py](../src/ml_pipes/vlm/validation/metrics.py) | `ClassificationMetrics`, `DetectionMetrics`, `GroundingMetrics`, and `AttributesMetrics` both perform evaluation and expose results: their `update()` methods compare predictions with ground truth and accumulate statistics; properties and `summary()` calculate scores from those statistics. These are stateful evaluators and result containers, rather than plain result dataclasses. Grounding prediction extraction also currently happens here. |
-
-The shared loop loads a sample, calls `predict_sample`, records recoverable
-inference failures, and calls `update_metrics`. Classification/detection pass
-`sample["img"]` to the task; grounding also supplies the expression. Attributes
-pass `(sample["img"], evaluation_attributes)` with the same complete choices for
-every crop through the same loop. Validation
-adds no model preprocessing or inference retries; backend processors own model
-input preparation. Finalization records elapsed time and per-sample loading,
-inference, and metric timings.
-
-## Using your own dataset
-
-Local paths never trigger downloads. You can use a built-in local format, supply
-a custom loader, or extend a validator for another format/task.
-
-### Classification: class directories
-
-```text
-animals/
-  val/
-    cat/a.jpg
-    dog/b.jpg
-```
+Use `class_map` to select dataset classes and give them task-facing names:
 
 ```python
 from ml_pipes.vlm import Classify
 
-task = Classify(backend, labels=["cat", "dog"])
-metrics = task.val(data="/datasets/animals", split="val", max_samples=100)
+task = Classify(
+    backend,
+    labels={"feline": "A cat", "canine": "A dog"},
+)
+metrics = task.val(
+    data="cifar10",
+    class_map={"cat": "feline", "dog": "canine"},
+    max_samples=100,
+)
 ```
 
-Directories define class names. Images are read without dataset-level resizing
-or cropping. Task labels must match dataset names, or supply aliases such as
-`class_map={"cat": "feline"}` for a task configured with the label `feline`.
-An explicit mapping selects the evaluated dataset classes.
+Without a mapping, task labels must match dataset names. With a mapping, keys
+are dataset classes and values are configured task labels; several classes can
+map to one label.
 
-Class names come from immediate split subdirectories; images can be nested
-within them. Files are read in sorted class and path order. Supported extensions
-are BMP, JPEG, PNG, TIFF, and WebP. The requested split must exist; the reader
-does not fall back to another split.
+Classification selects examples from the mapped classes before applying the
+sample limit. Detection retains negative images and scores only selected
+classes; unmatched selected predictions are false positives. A classification
+prediction outside the evaluated subset still counts as incorrect. Grounding
+and attributes do not accept `class_map`.
 
-For direct dataset use, `ClassificationDataset(root, split="val", class_ids=[1])`
-selects classes before image discovery and decoding. IDs follow sorted class
-directory names; filtering preserves those IDs and the complete `.names`
-mapping. `None` selects all classes; an explicit selection must be a nonempty
-iterable of known integer IDs. Class selection preserves dataset order, and
-validation applies `max_samples` after selection. Normal `task.val()` calls
-derive this selection from the task labels or `class_map`.
-
-### Detection: YOLO YAML and labels
-
-```text
-objects/
-  data.yaml
-  images/val/a.jpg
-  labels/val/a.txt
-```
-
-`data.yaml` defines the split and consecutive class IDs starting at zero:
-
-```yaml
-path: .
-val: images/val
-names:
-  0: person
-```
-
-Each label row is `class_id x_center y_center width height`, with coordinates
-normalized to image dimensions. For example, `0 0.5 0.5 0.5 0.5` describes a
-centered person box spanning half the image's width and height.
+### Detection matching
 
 ```python
 from ml_pipes.vlm import Detect
 
-task = Detect(backend, labels={"pedestrian": "A visible person"})
-metrics = task.val(
-    data="/datasets/objects/data.yaml",
-    class_map={"person": "pedestrian"},
-    match_iou=0.5,
-)
+task = Detect(backend, labels=["person", "car"])
+metrics = task.val(data="coco128", match_iou=0.75, max_samples=100)
 ```
 
-Missing or empty label files represent negative images. Malformed annotations
-or unreadable images stop evaluation. The reader converts normalized boxes into
-original-image pixel `xyxy` coordinates; segmentation polygon rows are unsupported.
-No Ultralytics installation is required.
+A higher `match_iou` requires closer box alignment. Keep the threshold and class
+selection fixed when comparing models.
 
-The YAML's `path` is relative to its directory and defaults to that directory.
-A split can name an image directory, a TXT image list, a single image, or a list
-of these sources. Split paths are relative to `path`; entries inside a TXT list
-are relative to that list's directory. Images are deduplicated by resolved path
-and sorted. Only the requested split and class names are required; `names` can
-also be a list of class names.
+### Grounding geometry
 
-The final `images` directory component becomes `labels`, and the image suffix
-becomes `.txt`; without an `images` component, label files are beside the images.
-Boxes must have positive area and stay inside the image, allowing `1e-6`
-normalized rounding error at the edges. Annotation coordinates are preserved.
-Class IDs must index `names`; pose and other annotation formats are unsupported.
-
-`metrics.dataset_counts` includes `missing_labels`, `empty_labels`, and
-`labeled_images` across the full dataset before the sample limit. Images retain
-their original dimensions; local readers do not create run directories.
-
-### Grounding: expression annotations and images
-
-Provide an annotation directory containing the exact filename
-`finetune_{dataset}_{split}.json`, plus an image directory. For example,
-`finetune_refcocog_val.json` can contain:
-
-```json
-{
-  "images": [
-    {"id": 91, "file_name": "sample.jpg", "width": 640, "height": 480,
-     "caption": "the person on the right"}
-  ],
-  "annotations": [
-    {"id": 501, "image_id": 91, "category_id": 1,
-     "bbox": [320, 80, 120, 300]}
-  ],
-  "categories": [{"id": 1, "name": "person"}]
-}
-```
+Choose geometry on the task; each dataset expression supplies its target:
 
 ```python
-from ml_pipes.vlm import Ground
-
-task = Ground(backend, geometry="box")  # or geometry="point"
-metrics = task.val(
-    data="/datasets/expressions/annotations",
-    images="/datasets/expressions/images",
-    dataset="refcocog",
-    split="val",
-)
+task = Ground(backend, geometry="point", context="Locate the described object.")
+metrics = task.val(data="refcocog", split="val", max_samples=100)
+print(metrics.results_dict["point_in_box_accuracy"])
 ```
 
-This MDETR-style format uses one `images` record per expression, even when records
-reference the same physical image. `caption` supplies the prompt; annotation
-`image_id` joins the expression record's `id`. Each expression requires exactly
-one category and target box in pixel `xywh`, converted to pixel `xyxy` by the
-reader. IDs may be sparse; duplicate IDs, missing joins, invalid expressions,
-invalid boxes, and decoded dimensions that disagree with the manifest are errors.
-Local images need not use COCO filenames.
-
-Supported filename/split conventions are RefCOCOg UMD (`train`, `val`, `test`)
-and RefCOCO/RefCOCO+ UNC (`train`, `val`, `testA`, `testB`). MDETR's published
-converter generates train/val annotations; supply any requested test file
-separately if it is absent. See the
-[MDETR preparation guide](https://github.com/ashkamath/mdetr/blob/main/.github/refexp.md).
-Local paths and expected protocol are recorded without certifying the provenance
-of arbitrary user annotations. Your custom expressions can use the same format.
-
-Expression order and repeated image filenames are preserved; `max_samples`
-counts expressions. Full-split `expressions` and `unique_images` appear in
-`dataset_counts`, while aggregate scores count only evaluated samples. Each
-expression overrides the task's constructor target; constructor context remains
-unchanged. Use neutral context when comparing benchmark runs.
+Use `geometry="box"` for IoU-based evaluation. Constructor context remains in
+effect, while dataset expressions override a constructor target. Keep context
+neutral for benchmark comparisons. Categories are reporting groups, rather
+than a grounding label vocabulary.
 
 ### Attributes: OVAD object crops
 
-Validation prepares the dataset and discovers its schema internally when the
-task has no constructor attributes:
+Omit constructor attributes to use the dataset's complete categorical schema:
 
 ```python
 from ml_pipes.vlm import Attributes
+
 task = Attributes(backend)
 metrics = task.val(data="ovad", max_samples=100)
+
 print(metrics.results_dict)
 print(metrics.summary())
 print(metrics.confusion_matrices["material"])
 ```
 
-The task's stored attributes remain `None` throughout and after validation.
-The validator passes the same complete schema with every crop, using the
-per-call override API. Direct calls can also supply choices:
+Each eligible object produces one crop and one call. All selected attribute
+fields are requested on every crop; only known targets contribute to scoring.
+The task's stored configuration is unchanged.
 
-```python
-result = task((image, {"material": ["wood", "metal"]}))
-```
-
-You can still prepare/discover choices separately and configure defaults:
+To evaluate fewer groups, prepare their choices and configure the task:
 
 ```python
 from ml_pipes.vlm.validation import prepare_dataset
 
-prepared = prepare_dataset("ovad", max_samples=100)
+prepared = prepare_dataset("ovad", groups=("material",), max_samples=100)
 task = Attributes(backend, attributes=prepared.attributes)
-```
-
-Local data requires `ovad2000.json` and COCO `val2017` images:
-
-```python
-from ml_pipes.vlm.validation import OVADDataset
-
-dataset = OVADDataset("/datasets/ovad/ovad2000.json", "/datasets/coco/val2017")
-task = Attributes(backend, attributes=dataset.attributes)
 metrics = task.val(
-    data="/datasets/ovad/ovad2000.json",
-    images="/datasets/coco/val2017",
+    data=prepared.data,
+    images=prepared.images,
     max_samples=100,
 )
 ```
 
-Both `test` and the default `val` alias refer to the same published benchmark;
-training splits are rejected. This is a **categorical adaptation**, distinct
-from the official OVAD mAP evaluation of independent attribute scores.
+Keep the complete dataset vocabulary within each selected group; descriptions
+and choice order may change. The categorical adaptation excludes overlapping
+color groups and objects without usable targets or sufficient annotated area.
+Selecting fewer groups can change which objects are eligible, so report the
+selection alongside the score.
 
-**Schema.** Groups come from OVAD's `type` field. A value such as
-`cleanliness:clean/neat` becomes canonical label `clean` with description
-`clean/neat`, preserving all synonyms. All 22 supported groups are selected by
-default: cleanliness, clothes pattern, color quantity, cooked, face expression,
-gender, group, hair color, hair length, hair tone, hair type, length, material,
-maturity, optical property, order, pattern, position, size, state, texture, tone.
-The overlapping groups color and clothes color are excluded.
+### Default datasets and downloads
 
-Select fewer groups with task attribute keys, for example
-`Attributes(backend, attributes={"material": dataset.attributes["material"]})`.
-Each selected group must retain the dataset's complete canonical vocabulary;
-custom descriptions and choice order are allowed. Unsupported groups,
-incomplete or extra choices, and `class_map` are rejected before inference.
-For a smaller download, use `prepare_dataset("ovad", groups=("material",),
-max_samples=100)` and construct the task from its `.attributes`.
+Select a registered name explicitly, or omit `data` for the default. To prepare
+data before model execution:
 
-**Targets and calls.** OVAD vectors contain positive `1`, negative `0`, and
-unknown `-1` entries. Exactly one positive within a group supplies its categorical
-target. Zero positives supplies no target, including an all-negative group;
-there is no invented “none” choice. Multiple positives in a supported group
-are annotation errors. Keep objects with annotation area ≥50 pixels and at least
-one target among selected groups; apply `max_samples` after filtering, preserving
-annotation order. Every object makes one
-`task((sample["img"], evaluation_attributes))` call that predicts **all configured
-fields**. The evaluation attributes are the complete dataset schema when no
-constructor choices exist, or the validated constructor schema with its custom
-descriptions and group selection. Missing targets affect scoring only:
-evaluation schema, descriptions, context, and request structure remain fixed
-across objects. Tuple overrides never change the stored task configuration.
+```python
+from ml_pipes.vlm.validation import prepare_dataset
 
-The data reader validates IDs, joins, vector lengths/values, image dimensions,
-and boxes. It converts pixel `xywh` boxes to crops using floor for the start and
-ceil for the end, clipped to image boundaries, without resizing. An empty crop
-or decoded dimensions inconsistent with annotations is an error. Samples contain
-`im_file`, cropped `img`, `sample_id` (annotation ID), and `attributes` (known
-targets only), with source `image_id`, original `bbox`, and crop bounds as metadata.
+prepared = prepare_dataset(
+    "refcocog",
+    split="val",
+    max_samples=100,
+    cache_dir="/datasets/vlm-cache",
+)
+print(prepared.data, prepared.images)
+print(prepared.metadata)
+```
 
-**Scoring.** `AttributesMetrics.update()` compares and accumulates predictions;
-the validator's `update_metrics()` checks/adapts the public result and delegates
-to it. Each group has a confusion matrix whose rows/columns follow
-`metrics.attributes[group]`, plus a final failed-prediction column.
+Pass the returned paths as `data` and, where required, `images` to use prepared
+data without automatic downloading.
 
-- `accuracy`: correct decisions divided by all evaluated known targets.
-- `mean_attribute_accuracy`: mean group accuracy over groups with target support.
-- `macro_f1`: average per-value F1 within each group, including values with target
-  or scored prediction support, then average across groups with target support.
-- `summary()`: group accuracy, support, macro F1, and per-value target/prediction
-  support, precision, recall, and F1. Groups with no target support report `None`
-  scores and are excluded from averages. Fully absent values are excluded from
-  F1 averages; a predicted-only value in a supported group is included.
-- `samples`, `attribute_decisions`, and `unique_images` in `results_dict` count
-  evaluated objects, known attribute decisions, and distinct source images.
-  Existing failures and loading/inference/metric timings are also reported.
+Cache precedence is `cache_dir`, then `VLM_TASKS_DATASETS_DIR`, then
+`~/.cache/vlm-tasks/datasets`. Matching preparations reuse cached files.
+A small sample limit does not guarantee a small download: CIFAR-10 and COCO128
+require their full archives, and RefCOCOg streams a shared annotation archive
+before fetching selected images. RefCOCOg uses COCO train2014 images; OVAD uses
+COCO val2017 images.
 
-Unscored fields add nothing to support, confusion matrices, or denominators.
-Failed calls remain incorrect for every known target on that object, including
-when every call fails.
+### Using your own dataset
 
-**Counts.** The pinned source has **14,300 objects in 2,000 images**. The default
-selection excludes **226 objects below 50 pixels** and **2 further objects with
-no known categorical target**, leaving **14,072 eligible objects in 2,000
-images**. Subsets of groups can exclude more objects. `dataset_counts` separates
-`source_objects`/`source_images`, `excluded_small_objects`,
-`excluded_unscored_objects`, `excluded_objects`, `eligible_objects`,
-`prepared_objects`/`prepared_images`, and
-`evaluated_objects`/`evaluated_attribute_decisions`/`evaluated_images`.
-Named preparation also retains the source/selection counts in
-`dataset_metadata["preparation"]["counts"]`; evaluated counts describe the
-actual run. Limits reduce prepared and evaluated objects, not source counts.
+Follow the corresponding default dataset's format to reuse its reader and
+metrics. Local paths bypass automatic downloading.
+
+| Task | Format to follow | Local configuration |
+|---|---|---|
+| Classification | Class directories, organized as `<root>/<split>/<class>/image.jpg` | `data="/datasets/animals"`, `split="val"` |
+| Detection | COCO128-style YOLO detection YAML, images, and normalized box labels | `data="/datasets/objects/data.yaml"` |
+| Grounding | MDETR RefCOCO annotations named `finetune_{dataset}_{split}.json`, plus images | `data="/datasets/annotations"`, `images="/datasets/images"`, `dataset="refcocog"` |
+| Attributes | OVAD annotation JSON and its referenced images | `data="/datasets/ovad2000.json"`, `images="/datasets/val2017"` |
+
+Local grounding also accepts `dataset="refcoco"` or `"refcoco+"` with the
+corresponding split files; see the
+[MDETR preparation guide](https://github.com/ashkamath/mdetr/blob/main/.github/refexp.md).
+Use `Path("cifar10")` or `"./cifar10"` when a local directory's name matches a
+registered key. If your annotations or evaluation semantics differ, extend an
+existing validator rather than forcing them into an incompatible format.
 
 ### Custom loaders and validators
 
-A custom loader must expose `.dataset`, whose `.names` maps integer IDs to
-class names (or `.attributes` defines the attributes schema), and yield sample dictionaries with the following fields:
-
-| Task | Required sample fields |
-|---|---|
-| Classify | `im_file`, `img` (`ImagePayload`), `cls` (integer array of shape `(1,)`) |
-| Detect | `im_file`, `img`, `cls` of shape `(N,)`, `bboxes` of shape `(N, 4)` in pixel `xyxy` |
-| Ground | `im_file`, `img`, `cls` of shape `(1,)`, `bboxes` of shape `(1, 4)`, `target` expression; optional `sample_id` preserved in failures |
-| Attributes | `im_file`, cropped `img`, `sample_id`, `attributes` mapping of known targets; optional `image_id` for source-image counts (otherwise `im_file` identifies the source) and `bbox` metadata |
-
-```python
-metrics = task.val(dataloader=my_loader, max_samples=100)
-```
-
-Pass `dataloader` without `data`; this bypasses both downloading and dataset
-construction. You can use the provided `DataLoader` with an indexed dataset
-implementing `__len__`, `__getitem__`, and `.names` (or `.attributes`).
-Attributes loaders own group selection, object filtering, and cropping. Yield
-known targets only within the task's selected groups; missing targets never
-change the task schema or context.
-
-Datasets own sample filtering; loaders iterate their selected samples. For
-classification, use `DataLoader(ClassificationDataset(root, class_ids=...))`.
-Custom datasets and loaders must supply samples from the intended classes;
-`class_map` aligns labels but does not filter an injected loader or a dataset
-returned by a custom `build_dataset()` implementation. Detection retains
-negative images and filters object annotations during scoring.
-
-For other annotations, metrics, or tasks, subclass `BaseValidator` or a concrete
-validator and override hooks such as `build_dataset`, `get_dataloader`,
-`init_metrics`, `predict_sample`, and `update_metrics`. Pass the class as
-`task.val(validator=MyValidator, ...)`. Tasks without a built-in validator need
-this explicit extension. See the
-[validator class reference](reference.md#validator-classes).
-
-For example, with a prepared classification dataset `my_dataset`:
+Extend a concrete validator when the task and scoring rules match; use
+`BaseValidator` for a different evaluation contract. For example, given a
+prepared classification dataset `my_dataset`:
 
 ```python
 from ml_pipes.vlm import Classify
@@ -621,63 +319,54 @@ task = Classify(backend, labels=["cat", "dog"])
 metrics = task.val(validator=CustomValidator, data="my-source")
 ```
 
-Validators bind their task at construction. `.val()` constructs the class with
-`task=self` and the supplied settings, then calls it without arguments. Direct
-`ClassificationValidator(task, ...)()` calls also work; each run starts fresh
-metrics. Custom constructors must accept `task` and forward it to the base
-constructor.
-
-`BaseValidator` owns the loop. `predict_sample()` normally calls the task with
-an image; grounding supplies `(image, target)`, and attributes supplies
-`(crop, evaluation_attributes)`. Task-specific validators consume public task
-results directly. If you override `finalize_metrics()`, call the inherited
-implementation to retain timings.
+The supplied dataset must follow the corresponding dataset interface and
+already select the intended samples. `class_map` aligns labels but does not
+filter a custom dataset or injected loader. For an existing loader, pass
+`dataloader=my_loader` without `data`; it must expose `.dataset`, with
+`.names` or `.attributes` as appropriate. Reuse the built-in dataset sample
+format; dataset class docstrings describe its fields.
 
 | Hook | Role |
 |---|---|
 | `build_dataset()` | Return the dataset |
-| `prepare_named_dataset(task)` | Prepare a registered dataset, or return `None` for local data |
+| `prepare_named_dataset(task)` | Prepare a registered source, or return `None` for local data |
 | `get_dataloader(dataset)` | Return a loader; defaults to `DataLoader(dataset)` |
 | `init_metrics()` | Assign `self.metrics` |
 | `predict_sample(sample)` | Return a public task result |
 | `update_metrics(prediction, sample)` | Accumulate a result, or `None` for a failed call |
-| `finalize_metrics()` | Finalize metrics; the base implementation assigns timings |
+| `finalize_metrics()` | Finalize the report and timings |
 
-## Results and reproducibility
+Validators bind their task at construction and run when called without
+arguments. Custom constructors must accept `task` and forward it to the base
+constructor. When overriding `finalize_metrics()`, call the inherited method
+to retain timings. See the [validator reference](reference.md#validator-classes)
+for constructor contracts.
 
-Python metrics expose `results_dict`, `summary()`, `failures`, `dataset_counts`,
-`speed`, and `elapsed_seconds`. Grounding also exposes status and unique-image
-counts. Attributes also expose known decision counts and per-group confusion
-matrices. Named-dataset preparation metadata is available through
-`metrics.dataset_metadata`.
+### Results and reproducibility
 
-Classification confusion-matrix rows follow `metrics.names` (evaluated labels);
-columns follow `metrics.prediction_names` (all task labels), with a final column
-for failed calls. Detection `tp`, `fp`, and `fn` arrays follow `metrics.names`;
-`summary()` returns per-class counts, support, precision, recall, and F1.
-Grounding summaries report support and the selected geometry's scores per
-category. Attribute matrix ordering and summaries are described in the
-[OVAD scoring section](#attributes-ovad-object-crops).
+| Result | Use |
+|---|---|
+| `metrics.results_dict` | Aggregate scores, evaluated samples, failures, and failure rate |
+| `metrics.summary()` | Per-class, per-category, or per-attribute scores and support |
+| `metrics.failures` | Failed calls with image paths, error messages, and sample identifiers where available |
+| `metrics.dataset_counts`, `metrics.dataset_metadata` | Dataset selection and preparation context when available |
+| `metrics.speed` | Mean milliseconds per evaluated sample for loading, inference, and metric calculation |
+| `metrics.elapsed_seconds` | Total validation time, including dataset preparation and cache checks |
 
-`metrics.failures` records image path, exception type, and message. When a loader
-supplies `sample_id` or `target`, these are retained in failure records too.
+Use the metrics object's label metadata when interpreting confusion matrices.
+Grounding also reports response statuses and unique images; attributes report
+known decisions and per-group confusion matrices. Source, prepared, and
+evaluated counts describe different scopes and should remain distinct in
+reports.
 
-For named datasets, preparation metadata retains full-source counts while
-`dataset_counts` describes the prepared manifest. Evaluated sample and grounding
-unique-image counts describe only the actual run. Keep these scopes distinct
-when reporting subset results.
+Loading time means sample loading, not model initialization. Backend setup
+before `.val()` is outside the reported timings; inference includes configured
+backend correction attempts.
 
-`metrics.elapsed_seconds` includes dataset setup/preparation, cache checks, and
-iteration. `metrics.speed` reports milliseconds per evaluated sample for `load`,
-`inference`, and `metrics`. Its `load` entry means sample loading, not model
-initialization. Backend initialization before `.val()` is outside these timings.
+Keep dataset version, split, sample/class/group selection, geometry, context,
+model revision, generation settings, output mode, and retries fixed when
+comparing runs. Report the metric definition alongside the score. Validation
+returns measurements without an automatic accuracy pass/fail threshold.
 
-Keep dataset version, split, sample/class selection, geometry, context, backend,
-model revision, generation settings, output mode, and retries fixed when comparing
-runs. Report the metric definition alongside the score. Every sample can incur
-provider usage, including configured correction retries.
-
-Progress goes to stderr; `verbose=False` disables it. Validation returns measured
-scores without an automatic accuracy pass/fail threshold. Report serialization
-and process exit codes belong to the
+For command-line execution and saved JSON reports, see the
 [validation example](../examples/README.md#task-validation).
