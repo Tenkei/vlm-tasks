@@ -11,7 +11,10 @@ import numpy as np
 
 from ..errors import InvalidModelResponseError, ModelExecutionError
 from ..types import AttributePredictionResult, ClassificationResult, DetectionResult, GroundingResult
-from .data import ClassificationDataLoader, ClassificationDataset, DataLoader, OVADDataset, RefCOCODataset, YOLODataset
+from .data import (
+    ClassificationDataset, DataLoader, OVADDataset, RefCOCODataset, YOLODataset,
+    _classification_classes,
+)
 from .metrics import AttributesMetrics, ClassificationMetrics, DetectionMetrics, GroundingMetrics
 from .prepare import DATASETS, prepare_dataset
 
@@ -104,7 +107,11 @@ class BaseValidator:
         return self.metrics
 
     def _align_classes(self) -> None:
-        dataset_names = set(self.dataset.names.values())
+        self.class_map = self._resolve_class_map(self.dataset.names)
+        self.names = tuple(name for name in self.task.labels if name in self.class_map.values())
+
+    def _resolve_class_map(self, names: Mapping[int, str]) -> dict[int, str]:
+        dataset_names = set(names.values())
         task_names = set(self.task.labels)
         mapping = self._requested_class_map
         if mapping is None:
@@ -116,10 +123,9 @@ class BaseValidator:
                 f"Invalid class alignment: missing dataset names={sorted(missing)}, "
                 f"unknown task labels={sorted(unknown)}. Supply class_map for aliases or a subset."
             )
-        self.class_map = {
-            class_id: mapping[name] for class_id, name in self.dataset.names.items() if name in mapping
+        return {
+            class_id: mapping[name] for class_id, name in names.items() if name in mapping
         }
-        self.names = tuple(name for name in self.task.labels if name in mapping.values())
 
     def build_dataset(self):
         raise NotImplementedError
@@ -236,10 +242,10 @@ class ClassificationValidator(BaseValidator):
 
     def build_dataset(self):
         prepared = self.prepare_named_dataset("classify")
-        return ClassificationDataset(self.data if prepared is None else prepared.data, split=self.split)
-
-    def get_dataloader(self, dataset):
-        return ClassificationDataLoader(dataset, class_ids=self.class_map)
+        root = self.data if prepared is None else prepared.data
+        names = {class_id: path.name for class_id, path in _classification_classes(root, self.split).items()}
+        class_map = self._resolve_class_map(names)
+        return ClassificationDataset(root, split=self.split, class_ids=class_map)
 
     def init_metrics(self) -> None:
         self.metrics = ClassificationMetrics(self.names, prediction_names=tuple(self.task.labels))

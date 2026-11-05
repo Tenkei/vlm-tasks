@@ -232,12 +232,11 @@ Public imports from `ml_pipes.vlm.validation`:
 
 | Dataset or loader | Contract |
 |---|---|
-| `ClassificationDataset(root, split="val")` | Indexed class-directory dataset |
+| `ClassificationDataset(root, split="val", class_ids=None)` | Indexed class-directory dataset; optional nonempty iterable of class IDs; preserves original IDs and the full `.names` mapping |
 | `YOLODataset(data, split="val")` | Indexed detection dataset from a local YAML |
 | `RefCOCODataset(annotations, images, *, dataset="refcocog", split="val")` | Indexed MDETR-format grounding expressions |
 | `OVADDataset(annotations, images, *, split="val", groups=None, max_samples=None)` | Indexed OVAD object crops; `.attributes` exposes choices |
 | `DataLoader(dataset, indices=None)` | Iterator over all or selected dataset indices |
-| `ClassificationDataLoader(dataset, *, class_ids=None)` | Select classes from `.samples` metadata before decoding |
 
 See [custom loaders and validators](validation.md#custom-loaders-and-validators)
 for sample fields, dataset interfaces, and extension examples.

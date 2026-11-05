@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Iterator, Mapping
+from collections.abc import Iterable, Iterator, Mapping
 from pathlib import Path
 
 import cv2
@@ -36,26 +36,56 @@ def _split_name(split: str) -> None:
         raise ValueError("split must be a nonempty split name")
 
 
+def _classification_classes(root: str | Path, split: str) -> dict[int, Path]:
+    _split_name(split)
+    directory = Path(root).expanduser().resolve() / split
+    if not directory.is_dir():
+        raise FileNotFoundError(f"Classification split not found: {directory}")
+    return dict(enumerate(sorted(path for path in directory.iterdir() if path.is_dir())))
+
+
 class ClassificationDataset:
     """Read ``root/split/class/image`` without resizing or cropping.
 
-    ``names`` maps integer IDs to class names. Indexed samples contain
-    ``im_file``, ``img`` (an ImagePayload), and ``cls`` (one integer ID).
+    ``class_ids`` selects classes before image discovery or decoding. ``names``
+    retains the complete ID-to-name mapping; selected IDs are not renumbered.
+    Indexed samples contain ``im_file``, ``img`` (an ImagePayload), and ``cls``
+    (one integer ID).
     """
 
-    def __init__(self, root: str | Path, split: str = "val") -> None:
-        _split_name(split)
-        directory = Path(root).expanduser().resolve() / split
-        if not directory.is_dir():
-            raise FileNotFoundError(f"Classification split not found: {directory}")
-        classes = sorted(path for path in directory.iterdir() if path.is_dir())
-        self.names = {i: path.name for i, path in enumerate(classes)}
+    def __init__(
+        self, root: str | Path, split: str = "val",
+        class_ids: Iterable[int] | None = None,
+    ) -> None:
+        classes = _classification_classes(root, split)
+        self.names = {class_id: path.name for class_id, path in classes.items()}
+        selected = None
+        if class_ids is not None:
+            try:
+                ids = tuple(class_ids)
+            except TypeError as exc:
+                raise ValueError("class_ids must be a nonempty collection of known integer class IDs") from exc
+            if (
+                isinstance(class_ids, (str, bytes)) or not ids
+                or any(
+                    isinstance(class_id, (bool, np.bool_))
+                    or not isinstance(class_id, (int, np.integer))
+                    or class_id not in self.names
+                    for class_id in ids
+                )
+            ):
+                raise ValueError("class_ids must be a nonempty collection of known integer class IDs")
+            selected = set(ids)
         self.samples = [
             {"im_file": str(image), "cls": np.array([class_id], dtype=np.int64)}
-            for class_id, path in enumerate(classes) for image in _image_files(path)
+            for class_id, path in classes.items()
+            if selected is None or class_id in selected
+            for image in _image_files(path)
         ]
         if not self.samples:
-            raise ValueError(f"No classification images found in {directory}")
+            if selected is not None:
+                raise ValueError("No samples belong to the selected classification classes")
+            raise ValueError(f"No classification images found in {Path(root).expanduser().resolve() / split}")
 
     def __len__(self) -> int:
         return len(self.samples)
@@ -526,21 +556,3 @@ class DataLoader:
     def __iter__(self) -> Iterator[dict]:
         for index in self.indices:
             yield self.dataset[index]
-
-
-class ClassificationDataLoader(DataLoader):
-    """Select classification samples by class ID before decoding images.
-
-    The dataset exposes annotation metadata through ``.samples``. Omit
-    ``class_ids`` to include every class.
-    """
-
-    def __init__(self, dataset, *, class_ids=None) -> None:
-        indices = None
-        if class_ids is not None:
-            selected = set(class_ids)
-            indices = [
-                i for i, sample in enumerate(dataset.samples)
-                if int(sample["cls"][0]) in selected
-            ]
-        super().__init__(dataset, indices=indices)

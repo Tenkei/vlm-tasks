@@ -288,8 +288,8 @@ flowchart TD
 |---|---|
 | Task `.val()` in [ops.py](../src/ml_pipes/vlm/ops.py) | Selects `ClassificationValidator`, `DetectionValidator`, `GroundingValidator`, or `AttributesValidator`; stores and returns metrics |
 | [prepare.py](../src/ml_pipes/vlm/validation/prepare.py) | Registry, source downloads, checksums, cache, subset materialization, and `PreparedDataset` metadata |
-| Dataset readers in [data.py](../src/ml_pipes/vlm/validation/data.py) | `ClassificationDataset`, `YOLODataset`, `RefCOCODataset`, and `OVADDataset` validate local annotations and decode images when indexed. OVAD owns group selection, categorical adaptation, object filtering, and cropping. |
-| Loaders in data.py | `DataLoader` iterates sample dictionaries synchronously; `ClassificationDataLoader` selects classes before decoding images |
+| Dataset readers in [data.py](../src/ml_pipes/vlm/validation/data.py) | `ClassificationDataset`, `YOLODataset`, `RefCOCODataset`, and `OVADDataset` validate local annotations and decode images when indexed. Classification owns class filtering. OVAD owns group selection, categorical adaptation, object filtering, and cropping. |
+| Loader in data.py | `DataLoader` iterates the selected dataset samples synchronously |
 | [validator.py](../src/ml_pipes/vlm/validation/validator.py) | `BaseValidator` owns setup, class alignment, iteration, timing, recoverable failures, and finalization. Task-specific `update_metrics()` methods validate/adapt predictions and ground truth, then delegate comparison and accumulation to the metrics classes. |
 | Configured task and backend | Build requests, perform inference, parse structured responses, and apply backend correction retries |
 | [metrics.py](../src/ml_pipes/vlm/validation/metrics.py) | `ClassificationMetrics`, `DetectionMetrics`, `GroundingMetrics`, and `AttributesMetrics` both perform evaluation and expose results: their `update()` methods compare predictions with ground truth and accumulate statistics; properties and `summary()` calculate scores from those statistics. These are stateful evaluators and result containers, rather than plain result dataclasses. Grounding prediction extraction also currently happens here. |
@@ -333,6 +333,14 @@ Class names come from immediate split subdirectories; images can be nested
 within them. Files are read in sorted class and path order. Supported extensions
 are BMP, JPEG, PNG, TIFF, and WebP. The requested split must exist; the reader
 does not fall back to another split.
+
+For direct dataset use, `ClassificationDataset(root, split="val", class_ids=[1])`
+selects classes before image discovery and decoding. IDs follow sorted class
+directory names; filtering preserves those IDs and the complete `.names`
+mapping. `None` selects all classes; an explicit selection must be a nonempty
+iterable of known integer IDs. Class selection preserves dataset order, and
+validation applies `max_samples` after selection. Normal `task.val()` calls
+derive this selection from the task labels or `class_map`.
 
 ### Detection: YOLO YAML and labels
 
@@ -585,12 +593,12 @@ Attributes loaders own group selection, object filtering, and cropping. Yield
 known targets only within the task's selected groups; missing targets never
 change the task schema or context.
 
-Loaders own sample filtering; the validator iterates their output directly.
-For classification datasets exposing `.samples` metadata, use
-`ClassificationDataLoader(dataset, class_ids=...)` to select classes before
-decoding. Custom loaders must yield samples from the intended classes;
-`class_map` aligns labels but does not filter an injected loader. Detection
-retains negative images and filters object annotations during scoring.
+Datasets own sample filtering; loaders iterate their selected samples. For
+classification, use `DataLoader(ClassificationDataset(root, class_ids=...))`.
+Custom datasets and loaders must supply samples from the intended classes;
+`class_map` aligns labels but does not filter an injected loader or a dataset
+returned by a custom `build_dataset()` implementation. Detection retains
+negative images and filters object annotations during scoring.
 
 For other annotations, metrics, or tasks, subclass `BaseValidator` or a concrete
 validator and override hooks such as `build_dataset`, `get_dataloader`,

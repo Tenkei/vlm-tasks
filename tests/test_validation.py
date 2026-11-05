@@ -16,7 +16,7 @@ from ml_pipes.vlm import (
 )
 from ml_pipes.vlm.validation import (
     BaseValidator, ClassificationDataset, ClassificationMetrics,
-    ClassificationValidator, ClassificationDataLoader, DetectionMetrics, DetectionValidator,
+    ClassificationValidator, DataLoader, DetectionMetrics, DetectionValidator,
     YOLODataset,
 )
 
@@ -188,18 +188,48 @@ def test_sample_limit_and_repeated_validator_runs(tmp_path):
     assert third is task.metrics and third is not second
 
 
+@pytest.mark.parametrize("class_ids", [[2, 0, 2], {0, 2}, np.array([2, 0], dtype=np.int64)])
+def test_classification_dataset_filters_classes_and_preserves_ids(tmp_path, monkeypatch, class_ids):
+    from ml_pipes.vlm.validation import data as readers
+
+    root = classification_data(tmp_path, classes=("cat", "dog", "fox"), per_class=2)
+    image_files = readers._image_files
+    visited = []
+
+    def selected_image_files(directory):
+        visited.append(directory.name)
+        assert directory.name != "dog", "Unselected classes must not be scanned for images"
+        return image_files(directory)
+
+    monkeypatch.setattr(readers, "_image_files", selected_image_files)
+    dataset = ClassificationDataset(root, class_ids=class_ids)
+    assert dataset.names == {0: "cat", 1: "dog", 2: "fox"}
+    assert len(dataset) == 4
+    assert visited == ["cat", "fox"]
+    loader = DataLoader(dataset)
+    assert len(loader) == 4
+    assert [int(sample["cls"][0]) for sample in loader] == [0, 0, 2, 2]
+
+
+@pytest.mark.parametrize("class_ids", [[], [-1], [2], [1.0], [0, True], [np.bool_(False)], 1, "1", b"\x01"])
+def test_classification_dataset_rejects_invalid_class_ids(tmp_path, class_ids):
+    root = classification_data(tmp_path)
+    with pytest.raises(ValueError, match="class_ids"):
+        ClassificationDataset(root, class_ids=class_ids)
+
+
 @pytest.mark.parametrize("custom_loader", [False, True])
 def test_classification_subset_does_not_decode_excluded_images(tmp_path, custom_loader):
-    data = classification_data(tmp_path)
+    data = classification_data(tmp_path, per_class=2)
     (data / "val" / "cat" / "0.png").write_bytes(b"corrupt but outside selected classes")
+    (data / "val" / "dog" / "1.png").write_bytes(b"corrupt but past sample limit")
     settings = {"data": data}
     if custom_loader:
-        dataset = ClassificationDataset(data)
-        dog_ids = [class_id for class_id, name in dataset.names.items() if name == "dog"]
-        loader = ClassificationDataLoader(dataset, class_ids=dog_ids)
-        assert len(loader) == 1
+        dataset = ClassificationDataset(data, class_ids=[1])
+        loader = DataLoader(dataset)
+        assert len(loader) == 2
         settings = {"dataloader": loader}
-    metrics = Classify(Backend({"labels": ["dog"]}), ["dog"]).val(**settings, verbose=False)
+    metrics = Classify(Backend({"labels": ["dog"]}), ["dog"]).val(**settings, max_samples=1, verbose=False)
     assert metrics.seen == 1 and metrics.top1 == 1
 
 
@@ -219,16 +249,24 @@ def test_custom_validator_class():
 
 def test_injected_loader_and_custom_dataset_construction(tmp_path):
     data = classification_data(tmp_path)
-    dataset = ClassificationDataset(data)
-    dog_ids = [class_id for class_id, name in dataset.names.items() if name == "dog"]
-    loader = ClassificationDataLoader(dataset, class_ids=dog_ids)
+    dataset = ClassificationDataset(data, class_ids=[1])
+    loader = DataLoader(dataset)
     task = Classify(Backend({"labels": ["dog"]}), ["dog"])
     metrics = task.val(dataloader=loader, verbose=False)
     assert metrics.seen == 1 and metrics.top1 == 1
 
+    class IndexedDataset:
+        names = dataset.names
+
+        def __len__(self):
+            return len(dataset)
+
+        def __getitem__(self, index):
+            return dataset[index]
+
     class CustomDatasetValidator(ClassificationValidator):
         def build_dataset(self):
-            return loader.dataset
+            return IndexedDataset()
 
     assert task.val(validator=CustomDatasetValidator, data="unused", verbose=False).top1 == 1
 
