@@ -1,94 +1,178 @@
-# vlm-tasks
+# VLM tasks
 
-Repository: `vlm-tasks`. Distribution: `ml-pipes-vlm`. Import: `ml_pipes.vlm`.
+[![Python: 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
+[![ml-pipes-core and ml-pipes-vision: >=0.1.3,<0.2.0](https://img.shields.io/badge/ml--pipes-%3E%3D0.1.3%2C%3C0.2.0-blue)](pyproject.toml)
+[![License: Apache 2.0](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
 
-Task operators for vision-language models, using PydanticAI for model
-communication and structured output execution.
+VLM tasks is a thin interface that coerces **vision-language models
+(VLMs)** into producing structured results for tasks such as classification,
+detection, grounding and attribute prediction.
 
-**MVP:** Classify, ClassifyMultiLabel, Detect, Ground, and Attributes.
-Requires Python 3.11+. Import operators from `ml_pipes.vlm`.
+Choose a task, provide the minimum information it needs, such as labels or a
+target description, and add optional context. The framework handles prompting
+and enforces the task's output structure, returning a Python result you can use
+in your application.
 
-## Installation
+Built-in validation helps you measure prediction quality on labeled datasets
+and compare models on your own data.
 
-From the repository root:
+## Quick start
 
-    python -m pip install -e .
+### Install
 
-Install the provider SDKs you use separately, for example:
+Requires Python 3.11+. Install from a local checkout:
 
-    python -m pip install 'pydantic-ai-slim[bedrock]==2.61.0'
-
-The base VLM package depends on pydantic-ai-slim, without every provider SDK,
-and reuses vision's ImagePayload. It does not load weights or start servers.
-Framework dependencies are
-`ml-pipes-core>=0.1.3,<0.2.0` and `ml-pipes-vision>=0.1.3,<0.2.0`.
-Provider authentication, clients and model loading remain application concerns.
-
-## Usage
-
-Application code supplies an initialized PydanticAI Model:
-
-    from ml_pipes.core import Pipeline
-    from ml_pipes.vision import Decode, LoadFile
-    from ml_pipes.vlm import Classify, PydanticAIBackend
-    from pydantic_ai.models.bedrock import BedrockConverseModel
-    from pydantic_ai.providers.bedrock import BedrockProvider
-
-    # existing_client: the application's configured boto3 bedrock-runtime client
-    # model_id: a vision-capable model available to that client
-    model = BedrockConverseModel(
-        model_id,
-        provider=BedrockProvider(bedrock_client=existing_client),
-    )
-    backend = PydanticAIBackend(model)
-    pipeline = Pipeline([
-        LoadFile(),
-        Decode(),
-        Classify(
-            backend,
-            labels={"clean": "No visible dirt", "dirty": "Visible dirt"},
-            context="Assess the cleanliness of the visible windows.",
-        ),
-    ])
-    result = pipeline("windows.jpg")
-    print(result.labels)
-
-Operators can also be called directly, without constructing a Pipeline:
-
-```python
-operator = Classify(backend, ["clean", "dirty"], context="Assess the windows.")
-result = operator(image)  # image is an ImagePayload
+```bash
+python -m pip install -e .
 ```
 
-Operators accept an ImagePayload and return their dedicated result. Ground also
-accepts `task((image, target))` to supply or override its optional constructor
-target. Attributes accepts `task((image, attributes))` to supply or override its
-optional attribute choices. Other settings are configured at construction.
-Backends can be shared; calls have independent histories.
+### Connect your model
 
-For a local OpenAI-compatible inference server, initialize a PydanticAI model
-in application code:
+Choose one of the options below to create a `backend`, then pass it to a task.
 
-    from pydantic_ai.models.openai import OpenAIChatModel
-    from pydantic_ai.providers.vllm import VLLMProvider
+#### Hugging Face Transformers
 
-    model = OpenAIChatModel(
-        "Qwen/Qwen3-VL-4B-Instruct",
-        provider=VLLMProvider(base_url="http://localhost:8000/v1"),
-    )
-    backend = PydanticAIBackend(model)
+Run a model locally with Transformers. Install the dependencies for this option:
 
-The server must already be running. API/model support for images and output
-modes is required. A checkpoint name alone is not evidence of task accuracy.
-
-## Validation
-
-Evaluate a configured task on local labeled data:
-
-```python
-metrics = operator.val(data="/path/to/dataset", max_samples=10)
-print(metrics.results_dict)
+```bash
+python -m pip install 'torch>=2.5' torchvision 'transformers>=4.57,<5' 'Pillow>=10'
 ```
 
-See the [validation guide](docs/validation.md) for dataset setup, configuration
-and metrics, and the [examples](examples/README.md#dataset-validation) for CLI commands.
+The first run downloads the model weights; inference runs on your machine.
+
+```python
+from transformers import AutoModelForImageTextToText, AutoProcessor
+
+from ml_pipes.vlm import PydanticAIBackend, TransformersModel
+
+model_id = "Qwen/Qwen3-VL-2B-Instruct"
+processor = AutoProcessor.from_pretrained(model_id)
+weights = AutoModelForImageTextToText.from_pretrained(model_id)
+backend = PydanticAIBackend(
+    TransformersModel(weights, processor, model_name=model_id),
+)
+```
+
+See the [Transformers guide](docs/guides/huggingface-transformers.md) for device
+setup and other checkpoints.
+
+#### vLLM and other providers
+
+Connect to a vision-language model already running on a vLLM server. Install the
+client dependencies:
+
+```bash
+python -m pip install 'pydantic-ai-slim[openai]==2.61.0'
+```
+
+```python
+from pydantic_ai.models.openai import OpenAIChatModel
+from pydantic_ai.providers.vllm import VLLMProvider
+
+from ml_pipes.vlm import PydanticAIBackend
+
+backend = PydanticAIBackend(OpenAIChatModel(
+    "Qwen/Qwen3-VL-2B-Instruct",  # Replace with your server's model name.
+    provider=VLLMProvider(base_url="http://localhost:8000/v1"),
+))
+```
+
+You can also wrap an existing PydanticAI model with `PydanticAIBackend(model)`.
+See [model integration](docs/reference.md#model-integration) for other providers.
+
+### Run a task
+
+Pass your `backend` to a task and specify what to predict. For example, describe
+a chair's material and condition:
+
+```python
+import ml_pipes.vlm as tasks
+
+task = tasks.Attributes(
+    backend,
+    attributes={
+        "material": ["wood", "metal", "plastic"],
+        "condition": ["clean", "dirty"],
+    },
+    context="Describe the chair in the image.",
+)
+result = task("chair.jpg")
+
+print(result.attributes)
+```
+
+**Structured result:** each requested attribute maps to exactly one allowed
+value. Example output:
+
+```text
+{'material': 'wood', 'condition': 'clean'}
+```
+
+Access individual values with `result.attributes["material"]`.
+
+See [available tasks](#available-tasks) for the full list and the
+[API reference](docs/reference.md#operators) for task options.
+
+### Built-in validation
+
+A model can produce the right response format and still make the wrong
+prediction. Use built-in validation to measure accuracy on a dataset that is
+downloaded and prepared automatically. For attributes, OVAD supplies the
+benchmark's attribute choices:
+
+```python
+metrics = tasks.Attributes(backend).val(max_samples=10)
+print(metrics.results_dict)  # Accuracy and failure statistics.
+```
+
+**Example result:** a local `Attributes` run with `Qwen/Qwen3-VL-2B-Instruct` on
+the first 100 eligible OVAD objects (17 images), using Apple MPS and float16:
+
+| Metric | Result |
+|---|---:|
+| Attribute accuracy | 58.52% (450 / 769 decisions) |
+| Mean attribute accuracy | 59.12% |
+| Macro F1 | 45.69% |
+| Inference failures | 1 / 100 |
+
+These results describe a small ordered subset using categorical attribute
+scoring. See the [attribute validation guide](docs/validation.md#attributes-ovad-object-crops)
+for details.
+
+### Validate on your own data
+
+```python
+metrics = tasks.Attributes(backend).val(data="./annotations.json", images="./images")
+```
+
+See the [custom dataset guide](docs/validation.md#using-your-own-dataset) for
+supported formats and setup.
+
+## How tasks work
+
+```mermaid
+flowchart LR
+    Image[Image] --> Task[Task]
+    Settings[Task configuration] --> Task
+    Task --> Model[VLM] --> Response[Model response] --> Result[Structured result]
+```
+
+The framework builds the model instructions from your task settings and
+context, then checks and converts the response into a structured result.
+
+## Available tasks
+
+| Task | What it does | Status |
+|---|---|---|
+| `Classify` | Choose exactly one label, such as cat or dog. | Available |
+| `ClassifyMultiLabel` | Choose all applicable labels, such as scratched and stained. | Available |
+| `Detect` | Find matching objects and return labeled bounding boxes. | Available |
+| `Ground` | Locate a described target, such as “the leftmost cat,” as a box or point. | Available |
+| `Attributes` | Predict named properties, such as material and condition, from allowed choices. | Available |
+| `Caption` | Describe an image in natural language. | Planned |
+| `Answer` | Answer a question about an image. | Planned |
+| `ReadText` | Read text visible in an image (OCR). | Planned |
+
+Planned tasks are the next additions; they are not available yet. For task
+options and result types, see the [API reference](docs/reference.md). For the
+broader roadmap, see the [task catalog](docs/design.md#task-catalog).
