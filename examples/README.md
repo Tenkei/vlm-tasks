@@ -1,328 +1,121 @@
-# VLM task examples
+# Run the examples
 
-Run VLM tasks on individual images or evaluate classification, detection and
-grounding against a labeled dataset. The single-image runners use Amazon Bedrock or
-local Hugging Face Transformers weights and execute all five tasks by default,
-with an independent model request for each task.
-
-| Example | Model execution | Requirements |
-|---|---|---|
-| [Amazon Bedrock](#amazon-bedrock) — [run_bedrock.py](run_bedrock.py) | Bedrock Converse API | Provider SDK, AWS credentials and model access |
-| [Hugging Face Transformers](#hugging-face-transformers) — [run_transformers.py](run_transformers.py) | Weights loaded in the local Python process | PyTorch, Transformers, Pillow and a compatible model |
-| [Dataset validation](#dataset-validation) — [run_validation.py](run_validation.py) | Bedrock or local Transformers, one call per image or grounding expression | Backend dependencies; default datasets download automatically; validation extra for detection YAML |
-
-To check task execution with synthetic responses, run the
-[sanity check](#sanity-check).
+Use Python 3.11+ and run commands from the repository root; see the [project README](../README.md) for an introduction.
 
 ## Setup
 
-Use Python 3.11+ and run commands from the repository root:
+Install the package:
 
 ```bash
 python -m pip install -e .
 ```
 
-Install the additional dependencies for the example you choose below.
+## Task Configuration
 
-## Amazon Bedrock
-
-[run_bedrock.py](run_bedrock.py) uses a vision-capable model exposed through
-Bedrock Converse. The application creates a boto3 client and passes it to
-PydanticAI.
-
-### Dependencies and authentication
+Copy [image_tasks.json](image_tasks.json) and edit the single-image task settings; see the [task reference](../docs/reference.md#operators) for available fields.
 
 ```bash
-python -m pip install 'pydantic-ai-slim[bedrock]==2.61.0'
+cp examples/image_tasks.json /tmp/vlm-tasks.json
 ```
 
-For an AWS IAM Identity Center profile, log in with:
-
-```bash
-aws sso login --profile YOUR_PROFILE
-```
-
-For a profile configured with AWS console login (`login_session`), use:
-
-```bash
-python -m pip install 'botocore[crt]'
-aws login --profile YOUR_PROFILE
-```
-
-The CRT extra lets boto3 use console login credentials. To log in through a
-URL on another device, use `aws login --profile YOUR_PROFILE --remote` and
-enter the authorization code in the waiting CLI.
-
-Other configured AWS authentication methods work through boto3's normal
-credential chain. Omit `--profile` to use that chain, including `AWS_PROFILE`.
-
-### Run
-
-Choose a vision-capable Bedrock Converse model or inference profile available
-to your account and region. For example, where available:
-
-```bash
-python -m examples.run_bedrock \
-  --input /path/to/image.jpg \
-  --profile YOUR_PROFILE \
-  --region us-east-1 \
-  --model us.amazon.nova-pro-v1:0 \
-  --output /tmp/vlm-bedrock-results.json
-```
-
-Model access and region availability must match your account. The account
-needs permission to invoke the chosen model. If you omit `--region`, boto3
-uses the environment or AWS profile configuration; the report then records
-`requested_region` as null.
-
-Bedrock defaults to prompted output and temperature 0. Set
-`--output-mode native` or `--output-mode tool` only when the model/API supports
-that mode. `--retries` controls structured-output correction attempts; boto3
-retains its normal transport retry policy.
+Pass the copy with `--config`; add `--tasks attributes` to run only attribute prediction.
 
 ## Hugging Face Transformers
 
-[run_transformers.py](run_transformers.py) loads model weights and a processor
-locally, then wraps them in `ml_pipes.vlm.TransformersModel` and
-`PydanticAIBackend`. The default checkpoint is `Qwen/Qwen3-VL-2B-Instruct`.
-
-### Dependencies
-
-Install a PyTorch and torchvision build suitable for your machine, together
-with Transformers and Pillow:
+Run all five tasks with local Qwen3-VL weights; see the [Transformers guide](../docs/guides/huggingface-transformers.md) for model and device options.
 
 ```bash
-python -m pip install 'torch>=2.5' torchvision 'transformers>=4.57,<5' 'Pillow>=10'
-```
+python -m pip install \
+  'torch>=2.5' \
+  torchvision \
+  'transformers>=4.57,<5' \
+  'Pillow>=10'
 
-The first run downloads model weights and the processor. For gated or private
-checkpoints, authenticate with the Hugging Face CLI or set `HF_TOKEN`.
-
-### Run
-
-```bash
 python -m examples.run_transformers \
   --input /path/to/image.jpg \
-  --model Qwen/Qwen3-VL-2B-Instruct \
-  --device auto \
+  --config /tmp/vlm-tasks.json \
   --output /tmp/vlm-transformers-results.json
 ```
 
-`--device auto` selects CUDA if available, then Apple MPS, then CPU. Use
-`--device cpu`, `--device mps` or `--device cuda:0` to choose explicitly.
-`--dtype` accepts `auto`, `float32`, `float16` or `bfloat16`.
+## Amazon Bedrock
 
-Use `--model /path/to/checkpoint` for local weights and `--local-files-only`
-to restrict loading to cached or local files. `--revision` selects the model
-and processor revision. The adapter supports prompted output with greedy
-generation and loads the model once for all selected tasks.
+Configure [AWS credentials](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html) and choose a model available in your account and region.
 
-See the [Hugging Face Transformers guide](../docs/guides/huggingface-transformers.md)
-for adapter details, supported models and reuse of already-loaded objects.
+```bash
+python -m pip install 'pydantic-ai-slim[bedrock]==2.61.0'
+
+python -m examples.run_bedrock \
+  --region us-east-1 \
+  --profile YOUR_PROFILE \
+  --model us.amazon.nova-pro-v1:0 \
+  --input /path/to/image.jpg \
+  --config /tmp/vlm-tasks.json \
+  --output /tmp/vlm-bedrock-results.json
+```
+
+For an AWS SSO profile, log in first with `aws sso login --profile YOUR_PROFILE`; see the [AWS authentication guide](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html#aws-iam-identity-center).
 
 ## Dataset validation
 
-[run_validation.py](run_validation.py) evaluates classification, detection,
-box or point grounding, and categorical object attributes with Bedrock (default)
-or local Transformers weights.
-Install the backend dependencies described above. Default datasets download
-automatically; see the [validation guide](../docs/validation.md) for defaults
-and custom local data.
-
-Classification:
+Install the validation extra for detection YAML support, plus your backend dependencies above; see the [validation guide](../docs/validation.md) for details.
 
 ```bash
-python -m examples.run_validation \
-  --task classify --max-samples 100 \
-  --model us.amazon.nova-pro-v1:0 --profile YOUR_PROFILE --region us-east-1
+python -m pip install -e '.[validation]'
 ```
 
-Detection:
+### Built-in datasets
+
+Evaluate attribute prediction on OVAD with automatic dataset preparation:
 
 ```bash
 python -m examples.run_validation \
-  --task detect --max-samples 100 \
-  --model us.amazon.nova-pro-v1:0 --profile YOUR_PROFILE --region us-east-1
-```
-
-Grounding with local Qwen3-VL:
-
-```bash
-python -m examples.run_validation \
-  --backend transformers --task ground \
+  --backend transformers \
+  --task attributes \
   --max-samples 10 \
-  --model Qwen/Qwen3-VL-2B-Instruct --device mps --dtype float16 \
-  --retries 0 --max-tokens 4096 --output /tmp/grounding10.json
+  --output /tmp/vlm-attributes-validation.json
 ```
 
-Attributes with automatic OVAD schema discovery:
+Use `--task classify`, `--task detect`, or `--task ground` for the other [built-in validations](../docs/validation.md#available-validations).
+
+### Your own data
+
+Evaluate local attribute annotations and images; see the [custom dataset guide](../docs/validation.md#using-your-own-dataset) for supported formats.
 
 ```bash
 python -m examples.run_validation \
-  --task attributes --max-samples 100 \
-  --model us.amazon.nova-pro-v1:0 --profile YOUR_PROFILE --region us-east-1
+  --backend transformers \
+  --task attributes \
+  --data /path/to/annotations.json \
+  --images /path/to/images \
+  --max-samples 10 \
+  --output /tmp/vlm-custom-validation.json
 ```
 
-Prepare OVAD and print the constructor-compatible schema without loading a model:
+### Validate with Bedrock
+
+Use your configured AWS profile and model:
 
 ```bash
-python -m examples.run_validation --task attributes --prepare-only --max-samples 100
+python -m examples.run_validation \
+  --backend bedrock \
+  --region us-east-1 \
+  --profile YOUR_PROFILE \
+  --model us.amazon.nova-pro-v1:0 \
+  --task attributes \
+  --max-samples 10 \
+  --output /tmp/vlm-bedrock-validation.json
 ```
 
-Use local OVAD annotations with `--data /datasets/ovad/ovad2000.json
---images /datasets/coco/val2017`. The default `--split val` aliases `test`;
-training splits are unsupported. The runner reports the selected groups and
-categorical protocol, which differs from official OVAD mAP.
+## Output and options
 
-### Runner options and configuration
+Runners print JSON; `--output /path/to/results.json` also saves it, and the [validation guide](../docs/validation.md#results-and-reproducibility) explains the metrics and timings.
 
-This example script wraps the Python validation API. Its CLI flags, configuration
-defaults, JSON reports, and exit codes are specific to the example. See the
-[validation guide](../docs/validation.md) for datasets, metrics, architecture,
-and custom data formats.
+Exit codes are `0` for success, `1` for model failures, and `2` for setup or validation errors; see the [validation runner](run_validation.py) for report fields.
 
-| Option | Purpose and default |
-|---|---|
-| `--task` | Required: `classify`, `detect`, `ground`, or `attributes` |
-| `--backend`, `--model` | Bedrock by default, requiring a model ID; Transformers defaults to `Qwen/Qwen3-VL-2B-Instruct` |
-| `--data` | Registered dataset name or local path; omitted uses the task default |
-| `--split`, `--max-samples` | `val` and no limit; limits images, grounding expressions, or eligible object crops |
-| `--cache-dir` | Overrides `VLM_TASKS_DATASETS_DIR` and `~/.cache/vlm-tasks/datasets` |
-| `--prepare-only` | Prepare a registered dataset without loading a model or running inference |
-| `--config` | JSON task constructor settings; defaults described below |
-| `--class-map` | JSON file mapping dataset names to task labels; classification/detection only |
-| `--match-iou` | Detection matching threshold; default `0.5` |
-| `--images` | Required for local grounding or OVAD images; automatic preparation supplies images |
-| `--dataset` | Local grounding annotation convention; defaults to `refcocog` |
-| `--output-mode`, `--retries`, `--max-tokens` | Defaults: `prompted`, `0` correction attempts, `4096` generated tokens per request |
-| `--output`, `--no-verbose` | Save the JSON report; disable progress and aggregate score logging on stderr |
-
-Bedrock authentication flags (`--profile`, `--region`) and Transformers loading
-flags (`--device`, `--dtype`, `--revision`, `--local-files-only`) work as described
-in their sections above. Transformers accepts only prompted output and uses
-greedy generation. Backend/transport retry policies are separate from correction
-retries. Use `python -m examples.run_validation --help` for all CLI options.
-
-Without `--config`, registered classification/detection datasets use all dataset
-labels; local classification/detection data uses [image_tasks.json](image_tasks.json),
-so supply matching settings when needed. Grounding defaults to empty task settings
-and gets targets from dataset expressions. Explicit configs retain their labels
-and context. Attributes discovers all supported groups and their complete choices
-from named or local data when no schema is configured (omitted or `null`). An explicit `attributes`
-schema selects groups and retains its descriptions/context; every selected group
-must contain the complete dataset vocabulary. For example, select only material:
-
-```json
-{"attributes": {"attributes": {"material": ["asphalt", "ceramic", "glass", "leather", "metal", "paper", "polymers", "stone", "textile", "wood"]}}}
-```
-
-Use the preparation-only output's `attributes` to copy the exact vocabulary.
-For point grounding, pass `--config /path/to/point.json` containing:
-
-```json
-{"ground": {"geometry": "point", "context": "Resolve the whole object."}}
-```
-
-Prepare a default dataset independently:
+List all command-line options:
 
 ```bash
-python -m examples.run_validation --task ground --prepare-only --max-samples 100
+python -m examples.run_transformers --help
+python -m examples.run_bedrock --help
+python -m examples.run_validation --help
 ```
-
-The runner prepares named data before model loading. Initial runs download any
-uncached dataset and model files. Local paths bypass dataset downloads; local
-grounding requires `--images`, with `--dataset` selecting the annotation naming
-convention. Automatic grounding preparation supports only `refcocog`.
-Local attributes data also requires `--images`. OVAD's preparation-only JSON
-includes `attributes` with canonical labels and synonym descriptions, plus
-counts and selection metadata.
-
-### Validation reports
-
-JSON goes to stdout and optionally `--output`; progress goes to stderr. Reports
-include aggregate/per-category metrics, failures, dataset counts and provenance,
-grounding statuses, task/model settings, output mode, retries, and timings.
-Attributes reports use `per_attribute` for group/value summaries and include
-`protocol` and `selected_groups`, with source, excluded, prepared, and evaluated
-object counts. Attribute decisions count only known targets.
-Transformers also records device, dtype, requested revision, and local-file mode.
-
-`preparation_seconds` measures initial dataset preparation; `load_seconds`
-measures backend/model setup. `elapsed_seconds` includes the validator's own
-dataset setup/cache checks and iteration. `speed_ms_per_sample` separates sample
-loading, inference, and metric updates; its `load` entry is not model loading.
-
-Exit codes are **0** for a completed run without recorded inference failures,
-**1** for a completed run with such failures, and **2** when setup or validation
-cannot complete. Accuracy has no automatic pass/fail threshold.
-
-## Shared task configuration
-
-[image_tasks.json](image_tasks.json) contains the default single-image task
-settings. Dataset runner defaults are described in
-[Runner options and configuration](#runner-options-and-configuration).
-The single-image defaults are:
-
-| Task | Default question/target |
-|---|---|
-| classify | Is the overall scene indoor, outdoor, or unclear? |
-| multilabel | Which of cat, dog, person, sofa, and remote control are present? |
-| detect | Locate all instances of those object categories |
-| ground | Locate the leftmost cat, or report absence/ambiguity |
-| attributes | Predict scene lighting and setting |
-
-Copy the JSON file, edit the labels, descriptions, contexts, target and attribute
-choices for your image, and pass `--config /path/to/tasks.json`. Keys inside
-each task are passed as that operator's constructor settings. Only selected
-tasks need configuration entries.
-
-The two single-image runners accept these options:
-
-| Option | Purpose |
-|---|---|
-| `--tasks classify` or `--tasks classify detect ground` | Select one or more tasks; all five run by default |
-| `--config /path/to/tasks.json` | Supply custom task settings |
-| `--retries N` | Allow structured-output correction attempts; default 0 |
-| `--max-tokens N` | Limit generated tokens per request; default 4096 |
-| `--output /path/to/results.json` | Save the JSON report as well as printing it |
-| `--dry-run` | Decode the image and validate tasks without model execution |
-
-### Validate without model execution
-
-Dry runs need only the base package. Bedrock skips provider SDK imports and
-credential discovery; Transformers skips runtime imports and model loading.
-Bedrock still requires a model ID:
-
-```bash
-python -m examples.run_bedrock \
-  --input /path/to/image.jpg --model us.amazon.nova-pro-v1:0 --dry-run
-
-python -m examples.run_transformers \
-  --input /path/to/image.jpg --dry-run
-```
-
-## Results
-
-Both runners print JSON to stdout and optionally save it with `--output`.
-Reports include image size, model settings, task configuration, predictions
-and elapsed time per task. Progress goes to stderr. The Transformers report
-also records model loading time, device, dtype and error cause chains.
-
-Detection and box grounding use floating-point xyxy pixels in the input image;
-point grounding uses floating-point x/y pixels. Scores remain unset. Valid output structure does not establish
-visual accuracy or benchmark performance.
-
-If one task fails, its error is recorded and the other tasks still run. Exit
-codes are 0 when all tasks succeed, 1 for task failures and 2 for setup failures.
-
-## Sanity check
-
-[run_sanity_check.py](run_sanity_check.py) exercises all five tasks with synthetic responses
-from a PydanticAI FunctionModel:
-
-```bash
-python -m examples.run_sanity_check
-```
-
-It requires only the base package, with no credentials or model downloads.
-It checks task execution and result handling using synthetic model responses.

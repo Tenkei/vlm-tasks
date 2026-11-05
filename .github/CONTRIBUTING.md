@@ -9,7 +9,6 @@ python -m venv .venv
 source .venv/bin/activate
 python -m pip install -e '.[test,validation]'
 python -m pytest -q
-python -m examples.run_sanity_check
 ```
 
 The validation extra includes PyYAML for detection dataset tests. The test
@@ -18,7 +17,8 @@ fake weights and a processor; PyTorch, Transformers, provider credentials and
 model downloads are not required. Provider SDKs and local inference runtimes
 are installed separately for live examples.
 
-Tests and the sanity check run without live provider calls.
+Tests run without live provider calls and include the
+[synthetic task check](../tests/test_sanity_check.py).
 
 The Transformers adapter and example CLI tests live in
 `tests/test_transformers_model.py`; run them separately with

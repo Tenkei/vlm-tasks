@@ -38,9 +38,6 @@ jobs:
       - name: Run package and example tests
         run: python -m pytest -q
 
-      - name: Run sanity check
-        run: python -m examples.run_sanity_check
-
   package:
     name: Build and validate distribution
     runs-on: ubuntu-latest
@@ -69,7 +66,7 @@ jobs:
           artifact-venv/bin/python -m pip install dist/*.whl
           artifact-venv/bin/python -m pip check
           artifact-venv/bin/python -I -c 'from pathlib import Path; import sys; import ml_pipes.vlm as vlm; assert Path(vlm.__file__).resolve().is_relative_to(Path(sys.prefix).resolve())'
-          artifact-venv/bin/python -I examples/run_sanity_check.py
+          artifact-venv/bin/python -I tests/test_sanity_check.py
 
   compatibility-summary:
     name: "Compat: Gate"

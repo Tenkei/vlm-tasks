@@ -1,9 +1,7 @@
-"""Sanity check for VLM task execution with synthetic model responses."""
+"""Check all task results with synthetic responses, including installed wheels."""
 from __future__ import annotations
 
 import json
-from dataclasses import asdict
-
 import numpy as np
 from pydantic_ai.messages import ModelResponse, TextPart
 from pydantic_ai.models.function import FunctionModel
@@ -11,11 +9,13 @@ from pydantic_ai.models.function import FunctionModel
 from ml_pipes.core import Pipeline
 from ml_pipes.vision import ImagePayload
 from ml_pipes.vlm import (
-    Attributes, Classify, ClassifyMultiLabel, Detect, Ground, PydanticAIBackend,
+    AttributePredictionResult, Attributes, BoundingBox, ClassificationResult,
+    Classify, ClassifyMultiLabel, Detect, Detection, DetectionResult, Ground,
+    GroundingResult, PydanticAIBackend,
 )
 
 
-def main() -> None:
+def test_tasks_with_synthetic_responses() -> None:
     predictions = iter([
         {"labels": ["clean"]},
         {"labels": ["scratched", "stained"]},
@@ -41,12 +41,22 @@ def main() -> None:
             "condition": ["healthy", "damaged"], "color": ["blue", "red"],
         }),
     ]
-    print("Sanity check: synthetic model responses.")
-    for operator in operators:
+    expected = [
+        ClassificationResult(("clean",)),
+        ClassificationResult(("scratched", "stained")),
+        DetectionResult(
+            (Detection("window", BoundingBox(20, 20, 160, 90)),),
+            image_size=(200, 100),
+        ),
+        GroundingResult("ambiguous", None, image_size=(200, 100)),
+        AttributePredictionResult({"condition": "healthy", "color": "blue"}),
+    ]
+    for operator, result in zip(operators, expected, strict=True):
         pipeline = Pipeline([operator])
         pipeline.validate(strict=True)
-        print(type(operator).__name__, json.dumps(asdict(pipeline(image))))
+        assert pipeline(image) == result
 
 
 if __name__ == "__main__":
-    main()
+    test_tasks_with_synthetic_responses()
+    print("Synthetic task checks passed.")
