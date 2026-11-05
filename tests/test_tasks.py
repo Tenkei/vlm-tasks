@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import json
 from dataclasses import is_dataclass
+from pathlib import Path
 
+import cv2
 import numpy as np
 import pytest
 
@@ -21,6 +23,7 @@ from ml_pipes.vlm import (
     InvalidModelResponseError, ModelExecutionError, ModelResponse,
     PydanticAIBackend,
 )
+from ml_pipes.vlm._images import ImageInput
 from ml_pipes.vlm.ops import AttributeChoices
 
 
@@ -54,6 +57,76 @@ def backend_for(*responses, retries=0, output_mode="prompted"):
         profile=ModelProfile(supports_tools=True, supports_json_schema_output=True),
     )
     return PydanticAIBackend(model, retries=retries, output_mode=output_mode), calls
+
+
+@pytest.mark.parametrize("path_type", [str, Path])
+@pytest.mark.parametrize(("make_task", "payload"), [
+    (lambda b: Classify(b, ["clean"]), {"labels": ["clean"]}),
+    (lambda b: ClassifyMultiLabel(b, ["clean"]), {"labels": ["clean"]}),
+    (lambda b: Detect(b, ["window"]), {"detections": [
+        {"label": "window", "box": {"x1": 0.1, "y1": 0.2, "x2": 0.6, "y2": 0.8}},
+    ]}),
+    (lambda b: Ground(b, "window"), {
+        "status": "found", "box": {"x1": 0.1, "y1": 0.2, "x2": 0.6, "y2": 0.8},
+    }),
+    (lambda b: Ground(b, "window", geometry="point"), {
+        "status": "found", "point": {"x": 0.25, "y": 0.5},
+    }),
+    (lambda b: Attributes(b, {"color": ["red"]}), {"attributes": {"color": "red"}}),
+])
+def test_tasks_accept_image_paths(tmp_path, image, path_type, make_task, payload):
+    path = tmp_path / "image.png"
+    assert cv2.imwrite(str(path), image.array)
+    backend, _ = backend_for(payload)
+    task = make_task(backend)
+    expected = task(image)
+
+    assert task(path_type(path)) == expected
+    pipeline = Pipeline([task])
+    pipeline.validate(pipeline_input_type=path_type, strict=True)
+    assert pipeline(path_type(path)) == expected
+
+
+@pytest.mark.parametrize("path_type", [str, Path])
+@pytest.mark.parametrize("configured", [False, True])
+@pytest.mark.parametrize("kind", ["ground", "attributes"])
+def test_paths_work_with_per_call_settings(tmp_path, image, path_type, configured, kind):
+    path = tmp_path / "image.png"
+    assert cv2.imwrite(str(path), image.array)
+    if kind == "ground":
+        backend, _ = backend_for({
+            "status": "found", "box": {"x1": 0, "y1": 0, "x2": 0.5, "y2": 1},
+        })
+        task = Ground(backend, "old target" if configured else None)
+        settings = "the window"
+        input_type = tuple[path_type, str]
+    else:
+        backend, _ = backend_for({"attributes": {"color": "red"}})
+        task = Attributes(backend, {"material": ["wood"]} if configured else None)
+        settings = {"color": ["red"]}
+        input_type = tuple[path_type, dict[str, list[str]]]
+    expected = task((image, settings))
+
+    assert task((path_type(path), settings)) == expected
+    pipeline = Pipeline([task])
+    pipeline.validate(pipeline_input_type=input_type, strict=True)
+    assert pipeline((path_type(path), settings)) == expected
+
+
+@pytest.mark.parametrize(("contents", "error"), [
+    (None, FileNotFoundError),
+    (b"not an image", ValueError),
+    (b"", ValueError),
+])
+def test_invalid_image_files_fail_before_inference(tmp_path, contents, error):
+    path = tmp_path / "image.png"
+    if contents is not None:
+        path.write_bytes(contents)
+    backend, calls = backend_for({"labels": ["clean"]})
+
+    with pytest.raises(error, match=str(path)):
+        Classify(backend, ["clean"])(path)
+    assert calls == []
 
 
 def test_public_exports():
@@ -235,7 +308,7 @@ def test_ground_default_target_in_pipeline(image):
     backend, _ = backend_for({"status": "not_found", "box": None})
     pipeline = Pipeline([Ground(backend, "the cat")])
     contract = pipeline.validate(strict=True)
-    assert contract.input_type == ImagePayload | tuple[ImagePayload, str]
+    assert contract.input_type == ImageInput | tuple[ImageInput, str]
     assert contract.output_type is GroundingResult
     assert pipeline(image).status == "not_found"
     assert pipeline.validate(pipeline_input_type=ImagePayload, strict=True).input_type is ImagePayload
@@ -262,7 +335,7 @@ def test_ground_without_default_requires_target_in_pipeline(image):
     backend, calls = backend_for({"status": "ambiguous", "box": None})
     pipeline = Pipeline([Ground(backend)])
     contract = pipeline.validate(strict=True)
-    assert contract.input_type == tuple[ImagePayload, str]
+    assert contract.input_type == tuple[ImageInput, str]
     assert contract.output_type is GroundingResult
     assert pipeline((image, "the window")) == GroundingResult("ambiguous", None, (200, 100))
     with pytest.raises(PipelineValidationError):
@@ -381,11 +454,11 @@ def test_operator_runs_and_validates_in_pipeline(image, task, payload, result_ty
     backend, _ = backend_for(payload)
     pipeline = Pipeline([task(backend)])
     contract = pipeline.validate(strict=True)
-    expected_input = ImagePayload
+    expected_input = ImageInput
     if result_type is GroundingResult:
-        expected_input = ImagePayload | tuple[ImagePayload, str]
+        expected_input = ImageInput | tuple[ImageInput, str]
     elif result_type is AttributePredictionResult:
-        expected_input = ImagePayload | tuple[ImagePayload, AttributeChoices]
+        expected_input = ImageInput | tuple[ImageInput, AttributeChoices]
     assert contract.input_type == expected_input
     assert contract.output_type is result_type
     result = pipeline(image)

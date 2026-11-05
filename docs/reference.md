@@ -6,19 +6,29 @@ See the [README](../README.md) for setup and the
 
 ## Operators
 
-Operators accept a vision.ImagePayload and return a dedicated dataclass. Ground
-also accepts an `(image, target)` tuple; Attributes accepts `(image, attributes)`.
-Other settings are constructor-only.
+Operators accept a local image path (`str` or `pathlib.Path`) or an existing
+`ml_pipes.vision.ImagePayload`, and return a dedicated dataclass. In this guide,
+`ImageInput` means any of these input types. Ground also accepts an
+`(image, target)` tuple; Attributes accepts `(image, attributes)`. Other settings
+are constructor-only.
 A model is a ModelBackend, normally a PydanticAIBackend wrapping an initialized
 PydanticAI Model.
 
 | Constructor | Input | Output | Contract |
 |---|---|---|---|
-| Classify(model, labels, *, context=None) | `ml_pipes.vision.ImagePayload` | ClassificationResult | Exactly one allowed label |
-| ClassifyMultiLabel(model, labels, *, context=None) | `ml_pipes.vision.ImagePayload` | ClassificationResult | Zero or more independently applicable labels |
-| Detect(model, labels, *, context=None) | `ml_pipes.vision.ImagePayload` | DetectionResult | All matching instances; empty detections are valid |
-| Ground(model, target=None, *, context=None, geometry="box") | ImagePayload or tuple[ImagePayload, str] | GroundingResult | Resolve one target as a box or point; found, not_found or ambiguous |
-| Attributes(model, attributes=None, *, context=None) | ImagePayload or tuple[ImagePayload, attribute mapping] | AttributePredictionResult | One allowed value for each requested attribute |
+| Classify(model, labels, *, context=None) | ImageInput | ClassificationResult | Exactly one allowed label |
+| ClassifyMultiLabel(model, labels, *, context=None) | ImageInput | ClassificationResult | Zero or more independently applicable labels |
+| Detect(model, labels, *, context=None) | ImageInput | DetectionResult | All matching instances; empty detections are valid |
+| Ground(model, target=None, *, context=None, geometry="box") | ImageInput or tuple[ImageInput, str] | GroundingResult | Resolve one target as a box or point; found, not_found or ambiguous |
+| Attributes(model, attributes=None, *, context=None) | ImageInput or tuple[ImageInput, attribute mapping] | AttributePredictionResult | One allowed value for each requested attribute |
+
+```python
+result = task("image.jpg")
+```
+
+Paths are loaded and decoded to BGR images before inference. Missing files raise
+`FileNotFoundError`; files that cannot be decoded raise `ValueError`. The model
+always receives an `ImagePayload`. Existing payloads are used without reloading.
 
 Labels are a sequence of distinct nonempty names or a mapping from names to
 descriptions. A bare string is not a vocabulary. Attribute definitions map
@@ -42,8 +52,8 @@ string target, including when a constructor default exists. Missing or invalid
 targets raise ValueError before inference.
 
 Ground has one call parameter, so Pipeline passes the tuple as one value. Without
-a constructor target, the pipeline requires `tuple[ImagePayload, str]`. With a
-default, it accepts either an ImagePayload or that tuple:
+a constructor target, the pipeline requires `tuple[ImageInput, str]`. With a
+default, it accepts either an image path, an ImagePayload, or that tuple:
 
 ```python
 from ml_pipes.core import Pipeline
@@ -81,8 +91,8 @@ attributes or the constructor's instructions/schema, including on failures.
 
 Pipeline passes `(image, attributes)` as one argument. Without constructor
 choices, the input contract requires that tuple. With constructor choices, it
-accepts either an ImagePayload or the tuple. Attribute choices use the same
-sequence-or-description-mapping format at construction and per call.
+accepts an image path, an ImagePayload, or the tuple. Attribute choices use the
+same sequence-or-description-mapping format at construction and per call.
 
 The [box_scale extension](design.md#box-configuration) remains planned.
 See the illustrated comparisons for

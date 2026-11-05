@@ -7,7 +7,7 @@ from typing import Any, Literal, TypeAlias, overload
 from ml_pipes.core import Operator
 from ml_pipes.vision import ImagePayload
 
-from ._images import validate_image
+from ._images import ImageInput, load_image, validate_image
 from ._schemas import attributes_spec, classification_spec, detection_spec, grounding_spec
 from .errors import InvalidModelResponseError
 from .types import (
@@ -136,7 +136,8 @@ class Classify(_Task):
             "Allowed labels and descriptions: " + json.dumps(self.labels)
         )
 
-    def __call__(self, image: ImagePayload) -> ClassificationResult:
+    def __call__(self, image: ImageInput) -> ClassificationResult:
+        image = load_image(image)
         data = self._predict(image)
         return ClassificationResult(labels=tuple(data["labels"]))
 
@@ -156,7 +157,8 @@ class ClassifyMultiLabel(_Task):
             "Allowed labels and descriptions: " + json.dumps(self.labels)
         )
 
-    def __call__(self, image: ImagePayload) -> ClassificationResult:
+    def __call__(self, image: ImageInput) -> ClassificationResult:
+        image = load_image(image)
         data = self._predict(image)
         return ClassificationResult(labels=tuple(data["labels"]))
 
@@ -189,7 +191,8 @@ class Detect(_Task):
             + _GEOMETRY + "\nAllowed labels and descriptions: " + json.dumps(self.labels)
         )
 
-    def __call__(self, image: ImagePayload) -> DetectionResult:
+    def __call__(self, image: ImageInput) -> DetectionResult:
+        image = load_image(image)
         data = self._predict(image)
         return DetectionResult(
             detections=tuple(
@@ -229,10 +232,10 @@ class Ground(_Task):
         )
 
     @overload
-    def __call__(self, image: ImagePayload) -> GroundingResult: ...
+    def __call__(self, image: ImageInput) -> GroundingResult: ...
 
     @overload
-    def __call__(self, image: tuple[ImagePayload, str]) -> GroundingResult: ...
+    def __call__(self, image: tuple[ImageInput, str]) -> GroundingResult: ...
 
     def __call__(self, image: Any) -> GroundingResult:
         target = self.target
@@ -243,6 +246,7 @@ class Ground(_Task):
         if target is None:
             raise ValueError("Ground requires a target at construction or when called")
         target = _text(target, "target")
+        image = load_image(image)
         data = self._predict(
             image, instruction=self._instruction + "\nTarget: " + json.dumps(target)
         )
@@ -266,8 +270,8 @@ class Ground(_Task):
         # Publish the configured boundary here; overloads describe direct calls.
         del upstream_annotation, validation_error_type
         if self.target is None:
-            return (tuple[ImagePayload, str],), GroundingResult
-        return (ImagePayload | tuple[ImagePayload, str],), GroundingResult
+            return (tuple[ImageInput, str],), GroundingResult
+        return (ImageInput | tuple[ImageInput, str],), GroundingResult
 
 
 @Operator
@@ -287,10 +291,10 @@ class Attributes(_Task):
         self._instruction = None if self.attributes is None else _attributes_instruction(self.attributes)
 
     @overload
-    def __call__(self, image: ImagePayload) -> AttributePredictionResult: ...
+    def __call__(self, image: ImageInput) -> AttributePredictionResult: ...
 
     @overload
-    def __call__(self, image: tuple[ImagePayload, AttributeChoices]) -> AttributePredictionResult: ...
+    def __call__(self, image: tuple[ImageInput, AttributeChoices]) -> AttributePredictionResult: ...
 
     def __call__(self, image: Any) -> AttributePredictionResult:
         response_spec, instruction = self._spec, self._instruction
@@ -303,6 +307,7 @@ class Attributes(_Task):
             instruction = _attributes_instruction(attributes)
         elif self.attributes is None:
             raise ValueError("Attributes requires attribute choices at construction or when called")
+        image = load_image(image)
         data = self._predict(image, instruction=instruction, response_spec=response_spec)
         return AttributePredictionResult(attributes=dict(data["attributes"]))
 
@@ -313,5 +318,5 @@ class Attributes(_Task):
     ) -> tuple[tuple[Any, ...], Any]:
         del upstream_annotation, validation_error_type
         if self.attributes is None:
-            return (tuple[ImagePayload, AttributeChoices],), AttributePredictionResult
-        return (ImagePayload | tuple[ImagePayload, AttributeChoices],), AttributePredictionResult
+            return (tuple[ImageInput, AttributeChoices],), AttributePredictionResult
+        return (ImageInput | tuple[ImageInput, AttributeChoices],), AttributePredictionResult

@@ -1,9 +1,25 @@
 from __future__ import annotations
 
+from pathlib import Path
+from typing import TypeAlias
+
 import cv2
 import numpy as np
 
-from ml_pipes.vision import ImagePayload
+from ml_pipes.vision import Decode, ImagePayload, LoadFile
+
+ImageInput: TypeAlias = ImagePayload | str | Path
+
+
+def load_image(image: ImageInput) -> ImagePayload:
+    if isinstance(image, (str, Path)):
+        data = LoadFile()(image)
+        try:
+            image = Decode()(data)
+        except (ValueError, cv2.error) as exc:
+            raise ValueError(f"Could not decode image: {image}") from exc
+    validate_image(image)
+    return image
 
 
 def validate_image(image: ImagePayload) -> None:

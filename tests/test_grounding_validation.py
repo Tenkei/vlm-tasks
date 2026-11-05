@@ -344,7 +344,7 @@ def test_custom_loader_and_dataset_hook(tmp_path):
     assert task.val(validator=CustomValidator, data="unused", images=images, verbose=False).seen == 4
 
 
-@pytest.mark.parametrize("payload", [(), ("bad image", "cat"), (None, "cat"), (1, 2, 3)])
+@pytest.mark.parametrize("payload", [(), (42, "cat"), (None, "cat"), (1, 2, 3)])
 def test_ground_rejects_invalid_tuple_inputs_before_inference(payload):
     backend = Backend(FOUND)
     with pytest.raises(ValueError):

@@ -18,6 +18,7 @@ from ml_pipes.vision import ImagePayload
 from ml_pipes.vlm import (
     Attributes, AttributePredictionResult, InvalidModelResponseError, ModelExecutionError, ModelResponse,
 )
+from ml_pipes.vlm._images import ImageInput
 from ml_pipes.vlm.ops import AttributeChoices
 from ml_pipes.vlm.validation import (
     AttributesMetrics, AttributesValidator, DataLoader, OVADDataset, prepare_dataset,
@@ -435,8 +436,8 @@ def test_call_attributes_override_defaults_without_mutation(configured):
     }
     pipeline = Pipeline([task])
     contract = pipeline.validate(strict=True)
-    tuple_type = tuple[ImagePayload, AttributeChoices]
-    assert contract.input_type == (ImagePayload | tuple_type if configured else tuple_type)
+    tuple_type = tuple[ImageInput, AttributeChoices]
+    assert contract.input_type == (ImageInput | tuple_type if configured else tuple_type)
     assert contract.output_type is AttributePredictionResult
     assert pipeline((image, override)).attributes == {"window color": "blue", "model_config": "healthy"}
     assert task((image, {"size": ["small", "large"]})).attributes == {"size": "large"}
