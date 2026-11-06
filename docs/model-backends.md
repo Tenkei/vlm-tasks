@@ -10,7 +10,8 @@ Use `PydanticAIBackend` with an initialized PydanticAI model:
 
 - [Hugging Face Transformers](huggingface-transformers.md): run loaded weights locally.
 - [Amazon Bedrock](amazon-bedrock.md): connect with an AWS profile.
-- [vLLM](../README.md#vllm-and-other-providers): use a running vision-model server.
+- [vLLM](#vllm): use a running vision-model server.
+- [Hosted models](#hosted-models): connect through PydanticAI, for example to OpenAI.
 - [Other PydanticAI providers](https://ai.pydantic.dev/models/overview/): configure
   a provider that supports image input.
 
@@ -44,6 +45,49 @@ provider client. Validation adds no further correction retry policy.
 Calls are synchronous; run them outside an active asyncio event loop.
 `PydanticAIBackend` encodes each image as lossless PNG without resizing it.
 For accepted image types, see the [task guide](tasks.md#images).
+
+## Hosted models
+
+For OpenAI, install the provider dependency and set your API key:
+
+```bash
+python -m pip install 'pydantic-ai-slim[openai]==2.61.0'
+export OPENAI_API_KEY="your-api-key"
+```
+
+```python
+from pydantic_ai.models.openai import OpenAIChatModel
+from ml_pipes.vlm import PydanticAIBackend
+
+backend = PydanticAIBackend(OpenAIChatModel("gpt-4o-mini"))
+```
+
+Pass `backend` to a [task](tasks.md). For other hosted models, use the matching
+[PydanticAI provider](https://ai.pydantic.dev/models/overview/).
+
+## vLLM
+
+Connect to a vision-language model already running on a vLLM server. Install
+the client dependencies:
+
+```bash
+python -m pip install 'pydantic-ai-slim[openai]==2.61.0'
+```
+
+```python
+from pydantic_ai.models.openai import OpenAIChatModel
+from pydantic_ai.providers.vllm import VLLMProvider
+
+from ml_pipes.vlm import PydanticAIBackend
+
+backend = PydanticAIBackend(OpenAIChatModel(
+    "Qwen/Qwen3-VL-2B-Instruct",  # Replace with your server's model name.
+    provider=VLLMProvider(base_url="http://localhost:8000/v1"),
+))
+```
+
+Replace the URL with your server's address, then pass `backend` to a
+[task](tasks.md).
 
 ## Custom backends
 

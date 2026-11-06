@@ -44,57 +44,22 @@ python -m pip install -e .
 
 ### Connect your model
 
-Choose one of the options below to create a `backend`, then pass it to a task.
+| Option | When to use it | Create a `backend` |
+|---|---|---|
+| Hugging Face Transformers | Run model weights locally. | [Setup guide](docs/huggingface-transformers.md#create-a-backend-in-python) |
+| vLLM | Connect to an existing model server. | [Setup guide](docs/model-backends.md#vllm) |
+| Amazon Bedrock | Use a vision model on AWS. | [Setup guide](docs/amazon-bedrock.md) |
+| Hosted models (PydanticAI) | Connect to a hosted vision model. | [Setup guide](docs/model-backends.md#hosted-models) |
 
-#### Hugging Face Transformers
-
-Run a model locally with Transformers. Install the dependencies for this option:
-
-```bash
-python -m pip install 'torch>=2.5' torchvision 'transformers>=4.57,<5' 'Pillow>=10'
-```
-
-The first run downloads the model weights; inference runs on your machine.
-
-```python
-from transformers import AutoModelForImageTextToText, AutoProcessor
-
-from ml_pipes.vlm import PydanticAIBackend, TransformersModel
-
-model_id = "Qwen/Qwen3-VL-2B-Instruct"
-processor = AutoProcessor.from_pretrained(model_id)
-weights = AutoModelForImageTextToText.from_pretrained(model_id)
-backend = PydanticAIBackend(
-    TransformersModel(weights, processor, model_name=model_id),
-)
-```
-
-See the [Transformers guide](docs/huggingface-transformers.md) for device
-setup and other checkpoints.
-
-#### vLLM and other providers
-
-Connect to a vision-language model already running on a vLLM server. Install the
-client dependencies:
-
-```bash
-python -m pip install 'pydantic-ai-slim[openai]==2.61.0'
-```
+For example, with the [OpenAI provider installed](docs/model-backends.md#hosted-models)
+and `OPENAI_API_KEY` set:
 
 ```python
 from pydantic_ai.models.openai import OpenAIChatModel
-from pydantic_ai.providers.vllm import VLLMProvider
-
 from ml_pipes.vlm import PydanticAIBackend
 
-backend = PydanticAIBackend(OpenAIChatModel(
-    "Qwen/Qwen3-VL-2B-Instruct",  # Replace with your server's model name.
-    provider=VLLMProvider(base_url="http://localhost:8000/v1"),
-))
+backend = PydanticAIBackend(OpenAIChatModel("gpt-4o-mini"))
 ```
-
-You can also wrap an existing PydanticAI model with `PydanticAIBackend(model)`.
-See the [model backend guide](docs/model-backends.md) for other providers.
 
 ### Run a task
 

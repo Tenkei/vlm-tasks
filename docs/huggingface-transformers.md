@@ -59,6 +59,27 @@ Inference runs in the local Python process; it does not call a hosted model or
 require a model server. Memory requirements depend on checkpoint, dtype and
 image token count; there is no quantization, sharding or CPU offload here.
 
+## Create a backend in Python
+
+After installing the dependencies above, load a model and wrap it in a backend:
+
+```python
+from transformers import AutoModelForImageTextToText, AutoProcessor
+
+from ml_pipes.vlm import PydanticAIBackend, TransformersModel
+
+model_id = "Qwen/Qwen3-VL-2B-Instruct"
+processor = AutoProcessor.from_pretrained(model_id)
+weights = AutoModelForImageTextToText.from_pretrained(model_id)
+backend = PydanticAIBackend(
+    TransformersModel(weights, processor, model_name=model_id),
+)
+```
+
+The first run downloads the model weights. Pass `backend` to any
+[task](tasks.md); move weights to your chosen device before wrapping them for
+GPU execution.
+
 ## Run
 
 Validate the image and task configuration first, without importing PyTorch or
