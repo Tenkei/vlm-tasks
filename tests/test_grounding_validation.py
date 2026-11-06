@@ -172,7 +172,7 @@ def test_point_validation_example_selects_metrics_from_task_config(tmp_path, mon
     config.write_text(json.dumps({"ground": {"geometry": "point"}}))
     assert run_validation.main([
         "--task", "ground", "--data", str(annotations), "--images", str(images),
-        "--model", "test", "--config", str(config), "--no-verbose",
+        "--model", "test", "--config", str(config),
     ]) == 0
     report = json.loads(capsys.readouterr().out)
     assert report["task_config"] == {"geometry": "point"}
@@ -369,7 +369,7 @@ def test_grounding_example_defaults_to_neutral_context_and_reports_settings(tmp_
     backend = Backend(FOUND)
     monkeypatch.setattr(run_validation, "create_backend", lambda args: backend)
     args = ["--task", "ground", "--data", str(annotations), "--images", str(images),
-            "--max-samples", "2", "--model", "test", "--no-verbose"]
+            "--max-samples", "2", "--model", "test"]
     assert run_validation.main(args) == 0
     report = json.loads(capsys.readouterr().out)
     assert report["task_config"] == {}
@@ -408,24 +408,21 @@ def test_transformers_validation_runner_saves_report(tmp_path, monkeypatch, caps
     output = tmp_path / "reports" / "ground.json"
     assert run_validation.main([
         "--backend", "transformers", "--task", "ground", "--data", str(annotations),
-        "--images", str(images), "--max-samples", "2", "--no-verbose",
-        "--device", "mps", "--dtype", "float16", "--revision", "test-revision",
-        "--local-files-only", "--output", str(output),
+        "--images", str(images), "--max-samples", "2",
+        "--device", "mps", "--dtype", "float16", "--output", str(output),
     ]) == 0
     report = json.loads(capsys.readouterr().out)
     assert json.loads(output.read_text()) == report
     assert report["backend"] == "transformers"
     assert report["model"] == "Qwen/Qwen3-VL-2B-Instruct"
     assert report["device"] == "mps" and report["dtype"] == "torch.float16"
-    assert report["revision"] == "test-revision" and report["local_files_only"]
+    assert report["output_mode"] == "prompted" and report["retries"] == 0
     assert report["do_sample"] is False and report["load_seconds"] >= 0
     assert report["metrics"]["mean_iou"] == 1 and report["task_config"] == {}
     assert received[0].device == "mps" and received[0].dtype == "float16"
-    assert received[0].revision == "test-revision" and received[0].local_files_only
 
 
 @pytest.mark.parametrize("options, message", [
-    (["--backend", "transformers", "--output-mode", "native"], "only prompted"),
     (["--backend", "transformers", "--profile", "aws"], "only to Bedrock"),
     (["--model", "bedrock", "--device", "mps"], "only to Transformers"),
     ([], "--model is required"),

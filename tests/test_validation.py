@@ -439,7 +439,7 @@ def test_validation_example_with_local_backend(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(run_validation, "create_backend", lambda args: Backend({"labels": ["cat"]}))
     assert run_validation.main([
         "--task", "classify", "--data", str(data), "--config", str(config),
-        "--model", "test", "--no-verbose",
+        "--model", "test",
     ]) == 0
     report = json.loads(capsys.readouterr().out)
     assert report["metrics"]["accuracy_top1"] == 1
@@ -457,7 +457,7 @@ def test_detection_example_and_execution_failure_exit_code(tmp_path, monkeypatch
     args = [
         "--task", "detect", "--data", str(data), "--config", str(config),
         "--class-map", str(mapping), "--match-iou", "0.75",
-        "--model", "test", "--no-verbose",
+        "--model", "test",
     ]
     monkeypatch.setattr(run_validation, "create_backend", lambda args: Backend({"detections": [box("pedestrian")]}))
     assert run_validation.main(args) == 0

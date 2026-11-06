@@ -112,10 +112,7 @@ Use `--device mps` or `--device cuda:0` explicitly as appropriate. `--dtype`
 accepts auto, float32, float16 or bfloat16; choose a dtype supported by the
 device. `auto` retains the checkpoint's dtype policy. CPU execution can be slow.
 
-Use `--local-files-only` after downloading to restrict model/processor loading
-to local files. You can also pass a directory with `--model /path/to/checkpoint`.
-`--revision` applies to both weights and processor; use a commit ID when fixing
-an experiment's model version.
+To load a local checkpoint, pass its directory with `--model /path/to/checkpoint`.
 
 ## Task validation
 
@@ -137,8 +134,8 @@ python -m examples.run_validation \
   --output /tmp/grounding10.json
 ```
 
-The runner accepts the same device, dtype, revision, cached-file and generation
-options. Grounding defaults to empty task settings and uses each dataset
+The runner accepts the same model, device, dtype and generation limit options.
+Grounding defaults to empty task settings and uses each dataset
 expression as its target. See [task validation](validation.md)
 for annotation preparation, metrics and report details. Begin with 10 expressions
 to check timing, then evaluate 100 for a preliminary result.
@@ -152,14 +149,14 @@ constructors. Ground accepts `geometry="point"` for direct point output.
 The box_scale extension remains a design proposal.
 
 The model is loaded once and reused across tasks. Each task has a fresh request
-history. A correction retry preserves that task's image, previous response and
-validation feedback. Generation uses `do_sample=False`, `--max-tokens` (default
-4096) and `--retries` (default 0). This adapter supports prompted structured
+history. Generation uses `do_sample=False` and `--max-tokens` (default 4096).
+The runner uses the backend's default prompted output without correction
+retries. This adapter supports prompted structured
 output only; it does not constrain model decoding to valid JSON. There is no
 native JSON mode, tool calling, streaming or batch inference.
 
 JSON is printed and optionally saved with `--output`. It includes model ID,
-requested revision, actual device/dtype, loading time separately from task
+actual device/dtype, loading time separately from task
 time, settings, task configurations, predictions and errors with their cause
 chains. Tasks continue after an individual failure. Exit codes are 0 for all
 tasks succeeding, 1 for task failures and 2 for setup failures.

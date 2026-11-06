@@ -38,7 +38,7 @@ def create_backend(args: argparse.Namespace) -> PydanticAIBackend:
         provider=BedrockProvider(bedrock_client=client),
         settings={"temperature": 0.0, "max_tokens": args.max_tokens},
     )
-    return PydanticAIBackend(model, output_mode=args.output_mode, retries=args.retries)
+    return PydanticAIBackend(model)
 
 
 def build_pipelines(config: dict, names: list[str], backend: ModelBackend) -> dict[str, Pipeline]:
@@ -62,12 +62,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--tasks", nargs="+", choices=TASKS, default=list(TASKS))
     parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG, help="Task constructor settings as JSON")
     parser.add_argument("--output", type=Path, help="Also save the JSON report to this path")
-    parser.add_argument("--output-mode", choices=["prompted", "native", "tool"], default="prompted")
-    parser.add_argument("--retries", type=int, default=0, help="Structured output correction attempts")
     parser.add_argument("--max-tokens", type=int, default=4096)
     args = parser.parse_args(argv)
-    if args.retries < 0 or args.max_tokens < 1:
-        parser.error("--retries must be nonnegative and --max-tokens must be positive")
+    if args.max_tokens < 1:
+        parser.error("--max-tokens must be positive")
 
     def unused_backend(request):
         raise RuntimeError("Validation must not call the model")
@@ -89,7 +87,7 @@ def main(argv: list[str] | None = None) -> int:
     report = {
         "input": str(args.input.resolve()), "image_size": image.size,
         "model": args.model, "profile": args.profile, "requested_region": args.region,
-        "output_mode": args.output_mode, "retries": args.retries,
+        "output_mode": "prompted", "retries": 0,
         "max_tokens": args.max_tokens, "task_config": {name: config[name] for name in pipelines},
         "results": {},
     }

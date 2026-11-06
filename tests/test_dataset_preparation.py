@@ -301,6 +301,7 @@ def test_detection_default_download_and_task_dataset_mismatch(tmp_path, http, mo
 def test_runner_grounding_default_prepares_data_and_saves_report(tmp_path, http, monkeypatch, capsys):
     from examples import run_validation
 
+    monkeypatch.setenv("VLM_TASKS_DATASETS_DIR", str(tmp_path))
     ground_source(http)
     requests = []
 
@@ -311,7 +312,7 @@ def test_runner_grounding_default_prepares_data_and_saves_report(tmp_path, http,
     monkeypatch.setattr(run_validation, "create_backend", lambda args: backend)
     output = tmp_path / "report.json"
     assert run_validation.main([
-        "--task", "ground", "--model", "test", "--max-samples", "2", "--cache-dir", str(tmp_path),
+        "--task", "ground", "--model", "test", "--max-samples", "2",
         "--output", str(output),
     ]) == 0
     report = json.loads(capsys.readouterr().out)
@@ -326,11 +327,11 @@ def test_runner_grounding_default_prepares_data_and_saves_report(tmp_path, http,
 def test_runner_classification_default_uses_dataset_labels(tmp_path, http, monkeypatch, capsys):
     from examples import run_validation
 
+    monkeypatch.setenv("VLM_TASKS_DATASETS_DIR", str(tmp_path))
     cifar_source(http, monkeypatch)
     monkeypatch.setattr(run_validation, "create_backend", lambda args: lambda request: ModelResponse({"labels": ["cat"]}))
     assert run_validation.main([
         "--task", "classify", "--model", "test", "--max-samples", "2",
-        "--cache-dir", str(tmp_path), "--no-verbose",
     ]) == 0
     report = json.loads(capsys.readouterr().out)
     assert report["metrics"]["samples"] == 2 and report["metrics"]["accuracy_top1"] == 1

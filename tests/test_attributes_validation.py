@@ -366,8 +366,9 @@ def test_invalid_named_requests_do_not_download(tmp_path, http, settings):
 def test_runner_schema_discovery_and_explicit_config(tmp_path, http, monkeypatch, capsys):
     from examples import run_validation
 
+    monkeypatch.setenv("VLM_TASKS_DATASETS_DIR", str(tmp_path))
     monkeypatch.setattr(run_validation, "create_backend", lambda args: Backend())
-    assert run_validation.main(["--task", "attributes", "--model", "test", "--max-samples", "2", "--cache-dir", str(tmp_path), "--no-verbose"]) == 0
+    assert run_validation.main(["--task", "attributes", "--model", "test", "--max-samples", "2"]) == 0
     report = json.loads(capsys.readouterr().out)
     assert report["task_config"]["attributes"]["material"]["wood"] == "wood/wooden"
     assert "categorical" in report["protocol"]
@@ -378,7 +379,7 @@ def test_runner_schema_discovery_and_explicit_config(tmp_path, http, monkeypatch
     settings = {"attributes": {"material": {"wood": "custom wood", "metal": "custom metal"}}, "context": "Inspect the crop."}
     config.write_text(json.dumps({"attributes": settings}))
     monkeypatch.setattr(run_validation, "create_backend", lambda args: Backend({"attributes": {"material": "metal"}}))
-    assert run_validation.main(["--task", "attributes", "--model", "test", "--config", str(config), "--max-samples", "1", "--cache-dir", str(tmp_path), "--no-verbose"]) == 0
+    assert run_validation.main(["--task", "attributes", "--model", "test", "--config", str(config), "--max-samples", "1"]) == 0
     report = json.loads(capsys.readouterr().out)
     assert report["task_config"] == settings
     assert report["selected_groups"] == ["material"]
@@ -389,7 +390,7 @@ def test_runner_local_automatic_schema(tmp_path, monkeypatch, capsys):
 
     path, images = write_local(tmp_path)
     monkeypatch.setattr(run_validation, "create_backend", lambda args: Backend())
-    assert run_validation.main(["--task", "attributes", "--data", str(path), "--images", str(images), "--model", "test", "--no-verbose"]) == 0
+    assert run_validation.main(["--task", "attributes", "--data", str(path), "--images", str(images), "--model", "test"]) == 0
     report = json.loads(capsys.readouterr().out)
     assert report["task_config"]["attributes"] == OVADDataset(path, images).attributes
     assert report["dataset_counts"]["source_objects"] == 5
@@ -399,14 +400,13 @@ def test_runner_local_automatic_schema(tmp_path, monkeypatch, capsys):
 def test_runner_discovers_explicit_null_attribute_schema(tmp_path, http, monkeypatch, capsys, source):
     from examples import run_validation
 
+    monkeypatch.setenv("VLM_TASKS_DATASETS_DIR", str(tmp_path))
     backend = Backend()
     monkeypatch.setattr(run_validation, "create_backend", lambda args: backend)
     config = tmp_path / "task.json"
     config.write_text(json.dumps({"attributes": {"attributes": None, "context": "Keep this context."}}))
-    args = ["--task", "attributes", "--config", str(config), "--model", "test", "--max-samples", "1", "--no-verbose"]
-    if source == "named":
-        args.extend(["--cache-dir", str(tmp_path)])
-    else:
+    args = ["--task", "attributes", "--config", str(config), "--model", "test", "--max-samples", "1"]
+    if source == "local":
         path, images = write_local(tmp_path)
         args.extend(["--data", str(path), "--images", str(images)])
     assert run_validation.main(args) == 0

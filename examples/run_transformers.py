@@ -24,18 +24,15 @@ def create_backend(args: argparse.Namespace) -> PydanticAIBackend:
     if device == "auto":
         device = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
     dtype = "auto" if args.dtype == "auto" else getattr(torch, args.dtype)
-    options = {"local_files_only": args.local_files_only}
-    if args.revision:
-        options["revision"] = args.revision
     print(f"Loading {args.model} on {device}...", file=sys.stderr, flush=True)
-    processor = AutoProcessor.from_pretrained(args.model, **options)
+    processor = AutoProcessor.from_pretrained(args.model)
     weights = AutoModelForImageTextToText.from_pretrained(
-        args.model, dtype=dtype, **options,
+        args.model, dtype=dtype,
     ).to(device)
     model = TransformersModel(
         weights, processor, model_name=args.model, max_new_tokens=args.max_tokens,
     )
-    return PydanticAIBackend(model, output_mode="prompted", retries=args.retries)
+    return PydanticAIBackend(model)
 
 
 def error_details(exc: Exception) -> dict:
@@ -51,18 +48,15 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input", type=Path, required=True)
     parser.add_argument("--model", default="Qwen/Qwen3-VL-2B-Instruct", help="HF model ID or local weights directory")
-    parser.add_argument("--revision", help="Optional model and processor revision; use a commit for reproducibility")
     parser.add_argument("--device", default="auto", help="auto, cpu, cuda, cuda:0, mps, etc.; one device")
     parser.add_argument("--dtype", choices=["auto", "float32", "float16", "bfloat16"], default="auto")
-    parser.add_argument("--local-files-only", action="store_true", help="Use cached/local files; do not download weights")
     parser.add_argument("--tasks", nargs="+", choices=TASKS, default=list(TASKS))
     parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
     parser.add_argument("--max-tokens", type=int, default=4096)
-    parser.add_argument("--retries", type=int, default=0)
     parser.add_argument("--output", type=Path)
     args = parser.parse_args(argv)
-    if args.max_tokens < 1 or args.retries < 0:
-        parser.error("--max-tokens must be positive and --retries nonnegative")
+    if args.max_tokens < 1:
+        parser.error("--max-tokens must be positive")
 
     def unused_backend(request):
         raise RuntimeError("Validation must not call the model")
@@ -84,11 +78,11 @@ def main(argv: list[str] | None = None) -> int:
 
     report = {
         "input": str(args.input.resolve()), "image_size": image.size,
-        "model": args.model, "revision": args.revision,
+        "model": args.model,
         "device": str(backend.model.weights.device), "dtype": str(backend.model.weights.dtype),
-        "local_files_only": args.local_files_only, "load_seconds": load_seconds,
+        "load_seconds": load_seconds,
         "output_mode": "prompted", "max_tokens": args.max_tokens,
-        "retries": args.retries, "do_sample": False,
+        "retries": 0, "do_sample": False,
         "task_config": {name: config[name] for name in pipelines}, "results": {},
     }
     failed = False

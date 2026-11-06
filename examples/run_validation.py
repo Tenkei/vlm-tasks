@@ -19,37 +19,29 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--images", type=Path, help="Local grounding (COCO train2014) or OVAD (COCO val2017) image directory")
     parser.add_argument("--dataset", choices=["refcocog", "refcoco", "refcoco+"], help="Grounding dataset; default refcocog")
     parser.add_argument("--split", default="val")
-    parser.add_argument("--cache-dir", type=Path, help="Dataset cache; defaults to VLM_TASKS_DATASETS_DIR or ~/.cache/vlm-tasks/datasets")
     parser.add_argument("--config", type=Path, help="Task settings JSON; attributes discovers the dataset schema, named classify/detect use dataset labels, local classify/detect use image_tasks.json, ground uses empty settings")
     parser.add_argument("--class-map", type=Path, help="JSON mapping of dataset class names to task labels")
     parser.add_argument("--max-samples", type=int, help="Limit evaluated samples (expressions for grounding; eligible object crops for attributes)")
     parser.add_argument("--match-iou", type=float, help="Detection matching IoU; default 0.5")
-    parser.add_argument("--verbose", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--model", help="Bedrock model ID or HF model/local directory; Transformers defaults to Qwen/Qwen3-VL-2B-Instruct")
     parser.add_argument("--device", default="auto", help="Transformers device: auto, mps, cuda, cpu, etc.")
     parser.add_argument("--dtype", choices=["auto", "float32", "float16", "bfloat16"], default="auto")
-    parser.add_argument("--revision", help="Transformers model and processor revision")
-    parser.add_argument("--local-files-only", action="store_true", help="Transformers: use only cached/local weights")
     parser.add_argument("--output", type=Path, help="Also save the JSON report to this file")
     parser.add_argument("--profile", help="AWS profile; defaults to the normal credential chain")
     parser.add_argument("--region", help="AWS region; defaults to the environment or profile")
-    parser.add_argument("--output-mode", choices=["prompted", "native", "tool"], default="prompted")
-    parser.add_argument("--retries", type=int, default=0)
     parser.add_argument("--max-tokens", type=int, default=4096)
     args = parser.parse_args(argv)
     if args.backend == "transformers":
         args.model = args.model or "Qwen/Qwen3-VL-2B-Instruct"
-        if args.output_mode != "prompted":
-            parser.error("The Transformers backend supports only prompted output")
         if args.profile is not None or args.region is not None:
             parser.error("--profile and --region apply only to Bedrock")
     else:
         if not args.model:
             parser.error("--model is required for Bedrock")
-        if args.device != "auto" or args.dtype != "auto" or args.revision or args.local_files_only:
-            parser.error("--device, --dtype, --revision and --local-files-only apply only to Transformers")
-    if args.retries < 0 or args.max_tokens < 1:
-        parser.error("--retries must be nonnegative and --max-tokens must be positive")
+        if args.device != "auto" or args.dtype != "auto":
+            parser.error("--device and --dtype apply only to Transformers")
+    if args.max_tokens < 1:
+        parser.error("--max-tokens must be positive")
     if args.max_samples is not None and args.max_samples < 1:
         parser.error("--max-samples must be positive")
     if args.task != "detect" and args.match_iou is not None:
@@ -91,11 +83,10 @@ def main(argv: list[str] | None = None) -> int:
         if automatic:
             classes = tuple(class_map or task_settings["labels"]) if args.task == "classify" else None
             started = perf_counter()
-            if args.verbose:
-                print(f"Preparing {args.data} split {args.split}...", file=sys.stderr, flush=True)
+            print(f"Preparing {args.data} split {args.split}...", file=sys.stderr, flush=True)
             prepared = prepare_dataset(
                 args.data, split=args.split, max_samples=args.max_samples,
-                cache_dir=args.cache_dir, classes=classes,
+                classes=classes,
                 **({"groups": tuple(task_settings["attributes"])} if args.task == "attributes" and task_settings.get("attributes") is not None else {}),
             )
             preparation_seconds = perf_counter() - started
@@ -116,8 +107,7 @@ def main(argv: list[str] | None = None) -> int:
         task = TASKS[args.task](backend, **task_settings)
         settings = {
             "data": args.data, "split": args.split, "class_map": class_map,
-            "max_samples": args.max_samples, "verbose": args.verbose,
-            "cache_dir": args.cache_dir,
+            "max_samples": args.max_samples,
         }
         if args.match_iou is not None:
             settings["match_iou"] = args.match_iou
@@ -138,7 +128,7 @@ def main(argv: list[str] | None = None) -> int:
         "status_counts": getattr(metrics, "status_counts", {}),
         "task": args.task, "task_config": task_settings, "model": args.model,
         "model_settings": {"temperature": 0.0, "max_tokens": args.max_tokens},
-        "output_mode": args.output_mode, "retries": args.retries,
+        "output_mode": "prompted", "retries": 0,
         "backend": args.backend, "load_seconds": load_seconds,
         "preparation_seconds": preparation_seconds,
         "speed_ms_per_sample": metrics.speed,
@@ -151,8 +141,8 @@ def main(argv: list[str] | None = None) -> int:
         )
     if args.backend == "transformers":
         report.update(
-            revision=args.revision, device=str(backend.model.weights.device),
-            dtype=str(backend.model.weights.dtype), local_files_only=args.local_files_only,
+            device=str(backend.model.weights.device),
+            dtype=str(backend.model.weights.dtype),
             do_sample=False,
         )
     serialized = json.dumps(report, indent=2)
