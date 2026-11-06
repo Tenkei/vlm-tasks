@@ -16,6 +16,22 @@ in your application.
 Built-in validation helps you measure prediction quality on labeled datasets
 and compare models on your own data.
 
+## Use cases
+
+Use VLM tasks alongside models such as YOLO, DETR, SAM, and Florence to add
+structured decisions defined by your labels, attributes, and context:
+
+- **Enrich traditional CV model outputs:** use a pretrained VLM's visual and
+  language knowledge to add information such as descriptions or attributes to
+  your detections.
+- **Extend beyond model vocabulary:** express targets, relationships, and
+  task criteria in natural language, and generate outputs or descriptions beyond
+  an existing CV model's trained vocabulary.
+- **Support novel classes and labels:** use VLMs' pretrained weights to work with
+  new classes or labels without additional training.
+- **Common VLM tasks:** leverage the structured output to
+  integrate VLMs into your applications or pipelines.
+
 ## Quick start
 
 ### Install
