@@ -363,17 +363,14 @@ def test_invalid_named_requests_do_not_download(tmp_path, http, settings):
     assert not http[1]
 
 
-def test_runner_schema_discovery_explicit_config_and_prepare_only(tmp_path, http, monkeypatch, capsys):
+def test_runner_schema_discovery_and_explicit_config(tmp_path, http, monkeypatch, capsys):
     from examples import run_validation
 
-    monkeypatch.setattr(run_validation, "create_backend", lambda args: pytest.fail("Must not load a model"))
-    assert run_validation.main(["--task", "attributes", "--prepare-only", "--max-samples", "2", "--cache-dir", str(tmp_path), "--no-verbose"]) == 0
-    report = json.loads(capsys.readouterr().out)
-    assert report["attributes"]["material"]["wood"] == "wood/wooden"
-    assert "categorical" in report["metadata"]["protocol"]
     monkeypatch.setattr(run_validation, "create_backend", lambda args: Backend())
     assert run_validation.main(["--task", "attributes", "--model", "test", "--max-samples", "2", "--cache-dir", str(tmp_path), "--no-verbose"]) == 0
     report = json.loads(capsys.readouterr().out)
+    assert report["task_config"]["attributes"]["material"]["wood"] == "wood/wooden"
+    assert "categorical" in report["protocol"]
     assert report["selected_groups"] == ["cleanliness", "material"]
     assert report["metrics"]["attribute_decisions"] == 2
     assert report["per_attribute"][0]["attribute"] == "cleanliness"

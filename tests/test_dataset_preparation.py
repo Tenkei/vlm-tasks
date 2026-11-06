@@ -298,21 +298,29 @@ def test_detection_default_download_and_task_dataset_mismatch(tmp_path, http, mo
     assert len(http[1]) == count
 
 
-def test_runner_prepare_only_skips_backend_and_records_paths(tmp_path, http, monkeypatch, capsys):
+def test_runner_grounding_default_prepares_data_and_saves_report(tmp_path, http, monkeypatch, capsys):
     from examples import run_validation
 
     ground_source(http)
-    monkeypatch.setattr(run_validation, "create_backend", lambda args: pytest.fail("Must not load a model"))
+    requests = []
+
+    def backend(request):
+        requests.append(request)
+        return ModelResponse({"status": "found", "box": {"x1": .25, "y1": .25, "x2": .75, "y2": .75}})
+
+    monkeypatch.setattr(run_validation, "create_backend", lambda args: backend)
     output = tmp_path / "report.json"
     assert run_validation.main([
-        "--task", "ground", "--prepare-only", "--max-samples", "2", "--cache-dir", str(tmp_path),
+        "--task", "ground", "--model", "test", "--max-samples", "2", "--cache-dir", str(tmp_path),
         "--output", str(output),
     ]) == 0
     report = json.loads(capsys.readouterr().out)
     assert report == json.loads(output.read_text())
-    assert report["dataset"] == "refcocog"
-    assert Path(report["data"]).is_dir() and Path(report["images"]).is_dir()
-    assert report["metadata"]["selected_expressions"] == 2
+    assert len(requests) == 2
+    assert report["metrics"]["mean_iou"] == 1
+    assert report["dataset_metadata"]["dataset"] == "refcocog"
+    assert Path(report["dataset_metadata"]["data"]).is_dir()
+    assert report["dataset_metadata"]["preparation"]["selected_expressions"] == 2
 
 
 def test_runner_classification_default_uses_dataset_labels(tmp_path, http, monkeypatch, capsys):

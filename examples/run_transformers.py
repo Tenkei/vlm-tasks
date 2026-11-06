@@ -16,7 +16,7 @@ from examples.run_bedrock import DEFAULT_CONFIG, TASKS, build_pipelines
 
 
 def create_backend(args: argparse.Namespace) -> PydanticAIBackend:
-    # --dry-run needs neither these optional dependencies nor model weights.
+    # Load optional dependencies only when this backend is selected.
     import torch
     from transformers import AutoModelForImageTextToText, AutoProcessor
 
@@ -60,7 +60,6 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--max-tokens", type=int, default=4096)
     parser.add_argument("--retries", type=int, default=0)
     parser.add_argument("--output", type=Path)
-    parser.add_argument("--dry-run", action="store_true", help="Decode and validate tasks without loading or downloading weights")
     args = parser.parse_args(argv)
     if args.max_tokens < 1 or args.retries < 0:
         parser.error("--max-tokens must be positive and --retries nonnegative")
@@ -76,12 +75,6 @@ def main(argv: list[str] | None = None) -> int:
         image_pipeline = Pipeline([LoadFile(), Decode()])
         image_pipeline.validate(strict=True)
         image = image_pipeline(str(args.input))
-        if args.dry_run:
-            print(json.dumps({
-                "dry_run": True, "input": str(args.input.resolve()), "image_size": image.size,
-                "model": args.model, "tasks": list(pipelines),
-            }, indent=2))
-            return 0
         started = perf_counter()
         backend = create_backend(args)
         load_seconds = perf_counter() - started

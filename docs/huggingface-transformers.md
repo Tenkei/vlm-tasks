@@ -82,15 +82,6 @@ GPU execution.
 
 ## Run
 
-Validate the image and task configuration first, without importing PyTorch or
-Transformers or downloading/loading weights:
-
-```bash
-python -m examples.run_transformers \
-  --input experiments/inputs/coco_000000039769.jpg \
-  --dry-run
-```
-
 Run all five tasks:
 
 ```bash
@@ -101,7 +92,7 @@ python -m examples.run_transformers \
   --output .example_assets/qwen3_vl_local_results.json
 ```
 
-Run these commands from the repository root. Replace the image path with any
+Run commands from the repository root. Replace the image path with any
 local image. The cats image is included in repository checkouts under
 `experiments/inputs/`; source distributions exclude that directory.
 `auto` selects CUDA if available, then Apple MPS, then CPU. It loads the entire
@@ -110,8 +101,11 @@ failure. For CPU execution, an explicit float32 run is available:
 
 ```bash
 python -m examples.run_transformers \
-  --input /path/to/image.jpg --device cpu --dtype float32 \
-  --tasks classify ground --max-tokens 1024
+  --input /path/to/image.jpg \
+  --device cpu \
+  --dtype float32 \
+  --tasks classify ground \
+  --max-tokens 1024
 ```
 
 Use `--device mps` or `--device cuda:0` explicitly as appropriate. `--dtype`
@@ -130,10 +124,16 @@ classification, detection or grounding datasets with this adapter. For example:
 
 ```bash
 python -m examples.run_validation \
-  --backend transformers --task ground \
-  --data /path/to/mdetr_annotations --images /path/to/coco/train2014 \
-  --dataset refcocog --split val --max-samples 10 \
-  --model Qwen/Qwen3-VL-2B-Instruct --device mps --dtype float16 \
+  --backend transformers \
+  --task ground \
+  --data /path/to/mdetr_annotations \
+  --images /path/to/coco/train2014 \
+  --dataset refcocog \
+  --split val \
+  --max-samples 10 \
+  --model Qwen/Qwen3-VL-2B-Instruct \
+  --device mps \
+  --dtype float16 \
   --output /tmp/grounding10.json
 ```
 

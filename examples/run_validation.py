@@ -20,7 +20,6 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--dataset", choices=["refcocog", "refcoco", "refcoco+"], help="Grounding dataset; default refcocog")
     parser.add_argument("--split", default="val")
     parser.add_argument("--cache-dir", type=Path, help="Dataset cache; defaults to VLM_TASKS_DATASETS_DIR or ~/.cache/vlm-tasks/datasets")
-    parser.add_argument("--prepare-only", action="store_true", help="Prepare a registered dataset without loading a model or running inference")
     parser.add_argument("--config", type=Path, help="Task settings JSON; attributes discovers the dataset schema, named classify/detect use dataset labels, local classify/detect use image_tasks.json, ground uses empty settings")
     parser.add_argument("--class-map", type=Path, help="JSON mapping of dataset class names to task labels")
     parser.add_argument("--max-samples", type=int, help="Limit evaluated samples (expressions for grounding; eligible object crops for attributes)")
@@ -45,7 +44,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.profile is not None or args.region is not None:
             parser.error("--profile and --region apply only to Bedrock")
     else:
-        if not args.model and not args.prepare_only:
+        if not args.model:
             parser.error("--model is required for Bedrock")
         if args.device != "auto" or args.dtype != "auto" or args.revision or args.local_files_only:
             parser.error("--device, --dtype, --revision and --local-files-only apply only to Transformers")
@@ -59,8 +58,6 @@ def main(argv: list[str] | None = None) -> int:
     automatic = args.data in DATASETS
     if automatic and DATASETS[args.data].task != args.task:
         parser.error(f"Dataset {args.data!r} does not support {args.task}")
-    if args.prepare_only and not automatic:
-        parser.error("--prepare-only requires a registered dataset name")
     if args.task == "ground":
         if args.images is None and not automatic:
             parser.error("--images is required for local grounding data")
@@ -104,19 +101,6 @@ def main(argv: list[str] | None = None) -> int:
             preparation_seconds = perf_counter() - started
             if args.task == "attributes" and task_settings.get("attributes") is None:
                 task_settings["attributes"] = prepared.attributes
-            if args.prepare_only:
-                serialized = json.dumps({
-                    "dataset": prepared.dataset, "split": prepared.split,
-                    "data": str(prepared.data),
-                    "images": None if prepared.images is None else str(prepared.images),
-                    "metadata": prepared.metadata, "preparation_seconds": preparation_seconds,
-                    "attributes": prepared.attributes,
-                }, indent=2)
-                print(serialized)
-                if args.output:
-                    args.output.parent.mkdir(parents=True, exist_ok=True)
-                    args.output.write_text(serialized + "\n")
-                return 0
         elif args.task == "attributes" and task_settings.get("attributes") is None:
             task_settings["attributes"] = OVADDataset(
                 args.data, args.images, split=args.split, max_samples=args.max_samples,

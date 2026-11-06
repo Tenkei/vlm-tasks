@@ -26,7 +26,7 @@ DEFAULT_CONFIG = Path(__file__).with_name("image_tasks.json")
 
 
 def create_backend(args: argparse.Namespace) -> PydanticAIBackend:
-    # Keep provider dependencies and credential discovery out of --dry-run.
+    # Load optional dependencies only when this backend is selected.
     import boto3
     from pydantic_ai.models.bedrock import BedrockConverseModel
     from pydantic_ai.providers.bedrock import BedrockProvider
@@ -65,7 +65,6 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--output-mode", choices=["prompted", "native", "tool"], default="prompted")
     parser.add_argument("--retries", type=int, default=0, help="Structured output correction attempts")
     parser.add_argument("--max-tokens", type=int, default=4096)
-    parser.add_argument("--dry-run", action="store_true", help="Decode image and validate tasks without AWS calls")
     args = parser.parse_args(argv)
     if args.retries < 0 or args.max_tokens < 1:
         parser.error("--retries must be nonnegative and --max-tokens must be positive")
@@ -82,12 +81,6 @@ def main(argv: list[str] | None = None) -> int:
         image_pipeline = Pipeline([LoadFile(), Decode()])
         image_pipeline.validate(strict=True)
         image = image_pipeline(str(args.input))
-        if args.dry_run:
-            print(json.dumps({
-                "dry_run": True, "input": str(args.input.resolve()),
-                "image_size": image.size, "tasks": list(pipelines),
-            }, indent=2))
-            return 0
         backend = create_backend(args)
         pipelines = build_pipelines(config, args.tasks, backend)
     except Exception as exc:

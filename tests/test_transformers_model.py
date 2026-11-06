@@ -181,15 +181,31 @@ def test_cli_continues_after_invalid_task_and_saves_causes(adapter, tmp_path, mo
     assert len(processor.chats) == 2
 
 
-def test_cli_dry_run_never_loads_weights(tmp_path, monkeypatch):
-    import cv2
-    from examples import run_transformers
+@pytest.mark.parametrize("runner", ["run_transformers", "run_bedrock"])
+@pytest.mark.parametrize("invalid", ["image", "config"])
+def test_cli_invalid_inputs_fail_before_loading_backend(tmp_path, monkeypatch, capsys, runner, invalid):
+    from importlib import import_module
 
+    import cv2
+
+    module = import_module(f"examples.{runner}")
     image = tmp_path / "input.png"
     cv2.imwrite(str(image), np.zeros((10, 20, 3), dtype=np.uint8))
+    config = module.DEFAULT_CONFIG
+    if invalid == "image":
+        image.write_bytes(b"invalid image")
+    else:
+        config = tmp_path / "config.json"
+        config.write_text(json.dumps({"classify": {"labels": []}}))
 
     def unexpected_load(args):
-        pytest.fail("Dry run must not load model dependencies or weights")
+        pytest.fail("Invalid local inputs must fail before loading the backend")
 
-    monkeypatch.setattr(run_transformers, "create_backend", unexpected_load)
-    assert run_transformers.main(["--input", str(image), "--dry-run"]) == 0
+    monkeypatch.setattr(module, "create_backend", unexpected_load)
+    with pytest.raises(SystemExit) as exc:
+        module.main([
+            "--input", str(image), "--config", str(config),
+            "--tasks", "classify", "--model", "test",
+        ])
+    assert exc.value.code == 2
+    assert "Setup failed:" in capsys.readouterr().err
