@@ -12,17 +12,20 @@ python -m pip install -e .
 
 ## Task Configuration
 
-Copy [image_tasks.json](image_tasks.json) and edit the single-image task settings; see the [task reference](../docs/reference.md#operators) for available fields.
+Copy [image_tasks.json](image_tasks.json) and edit the single-image task settings:
 
 ```bash
 cp examples/image_tasks.json /tmp/vlm-tasks.json
 ```
 
-Pass the copy with `--config`; add `--tasks attributes` to run only attribute prediction.
+Or pass your own `--config /path/to/tasks.json`. Settings match the
+[task constructor options](../docs/reference.md#operators); for example,
+`Ground` accepts `geometry="point"` for direct point output.
 
 ## Hugging Face Transformers
 
-Run all five tasks with local Qwen3-VL weights; see the [Transformers guide](../docs/huggingface-transformers.md) for model and device options.
+Run tasks with local Qwen3-VL weights (`Qwen/Qwen3-VL-2B-Instruct` by default);
+see the [Transformers guide](../docs/huggingface-transformers.md) for backend setup.
 
 ```bash
 python -m pip install \
@@ -36,6 +39,12 @@ python -m examples.run_transformers \
   --config /tmp/vlm-tasks.json \
   --output /tmp/vlm-transformers-results.json
 ```
+
+- Use `--device mps` or `--device cuda:0` to select a GPU. The default `auto`
+  selects CUDA if available, then Apple MPS, then CPU.
+- `--dtype` accepts `auto`, `float32`, `float16` or `bfloat16`; choose a dtype
+  supported by the device. The default `auto` uses the checkpoint's dtype.
+- To load a local checkpoint, pass its directory with `--model /path/to/checkpoint`.
 
 ## Amazon Bedrock
 
@@ -53,7 +62,8 @@ python -m examples.run_bedrock \
 
 ## Task validation
 
-Install the validation extra for detection YAML support, plus your backend dependencies above; see the [validation guide](../docs/validation.md) for details.
+Install the validation extra for detection YAML support, plus your backend dependencies above;
+see the [validation guide](../docs/validation.md) for details.
 
 ```bash
 python -m pip install -e '.[validation]'
@@ -72,6 +82,8 @@ python -m examples.run_validation \
 ```
 
 Use `--task classify`, `--task detect`, or `--task ground` for the other [built-in validations](../docs/validation.md#available-validations).
+
+Start with `--max-samples 10` to check runtime, then try 100 samples.
 
 ### Your own data
 
@@ -102,11 +114,31 @@ python -m examples.run_validation \
   --output /tmp/vlm-bedrock-validation.json
 ```
 
-## Output and options
+### Validate with Transformers
 
-Runners print JSON; `--output /path/to/results.json` also saves it, and the [validation guide](../docs/validation.md#results-and-reproducibility) explains the metrics and timings.
+Evaluate a task with local model weights. For example, run attribute validation
+on Apple MPS with float16:
 
-Exit codes are `0` for success, `1` for model failures, and `2` for setup or validation errors; see the [validation runner](run_validation.py) for report fields.
+```bash
+python -m examples.run_validation \
+  --backend transformers \
+  --task attributes \
+  --model Qwen/Qwen3-VL-2B-Instruct \
+  --device mps \
+  --dtype float16 \
+  --max-samples 10 \
+  --output /tmp/vlm-transformers-validation.json
+```
+
+The runner accepts the same `--model`, `--device`, `--dtype` and `--max-tokens`
+options as `run_transformers`; see [task validation](../docs/validation.md) for details.
+
+## Common options
+
+- Single-image runners use `--tasks` to select one or more tasks; all five run by default.
+- Validation uses `--task` to select one task.
+- Runners print JSON; `--output /path/to/results.json` also saves it.
+- Exit codes are `0` for success, `1` for model failures, and `2` for setup or validation errors.
 
 List all command-line options:
 

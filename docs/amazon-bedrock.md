@@ -35,17 +35,18 @@ aws sso login \
 
 Repeat the appropriate login command when your session expires.
 
-## Connect the backend and run a task
+## Create a backend in Python
 
 Choose a model that supports image input and is available to your account in
-the selected region. This example uses Qwen3 VL in Tokyo (`ap-northeast-1`):
+the selected region. Set the profile, region and model ID below to match your
+AWS account:
 
 ```python
 import boto3
 from pydantic_ai.models.bedrock import BedrockConverseModel
 from pydantic_ai.providers.bedrock import BedrockProvider
 
-from ml_pipes.vlm import Attributes, PydanticAIBackend
+from ml_pipes.vlm import PydanticAIBackend
 
 session = boto3.Session(
     profile_name="YOUR_PROFILE",
@@ -56,15 +57,9 @@ model = BedrockConverseModel(
     provider=BedrockProvider(bedrock_client=session.client("bedrock-runtime")),
 )
 backend = PydanticAIBackend(model)
-
-task = Attributes(backend, attributes={"setting": ["indoor", "outdoor"]})
-result = task("/path/to/image.jpg")
-print(result.attributes)  # Example: {'setting': 'indoor'}
 ```
 
-Replace the profile and image path with your own values. The same `backend`
-works with any [available task](../README.md#available-tasks).
+Pass `backend` to a [task](tasks.md).
 
-For command-line examples and task validation, see
-[Run the examples](../examples/README.md#amazon-bedrock). For other credential
-methods, see the [Boto3 credentials guide](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html).
+For other credential methods, see the
+[Boto3 credentials guide](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html).
