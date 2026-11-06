@@ -5,8 +5,6 @@ measures task quality, failures, and execution time without training the model.
 This page records the design decisions, summarizes the available validations,
 and explains how to configure a run.
 
-## Architecture decision record
-
 ### Context
 
 A useful evaluation must exercise the same task semantics as application use.
@@ -17,30 +15,23 @@ logic for every data source.
 
 ### Decisions
 
-| Decision | Alternatives considered | Rationale and tradeoffs |
-|---|---|---|
-| Evaluate the configured task through its public results | Call the model directly or score raw responses | Measures instructions, parsing, and task behavior together; results describe the complete configuration rather than the model alone |
-| Separate data loading, annotation adaptation, and evaluation | Put dataset-specific parsing and scoring in one runner | Reuses task metrics across datasets; requires consistent labels, geometry, and sample meaning |
-| Provide task defaults with replaceable validators | Require a benchmark framework or a custom runner for every evaluation | Makes reference runs easy while allowing extensions; defaults cannot represent every domain |
-| Target Imagenette for the classification default | Keep CIFAR-10 as the long-term default | Higher-resolution natural images; larger downloads and an unresolved resolution choice |
-| Prepare named datasets separately from inference | Bundle data or make downloading inseparable from execution | Allows caching and preparation before model use; subset preparation may still require large source downloads |
-| Include failed predictions in scoring and report them separately | Drop failures or stop on every model error | Avoids inflating scores by evaluating only successful calls; aggregate quality includes execution reliability |
-| Use task-specific metrics and explicit evaluation scopes | Report one universal score | Preserves the distinction between classification, detection, localization, and attributes; scores across tasks are not interchangeable |
+| Decision                                                     | Alternatives considered                                               | Rationale and tradeoffs                                                                                                                |
+|--------------------------------------------------------------|-----------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|
+| Evaluate the configured task through its public results      | Call the model directly or score raw responses                        | Measures instructions, parsing, and task behavior together; results describe the complete configuration rather than the model alone    |
+| Separate data loading, annotation adaptation, and evaluation | Put dataset-specific parsing and scoring in one runner                | Reuses task metrics across datasets; requires consistent labels, geometry, and sample meaning                                          |
+| Provide task defaults with replaceable validators            | Require a benchmark framework or a custom runner for every evaluation | Makes reference runs easy while allowing extensions; defaults cannot represent every domain                                            |
+| Prepare datasets separately from inference                   | Bundle data or make downloading inseparable from execution            | Allows caching and preparation before model use; subset preparation may still require large source downloads                           |
+| Include failed predictions in scoring and report them        | Drop failures or stop on every model error                            | Avoids inflating scores by evaluating only successful calls; aggregate quality includes execution reliability                          |
+| Use task-specific metrics and explicit evaluation scopes     | Report one universal score                                            | Preserves the distinction between classification, detection, localization, and attributes; scores across tasks are not interchangeable |
+| Target Imagenette for the classification default             | Keep CIFAR-10 as the long-term default                                | Higher-resolution natural images; larger downloads and an unresolved resolution choice                                                 |
 
 A validator coordinates three responsibilities:
 
-| Responsibility | Purpose |
-|---|---|
-| Data loading | Supply the selected images or crops and their annotations |
+| Responsibility        | Purpose                                                              |
+|-----------------------|----------------------------------------------------------------------|
+| Data loading          | Supply the selected images or crops and their annotations            |
 | Annotation adaptation | Align source labels and geometry with the task's evaluation contract |
-| Evaluation | Compare public task results with targets and accumulate metrics |
-
-**Consequences:** keep the task configuration fixed across samples, apart from
-dataset-supplied inputs such as grounding expressions. In particular, missing
-attribute annotations must not change the choices presented to the model.
-Separate correction retries from transport retries, and record both when
-comparing runs. Small deterministic subsets are useful for execution checks;
-claims about quality require representative data and a stated protocol.
+| Evaluation            | Compare public task results with targets and accumulate metrics      |
 
 ## Implementation notes
 
@@ -139,12 +130,14 @@ Start with `max_samples=10` to check execution and timing. Use
 `max_samples=None`, the default, to evaluate the complete selected split.
 Limits count images for classification/detection, expressions for grounding,
 and eligible objects for attributes. Selection is deterministic, not a random
-sample.
+sample. Quality claims require representative data and a stated evaluation
+protocol.
 
-Configure labels, descriptions, context, and geometry on the task. Configure
-model settings, output mode, and correction retries on the
-[backend](model-backends.md#output-modes-and-retries). Validation adds no
-correction retry policy.
+Configure labels, descriptions, context, and geometry on the task. Keep these
+settings fixed across samples; datasets supply per-sample inputs such as
+grounding expressions. Configure model settings, output mode, and correction
+retries on the [backend](model-backends.md#output-modes-and-retries). Validation
+adds no correction retry policy.
 
 | Validation setting | Purpose |
 |---|---|
@@ -230,9 +223,10 @@ print(metrics.summary())
 print(metrics.confusion_matrices["material"])
 ```
 
-Each eligible object produces one crop and one call. All selected attribute
-fields are requested on every crop; only known targets contribute to scoring.
-The task's stored configuration is unchanged.
+Each eligible object produces one crop and one call. The model receives the same
+selected attribute fields and choices for every crop, including fields without
+annotations. Only known targets contribute to scoring. The task's stored
+configuration is unchanged.
 
 To evaluate fewer groups, prepare their choices and configure the task:
 
@@ -364,9 +358,11 @@ before `.val()` is outside the reported timings; inference includes configured
 backend correction attempts.
 
 Keep dataset version, split, sample/class/group selection, geometry, context,
-model revision, generation settings, output mode, and retries fixed when
-comparing runs. Report the metric definition alongside the score. Validation
-returns measurements without an automatic accuracy pass/fail threshold.
+model revision, generation settings, output mode, and retry settings fixed when
+comparing runs. Record backend correction retries for invalid model responses
+separately from provider transport retries for failed API requests. Report the
+metric definition alongside the score. Validation returns measurements without
+an automatic accuracy pass/fail threshold.
 
 For command-line execution and saved JSON reports, see the
 [validation example](../examples/README.md#task-validation).
