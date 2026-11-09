@@ -28,6 +28,30 @@ class _Selection(_WireModel):
         return value
 
 
+class _Description(_WireModel):
+    description: str = Field(min_length=1)
+
+    @field_validator("description")
+    @classmethod
+    def nonempty_description(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("description must be a nonempty string")
+        return value
+
+
+class _Answer(_WireModel):
+    status: Literal["answered", "unanswerable"]
+    answer: str | None = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def consistent(self) -> _Answer:
+        if self.answer is not None and not self.answer.strip():
+            raise ValueError("answer must be a nonempty string or null")
+        if (self.status == "answered") != (self.answer is not None):
+            raise ValueError("An answer is required exactly when status is answered")
+        return self
+
+
 class _Box(_WireModel):
     x1: float = Field(ge=0, le=1, allow_inf_nan=False)
     y1: float = Field(ge=0, le=1, allow_inf_nan=False)
@@ -81,6 +105,14 @@ def _spec(model: type[BaseModel]) -> ResponseSpec:
 
 def _label_type(choices: Mapping[str, str]):
     return Literal.__getitem__(tuple(choices))
+
+
+def description_spec() -> ResponseSpec:
+    return _spec(_Description)
+
+
+def answer_spec() -> ResponseSpec:
+    return _spec(_Answer)
 
 
 def classification_spec(choices: Mapping[str, str], *, multiple: bool) -> ResponseSpec:

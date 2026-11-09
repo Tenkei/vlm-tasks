@@ -150,8 +150,8 @@ context, then checks and converts the response into a structured result.
 | `Detect` | Find matching objects and return labeled bounding boxes. | Available |
 | `Ground` | Locate a described target, such as “the leftmost cat,” as a box or point. | Available |
 | `Attributes` | Predict named properties, such as material and condition, from allowed choices. | Available |
-| `Caption` | Describe an image in natural language. | Planned |
-| `Answer` | Answer a question about an image. | Planned |
+| `Describe` | Describe an image in natural language, with optional focus and detail. | Available |
+| `Answer` | Answer a question about an image, or report that it cannot be answered. | Available |
 | `ReadText` | Read text visible in an image (OCR). | Planned |
 
 Planned tasks are the next additions; they are not available yet. For task

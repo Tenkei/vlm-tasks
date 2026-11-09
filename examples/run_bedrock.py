@@ -9,9 +9,9 @@ from pathlib import Path
 from time import perf_counter
 
 from ml_pipes.core import Pipeline
-from ml_pipes.vision import Decode, LoadFile
+from ml_pipes.vision import Decode, ImagePayload, LoadFile
 from ml_pipes.vlm import (
-    Attributes, Classify, ClassifyMultiLabel, Detect, Ground, ModelBackend,
+    Answer, Attributes, Classify, ClassifyMultiLabel, Describe, Detect, Ground, ModelBackend,
     PydanticAIBackend,
 )
 
@@ -21,6 +21,8 @@ TASKS = {
     "detect": Detect,
     "ground": Ground,
     "attributes": Attributes,
+    "describe": Describe,
+    "answer": Answer,
 }
 DEFAULT_CONFIG = Path(__file__).with_name("image_tasks.json")
 
@@ -48,7 +50,7 @@ def build_pipelines(config: dict, names: list[str], backend: ModelBackend) -> di
         if not isinstance(settings, dict):
             raise ValueError(f"Configuration must contain an object for task {name!r}")
         pipeline = Pipeline([TASKS[name](backend, **settings)])
-        pipeline.validate(strict=True)
+        pipeline.validate(pipeline_input_type=ImagePayload, strict=True)
         pipelines[name] = pipeline
     return pipelines
 

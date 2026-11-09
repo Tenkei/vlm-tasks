@@ -102,6 +102,50 @@ With `Attributes(backend)`, direct calls must supply `(image, attributes)`.
 [Validation](validation.md#attributes-ovad-object-crops) can discover choices
 from the dataset instead.
 
+## Descriptions and questions
+
+Use `Describe` for a factual natural-language description. Context controls the
+subject, focus, language, and level of detail; the default asks for a concise
+description of salient visible content:
+
+```python
+from ml_pipes.vlm import Answer, Describe
+
+describe = Describe(backend, context="Describe visible damage to the chair.")
+result = describe("chair.jpg")
+print(result.description)
+```
+
+Use `Answer` for an explicit question. Set a default question or supply one per
+call as `(image, question)`, following the grounding input pattern:
+
+```python
+answer = Answer(backend, question="What material is the chair made of?")
+result = answer("chair.jpg")
+
+answer = Answer(backend)
+result = answer(("street.jpg", "What is the cyclist carrying?"))
+print(result.status, result.answer)
+```
+
+Questions must be nonempty strings. A missing question or invalid override
+raises `ValueError` before inference. Overrides preserve stored question and
+context, and independent calls have no conversation history.
+
+An `answered` result contains nonempty answer text. An `unanswerable` result has
+`answer=None`, for example when evidence is insufficient, text is unreadable, or
+a referent remains ambiguous. “No” and “zero” are answers, not abstentions.
+Malformed responses and execution failures raise the usual task errors.
+
+Answer uses visual evidence, relevant general knowledge, and supplied context.
+Use context to specify a stricter evidence policy or answer language when needed.
+Output wording is preserved; benchmark normalization belongs in a validator.
+For allowed labels, categorical attributes, or coordinates, use the corresponding
+task contract. Descriptions and free-text answers do not enforce those formats.
+
+`Describe` and `Answer` currently require an explicit custom validator for
+`.val()`; see [custom validation](validation.md#custom-loaders-and-validators).
+
 ## Coordinates and results
 
 Task results use original-image pixels, with the origin at the top left.
@@ -130,4 +174,6 @@ result = pipeline(("image.jpg", "the person on the right"))
 
 The pipeline passes a tuple as one argument. Grounding without a default target
 requires `(image, target)`; attributes without default choices requires
-`(image, attributes)`. With defaults, either task also accepts an image alone.
+`(image, attributes)`. Answer without a default question requires
+`(image, question)`. With defaults, these tasks also accept an image alone.
+Describe accepts an image alone.

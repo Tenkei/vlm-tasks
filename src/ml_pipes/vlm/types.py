@@ -9,7 +9,7 @@ from ml_pipes.vision import ImagePayload
 
 __all__ = [
     "BoundingBox", "Point", "ClassificationResult", "Detection", "DetectionResult",
-    "GroundingResult", "AttributePredictionResult", "ResponseSpec",
+    "GroundingResult", "AttributePredictionResult", "DescriptionResult", "AnswerResult", "ResponseSpec",
     "ModelRequest", "ModelResponse", "ModelBackend",
 ]
 
@@ -59,6 +59,17 @@ class GroundingResult:
 @dataclass(frozen=True)
 class AttributePredictionResult:
     attributes: Mapping[str, str]
+
+
+@dataclass(frozen=True)
+class DescriptionResult:
+    description: str
+
+
+@dataclass(frozen=True)
+class AnswerResult:
+    status: Literal["answered", "unanswerable"]
+    answer: str | None
 
 
 @dataclass(frozen=True)

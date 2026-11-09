@@ -49,8 +49,8 @@ MB/GB, excluding model weights and expanded cache files.
 | `Ground`, point | **RefCOCOg UMD** (`refcocog`) | Same expressions and target boxes as box mode | train, val, test | Point-in-box accuracy | Shares box-mode data and cache | Same as box mode |
 | `Attributes` | **OVAD** (`ovad`) | 14,300 source objects; 14,072 eligible objects in 2,000 images; 22 categorical groups | test, val; **val aliases the same benchmark**; no train | Categorical accuracy; mean attribute accuracy; macro F1; per-group reports | Download annotations and images referenced by selected objects | 1.13 MB annotations; images additional |
 
-`ClassifyMultiLabel` requires an explicit custom validator. Local
-RefCOCO/RefCOCO+ data can reuse grounding validation; see
+`ClassifyMultiLabel`, `Describe`, and `Answer` require an explicit custom
+validator. Local RefCOCO/RefCOCO+ data can reuse grounding validation; see
 [local data](#using-your-own-dataset).
 
 **Interpretation limits:** CIFAR-10 contains small images, and COCO128 is a smoke

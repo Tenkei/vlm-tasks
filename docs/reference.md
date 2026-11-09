@@ -41,20 +41,18 @@ that request. Stored choices and context are unchanged.
 
 `Attributes(backend).val()` can discover choices from its dataset.
 
-### Grounding targets
+### Prompts
 
-| Parameter | Contract |
-|---|---|
-| `target` | Nonempty `str`; required at construction or per call as `(image, target)` |
-| `geometry` | `"box"` (default) or `"point"`; constructor setting |
+| Parameter | Task | Contract |
+|---|---|---|
+| `target` | `Ground` | Nonempty `str`; required at construction or per call as `(image, target)` |
+| `question` | `Answer` | Nonempty `str`; required at construction or per call as `(image, question)` |
+| `context` | All tasks | Nonempty `str` or `None` (default); constructor setting |
 
-A per-call target overrides the constructor target for that request without
-changing stored configuration.
-
-### Context
-
-`context`: nonempty `str` or `None` (default). Constructor setting shared by all
-tasks; per-call target or attribute overrides preserve it.
+Per-call targets and questions replace their defaults for that request without
+changing stored configuration. Missing or invalid values fail before inference.
+Target, question, and attribute overrides preserve context. Describe uses
+context to guide the subject, focus, language, and level of detail.
 
 See the [task guide](tasks.md) for configuration examples.
 
@@ -70,6 +68,10 @@ Import from `ml_pipes.vlm`. `model` must be a callable `ModelBackend`, normally
 | `Detect(model, labels, *, context=None)` | `ImageInput` | `DetectionResult`; empty detections are valid |
 | `Ground(model, target=None, *, context=None, geometry="box")` | `ImageInput` or `tuple[ImageInput, str]` | `GroundingResult` |
 | `Attributes(model, attributes=None, *, context=None)` | `ImageInput` or `tuple[ImageInput, AttributeChoices]` | `AttributePredictionResult` with exactly one allowed value per attribute |
+| `Describe(model, *, context=None)` | `ImageInput` | `DescriptionResult` with one factual natural-language description |
+| `Answer(model, question=None, *, context=None)` | `ImageInput` or `tuple[ImageInput, str]` | `AnswerResult` with an answer or an unanswerable outcome |
+
+Ground's `geometry` constructor setting accepts `"box"` (default) or `"point"`.
 
 ## Result types
 
@@ -84,6 +86,8 @@ Import from `ml_pipes.vlm`. All result types are frozen dataclasses.
 | `DetectionResult` | `detections: tuple[Detection, ...]`; `image_size: tuple[int, int]` |
 | `GroundingResult` | `status`: `"found"`, `"not_found"`, or `"ambiguous"`; `box: BoundingBox` or `None`; `image_size: tuple[int, int]`; `geometry`: `"box"` (default) or `"point"`; `point: Point` or `None` (default) |
 | `AttributePredictionResult` | `attributes: Mapping[str, str]` |
+| `DescriptionResult` | `description: str`; nonempty, non-whitespace text |
+| `AnswerResult` | `status`: `"answered"` or `"unanswerable"`; `answer: str` or `None` in case of `unanswerable` |
 
 Task results use original-image pixels and `image_size=(width, height)`.
 Found grounding results contain only the selected geometry; other statuses have
@@ -138,6 +142,8 @@ datasets and metric types:
 | `Ground` | `GroundingValidator` | `GroundingMetrics` | `refcocog` |
 | `Attributes` | `AttributesValidator` | `AttributesMetrics` | `ovad` |
 | `ClassifyMultiLabel` | Explicit custom validator required | Custom | None |
+| `Describe` | Explicit custom validator required | Custom | None |
+| `Answer` | Explicit custom validator required | Custom | None |
 
 Validation arguments:
 

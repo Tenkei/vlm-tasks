@@ -21,6 +21,8 @@ cp examples/image_tasks.json /tmp/vlm-tasks.json
 Or pass your own `--config /path/to/tasks.json`. Settings match the
 [task constructor options](../docs/reference.md#operators); for example,
 `Ground` accepts `geometry="point"` for direct point output.
+`Describe` accepts optional `context` for focus and detail. `Answer` needs a
+`question` in the configuration because these runners pass an image to each task.
 
 ## Hugging Face Transformers
 
@@ -135,7 +137,7 @@ options as `run_transformers`; see [task validation](../docs/validation.md) for 
 
 ## Common options
 
-- Single-image runners use `--tasks` to select one or more tasks; all five run by default.
+- Single-image runners use `--tasks` to select one or more tasks; all available tasks run by default.
 - Validation uses `--task` to select one task.
 - Runners print JSON; `--output /path/to/results.json` also saves it.
 - Exit codes are `0` for success, `1` for model failures, and `2` for setup or validation errors.

@@ -13,7 +13,7 @@ import pytest
 from ml_pipes.core import Pipeline
 from ml_pipes.vision import ImagePayload
 from ml_pipes.vlm import (
-    Attributes, Classify, ClassifyMultiLabel, Detect, Ground,
+    Answer, Attributes, Classify, ClassifyMultiLabel, Describe, Detect, Ground,
     InvalidModelResponseError, ModelExecutionError, PydanticAIBackend,
 )
 from ml_pipes.vlm import TransformersModel
@@ -82,11 +82,14 @@ def test_all_tasks_receive_schema_and_rgb_image_with_fresh_history(adapter, imag
         {"detections": [{"label": "window", "box": {"x1": .1, "y1": .2, "x2": .8, "y2": .9}}]},
         {"status": "found", "box": {"x1": .1, "y1": .2, "x2": .8, "y2": .9}},
         {"attributes": {"state": "clean"}},
+        {"description": "A clean window."},
+        {"status": "answered", "answer": "clean"},
     ]
     backend, processor = adapter([json.dumps(value) for value in outputs])
     tasks = [Classify(backend, ["clean", "dirty"]), ClassifyMultiLabel(backend, ["clean", "intact"]),
              Detect(backend, ["window"]), Ground(backend, "the window"),
-             Attributes(backend, {"state": ["clean", "dirty"]})]
+             Attributes(backend, {"state": ["clean", "dirty"]}),
+             Describe(backend), Answer(backend, "What is the window's condition?")]
     results = []
     for task in tasks:
         pipeline = Pipeline([task])
@@ -97,6 +100,9 @@ def test_all_tasks_receive_schema_and_rgb_image_with_fresh_history(adapter, imag
     assert results[2].detections[0].box.x2 == 16
     assert results[3].box.y2 == 9
     assert results[4].attributes == {"state": "clean"}
+    assert results[5].description == "A clean window."
+    assert results[6].status == "answered"
+    assert results[6].answer == "clean"
     for chat in processor.chats:
         assert [message["role"] for message in chat] == ["system", "user"]
         assert '"properties"' in chat[0]["content"][0]["text"]
@@ -182,7 +188,34 @@ def test_cli_continues_after_invalid_task_and_saves_causes(adapter, tmp_path, mo
 
 
 @pytest.mark.parametrize("runner", ["run_transformers", "run_bedrock"])
-@pytest.mark.parametrize("invalid", ["image", "config"])
+def test_cli_runs_describe_and_answer_with_default_config(adapter, tmp_path, monkeypatch, runner):
+    from importlib import import_module
+
+    import cv2
+
+    module = import_module(f"examples.{runner}")
+    image = tmp_path / "input.png"
+    cv2.imwrite(str(image), np.zeros((10, 20, 3), dtype=np.uint8))
+    description = {"description": "A dark image."}
+    answer = {"status": "unanswerable", "answer": None}
+    backend, _ = adapter([json.dumps(description), json.dumps(answer)])
+    monkeypatch.setattr(module, "create_backend", lambda args: backend)
+    output = tmp_path / "results.json"
+
+    status = module.main([
+        "--input", str(image), "--model", "test", "--tasks", "describe", "answer",
+        "--output", str(output),
+    ])
+
+    report = json.loads(output.read_text())
+    assert status == 0
+    assert report["results"]["describe"]["prediction"] == description
+    assert report["results"]["answer"]["prediction"] == answer
+    assert report["task_config"]["answer"]["question"] == "What is the main subject doing?"
+
+
+@pytest.mark.parametrize("runner", ["run_transformers", "run_bedrock"])
+@pytest.mark.parametrize("invalid", ["image", "config", "question"])
 def test_cli_invalid_inputs_fail_before_loading_backend(tmp_path, monkeypatch, capsys, runner, invalid):
     from importlib import import_module
 
@@ -192,8 +225,13 @@ def test_cli_invalid_inputs_fail_before_loading_backend(tmp_path, monkeypatch, c
     image = tmp_path / "input.png"
     cv2.imwrite(str(image), np.zeros((10, 20, 3), dtype=np.uint8))
     config = module.DEFAULT_CONFIG
+    task_name = "classify"
     if invalid == "image":
         image.write_bytes(b"invalid image")
+    elif invalid == "question":
+        config = tmp_path / "config.json"
+        config.write_text(json.dumps({"answer": {}}))
+        task_name = "answer"
     else:
         config = tmp_path / "config.json"
         config.write_text(json.dumps({"classify": {"labels": []}}))
@@ -205,7 +243,7 @@ def test_cli_invalid_inputs_fail_before_loading_backend(tmp_path, monkeypatch, c
     with pytest.raises(SystemExit) as exc:
         module.main([
             "--input", str(image), "--config", str(config),
-            "--tasks", "classify", "--model", "test",
+            "--tasks", task_name, "--model", "test",
         ])
     assert exc.value.code == 2
     assert "Setup failed:" in capsys.readouterr().err

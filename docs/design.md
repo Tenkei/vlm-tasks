@@ -33,8 +33,8 @@ model family or prompt format.
 | Score | Image, assessment criterion, defined continuous scale | Value on that scale |
 | Count | Image and target | Nonnegative count |
 | ReadText | Image and reading constraints | Text and relevant layout |
-| Answer | Image and question | Free-text answer |
-| Caption | Image and description criteria | Factual caption |
+| Answer | Image and question | Free-text answer or unanswerable outcome |
+| Describe | Image and description context | Factual natural-language description |
 | Embed | Image or text and an embedding model | Vector with embedding-space identity |
 | Compare | Compatible embeddings | Similarity under a defined metric |
 | Rank | Image, candidates, comparison criterion | Ordering with explicit tie semantics |
@@ -65,6 +65,32 @@ different meanings. A task should define its scale and interpretation rather
 than treating every numerical answer as confidence. Embeddings require a
 compatible representation space; ordinary generation-model hidden states do
 not automatically provide useful retrieval embeddings.
+
+### Descriptions and question answering
+
+Describe produces a factual description, with context controlling focus and
+detail. Answer responds to an explicit question with free text or an
+unanswerable outcome. Questions can be supplied per call without changing the
+task's defaults. Both tasks share execution with the other operators.
+
+They overlap in the information they can express. Use a task with a constrained
+result when the application needs its guarantees:
+
+| Text request | Task and structured guarantee |
+|---|---|
+| “What material is the chair?” | `Attributes` for an allowed categorical value |
+| “Which option is correct?” | `Classify` for exactly one choice |
+| “How many dogs?” | `Count` for a nonnegative integer |
+| “Where is the dog?” | `Ground` for coordinates and resolution status |
+| “What does the sign say?” | `ReadText` for transcription and layout |
+| “Is a dog present?” | `Verify` for a verification decision |
+
+Count, ReadText, and Verify are planned contracts. A description or answer may
+express their information in prose, but does not guarantee the corresponding
+type, vocabulary, geometry, or completeness. Several reference captions or
+human answers in a dataset are evaluation alternatives for one prediction;
+they do not require multiple task results. An answer of “no” or “zero” remains
+an answered outcome, distinct from an inability to answer or an execution failure.
 
 ### Detection vs grounding
 

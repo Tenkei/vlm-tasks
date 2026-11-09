@@ -8,15 +8,19 @@ from ml_pipes.core import Operator
 from ml_pipes.vision import ImagePayload
 
 from ._images import ImageInput, load_image, validate_image
-from ._schemas import attributes_spec, classification_spec, detection_spec, grounding_spec
+from ._schemas import (
+    answer_spec, attributes_spec, classification_spec, description_spec,
+    detection_spec, grounding_spec,
+)
 from .errors import InvalidModelResponseError
 from .types import (
-    AttributePredictionResult, BoundingBox, ClassificationResult, Detection,
-    DetectionResult, GroundingResult, ModelBackend, ModelRequest, ModelResponse,
+    AnswerResult, AttributePredictionResult, BoundingBox, ClassificationResult,
+    DescriptionResult, Detection, DetectionResult, GroundingResult,
+    ModelBackend, ModelRequest, ModelResponse,
     Point, ResponseSpec,
 )
 
-__all__ = ["Classify", "ClassifyMultiLabel", "Detect", "Ground", "Attributes"]
+__all__ = ["Classify", "ClassifyMultiLabel", "Detect", "Ground", "Attributes", "Describe", "Answer"]
 
 LabelChoices: TypeAlias = Sequence[str] | Mapping[str, str]
 AttributeChoices: TypeAlias = Mapping[str, LabelChoices]
@@ -320,3 +324,75 @@ class Attributes(_Task):
         if self.attributes is None:
             return (tuple[ImageInput, AttributeChoices],), AttributePredictionResult
         return (ImageInput | tuple[ImageInput, AttributeChoices],), AttributePredictionResult
+
+
+@Operator
+class Describe(_Task):
+    """Describe visible image content, with optional focus and detail in context."""
+
+    def __init__(self, model: ModelBackend, *, context: str | None = None) -> None:
+        self._configure(model, context)
+        self._spec = description_spec()
+        self._instruction = (
+            "Describe the image in natural language. Provide one concise, factual "
+            "description of salient visible content. Use context to guide the "
+            "subject, focus, language, and level of detail. Do not invent details "
+            "unsupported by the image."
+        )
+
+    def __call__(self, image: ImageInput) -> DescriptionResult:
+        image = load_image(image)
+        data = self._predict(image)
+        return DescriptionResult(description=data["description"])
+
+
+@Operator
+class Answer(_Task):
+    """Answer a question supplied at construction or when calling the task."""
+
+    def __init__(
+        self, model: ModelBackend, question: str | None = None, *, context: str | None = None,
+    ) -> None:
+        self._configure(model, context)
+        self.question = None if question is None else _text(question, "question")
+        self._spec = answer_spec()
+        self._instruction = (
+            "Answer the supplied question about the image concisely and directly. "
+            "Use visual evidence, relevant general knowledge, and any supplied context. "
+            "Do not invent image-specific facts. Return answered with a nonempty answer "
+            "when the answer can be determined, or unanswerable with answer=null when "
+            "evidence is insufficient or the question remains ambiguous. A negative "
+            "answer such as no or zero is still answered. Do not include a preamble "
+            "or an unsolicited explanation."
+        )
+
+    @overload
+    def __call__(self, image: ImageInput) -> AnswerResult: ...
+
+    @overload
+    def __call__(self, image: tuple[ImageInput, str]) -> AnswerResult: ...
+
+    def __call__(self, image: Any) -> AnswerResult:
+        question = self.question
+        if isinstance(image, tuple):
+            if len(image) != 2:
+                raise ValueError("Answer requires an image or an (image, question) tuple")
+            image, question = image
+        if question is None:
+            raise ValueError("Answer requires a question at construction or when called")
+        question = _text(question, "question")
+        image = load_image(image)
+        data = self._predict(
+            image, instruction=self._instruction + "\nQuestion: " + json.dumps(question)
+        )
+        return AnswerResult(status=data["status"], answer=data["answer"])
+
+    def resolve_contract(
+        self,
+        upstream_annotation: Any,
+        validation_error_type: type[Exception],
+    ) -> tuple[tuple[Any, ...], Any]:
+        del upstream_annotation, validation_error_type
+        if self.question is None:
+            return (tuple[ImageInput, str],), AnswerResult
+        return (ImageInput | tuple[ImageInput, str],), AnswerResult

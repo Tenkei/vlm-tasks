@@ -9,8 +9,8 @@ from pydantic_ai.models.function import FunctionModel
 from ml_pipes.core import Pipeline
 from ml_pipes.vision import ImagePayload
 from ml_pipes.vlm import (
-    AttributePredictionResult, Attributes, BoundingBox, ClassificationResult,
-    Classify, ClassifyMultiLabel, Detect, Detection, DetectionResult, Ground,
+    Answer, AnswerResult, AttributePredictionResult, Attributes, BoundingBox, ClassificationResult,
+    Classify, ClassifyMultiLabel, Describe, DescriptionResult, Detect, Detection, DetectionResult, Ground,
     GroundingResult, PydanticAIBackend,
 )
 
@@ -25,6 +25,8 @@ def test_tasks_with_synthetic_responses() -> None:
         }]},
         {"status": "ambiguous", "box": None},
         {"attributes": {"condition": "healthy", "color": "blue"}},
+        {"description": "A blue window."},
+        {"status": "answered", "answer": "blue"},
     ])
 
     def respond(messages, info):
@@ -40,6 +42,8 @@ def test_tasks_with_synthetic_responses() -> None:
         Attributes(backend, {
             "condition": ["healthy", "damaged"], "color": ["blue", "red"],
         }),
+        Describe(backend),
+        Answer(backend, "What color is the window?"),
     ]
     expected = [
         ClassificationResult(("clean",)),
@@ -50,6 +54,8 @@ def test_tasks_with_synthetic_responses() -> None:
         ),
         GroundingResult("ambiguous", None, image_size=(200, 100)),
         AttributePredictionResult({"condition": "healthy", "color": "blue"}),
+        DescriptionResult("A blue window."),
+        AnswerResult("answered", "blue"),
     ]
     for operator, result in zip(operators, expected, strict=True):
         pipeline = Pipeline([operator])

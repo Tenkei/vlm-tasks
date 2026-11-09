@@ -18,8 +18,9 @@ from ml_pipes.core import Pipeline
 from ml_pipes.vision import ImagePayload
 from ml_pipes.validation import PipelineValidationError
 from ml_pipes.vlm import (
-    AttributePredictionResult, Attributes, BoundingBox, ClassificationResult, Classify,
-    ClassifyMultiLabel, Detect, DetectionResult, Ground, GroundingResult,
+    Answer, AnswerResult, AttributePredictionResult, Attributes, BoundingBox,
+    ClassificationResult, Classify, ClassifyMultiLabel, Describe, DescriptionResult,
+    Detect, DetectionResult, Ground, GroundingResult,
     InvalidModelResponseError, ModelExecutionError, ModelResponse,
     PydanticAIBackend,
 )
@@ -73,6 +74,8 @@ def backend_for(*responses, retries=0, output_mode="prompted"):
         "status": "found", "point": {"x": 0.25, "y": 0.5},
     }),
     (lambda b: Attributes(b, {"color": ["red"]}), {"attributes": {"color": "red"}}),
+    (lambda b: Describe(b), {"description": "A red chair."}),
+    (lambda b: Answer(b, "What color is the chair?"), {"status": "answered", "answer": "red"}),
 ])
 def test_tasks_accept_image_paths(tmp_path, image, path_type, make_task, payload):
     path = tmp_path / "image.png"
@@ -89,7 +92,7 @@ def test_tasks_accept_image_paths(tmp_path, image, path_type, make_task, payload
 
 @pytest.mark.parametrize("path_type", [str, Path])
 @pytest.mark.parametrize("configured", [False, True])
-@pytest.mark.parametrize("kind", ["ground", "attributes"])
+@pytest.mark.parametrize("kind", ["ground", "attributes", "answer"])
 def test_paths_work_with_per_call_settings(tmp_path, image, path_type, configured, kind):
     path = tmp_path / "image.png"
     assert cv2.imwrite(str(path), image.array)
@@ -100,11 +103,16 @@ def test_paths_work_with_per_call_settings(tmp_path, image, path_type, configure
         task = Ground(backend, "old target" if configured else None)
         settings = "the window"
         input_type = tuple[path_type, str]
-    else:
+    elif kind == "attributes":
         backend, _ = backend_for({"attributes": {"color": "red"}})
         task = Attributes(backend, {"material": ["wood"]} if configured else None)
         settings = {"color": ["red"]}
         input_type = tuple[path_type, dict[str, list[str]]]
+    else:
+        backend, _ = backend_for({"status": "answered", "answer": "red"})
+        task = Answer(backend, "Old question?" if configured else None)
+        settings = "What color is the chair?"
+        input_type = tuple[path_type, str]
     expected = task((image, settings))
 
     assert task((path_type(path), settings)) == expected
@@ -133,9 +141,9 @@ def test_public_exports():
     import ml_pipes.vlm as vlm
 
     expected = {
-        "Classify", "ClassifyMultiLabel", "Detect", "Ground", "Attributes",
+        "Classify", "ClassifyMultiLabel", "Detect", "Ground", "Attributes", "Describe", "Answer",
         "PydanticAIBackend", "TransformersModel", "BoundingBox", "Point", "ClassificationResult", "Detection",
-        "DetectionResult", "GroundingResult", "AttributePredictionResult",
+        "DetectionResult", "GroundingResult", "AttributePredictionResult", "DescriptionResult", "AnswerResult",
         "ModelBackend", "ModelRequest", "ModelResponse", "ResponseSpec",
         "InvalidModelResponseError", "ModelExecutionError",
     }
@@ -380,6 +388,181 @@ def test_attributes_reject_missing_extra_or_invalid_values(image, values):
         })(image)
 
 
+def test_describe_preserves_wording_and_context(image):
+    requests = []
+    description = "  A blue chair.\nThe label reads ‘椅子’.  "
+
+    def backend(request):
+        requests.append(request)
+        return ModelResponse({"description": description})
+
+    task = Describe(backend, context="Describe the chair and any visible text.")
+    assert task(image) == DescriptionResult(description)
+    assert requests[0].image is image
+    assert "Context: Describe the chair and any visible text." in requests[0].instruction
+
+
+@pytest.mark.parametrize("data", [
+    {}, {"description": ""}, {"description": " \n\t"},
+    {"description": None}, {"description": 42}, {"description": ["chair"]},
+    {"description": "A chair.", "extra": "unexpected"},
+])
+def test_describe_validates_custom_backend_responses(image, data):
+    with pytest.raises(InvalidModelResponseError):
+        Describe(lambda request: ModelResponse(data))(image)
+
+
+@pytest.mark.parametrize("answer", ["no", "zero", "0", "wood", "椅子", "  A blue chair.\n  "])
+def test_answer_preserves_answer_text_including_negative_answers(image, answer):
+    backend, _ = backend_for({"status": "answered", "answer": answer})
+    assert Answer(backend, "What is visible?")(image) == AnswerResult("answered", answer)
+
+
+def test_answer_unanswerable_is_a_valid_result(image):
+    backend, calls = backend_for({"status": "unanswerable", "answer": None}, retries=1)
+    assert Answer(backend, "What does the unreadable label say?")(image) == AnswerResult("unanswerable", None)
+    assert len(calls) == 1
+
+
+@pytest.mark.parametrize("data", [
+    {}, {"status": "answered"}, {"answer": "wood"},
+    {"status": "answered", "answer": None},
+    {"status": "answered", "answer": ""},
+    {"status": "answered", "answer": " \n\t"},
+    {"status": "answered", "answer": 0},
+    {"status": "answered", "answer": False},
+    {"status": "answered", "answer": ["wood"]},
+    {"status": "unanswerable", "answer": "unknown"},
+    {"status": "ambiguous", "answer": None},
+    {"status": "answered", "answer": "wood", "extra": "unexpected"},
+])
+def test_answer_validates_status_and_text_from_custom_backends(image, data):
+    with pytest.raises(InvalidModelResponseError):
+        Answer(lambda request: ModelResponse(data), "What material is the chair?")(image)
+
+
+@pytest.mark.parametrize("default", [None, "What material is the chair?"])
+def test_answer_call_questions_do_not_change_configuration(image, default):
+    requests = []
+
+    def backend(request):
+        requests.append(request)
+        return ModelResponse({"status": "answered", "answer": "wood"})
+
+    task = Answer(backend, default, context="Assess the chair.")
+    instruction = task._instruction
+    questions = ["What color is the chair?", "What is resting on the chair?"]
+    for question in questions:
+        assert task((image, question)) == AnswerResult("answered", "wood")
+    if default is not None:
+        task(image=image)
+        questions.append(default)
+    else:
+        with pytest.raises(ValueError, match="requires a question"):
+            task(image)
+
+    assert task.question == default
+    assert task.context == "Assess the chair."
+    assert task._instruction == instruction
+    assert len(requests) == len(questions)
+    for request, question in zip(requests, questions, strict=True):
+        assert request.image is image
+        assert "Question: " + json.dumps(question) + "\nContext:" in request.instruction
+        assert request.instruction.count("Question: ") == 1
+        assert "Assess the chair." in request.instruction
+
+
+@pytest.mark.parametrize("question", ["", " \n\t", 42, True, []])
+def test_invalid_constructor_questions_fail_before_inference(question):
+    backend, calls = backend_for({"status": "answered", "answer": "wood"})
+    with pytest.raises(ValueError, match="question"):
+        Answer(backend, question)
+    assert calls == []
+
+
+@pytest.mark.parametrize("default", [None, "What material is the chair?"])
+@pytest.mark.parametrize("question", [None, "", " \n\t", 42, True, []])
+def test_invalid_question_overrides_fail_before_loading_the_image(default, question):
+    backend, calls = backend_for({"status": "answered", "answer": "wood"})
+    task = Answer(backend, default)
+    with pytest.raises(ValueError, match="question"):
+        task(("missing-image.png", question))
+    assert task.question == default
+    assert calls == []
+
+
+@pytest.mark.parametrize("length", [0, 1, 3])
+def test_answer_rejects_malformed_input_tuples_before_inference(length):
+    backend, calls = backend_for({"status": "answered", "answer": "wood"})
+    with pytest.raises(ValueError, match=r"\(image, question\)"):
+        Answer(backend, "What is visible?")(("missing-image.png",) * length)
+    assert calls == []
+
+
+@pytest.mark.parametrize("mode", ["prompted", "native", "tool"])
+def test_text_tasks_share_a_backend_without_sharing_questions_or_history(image, mode):
+    backend, calls = backend_for(
+        {"description": "A chair."},
+        {"status": "answered", "answer": "wood"},
+        {"status": "unanswerable", "answer": None},
+        output_mode=mode,
+    )
+    assert Describe(backend)(image) == DescriptionResult("A chair.")
+    task = Answer(backend)
+    assert task((image, "What is the chair made of?")) == AnswerResult("answered", "wood")
+    assert task((image, "Who manufactured it?")) == AnswerResult("unanswerable", None)
+    assert [len(messages) for messages, _ in calls] == [1, 1, 1]
+
+
+@pytest.mark.parametrize("mode", ["prompted", "native", "tool"])
+def test_inconsistent_answers_can_be_corrected_and_overrides_stay_isolated(image, mode):
+    backend, calls = backend_for(
+        {"status": "unanswerable", "answer": "wood"},
+        {"status": "answered", "answer": "wood"},
+        {"status": "answered", "answer": "blue"},
+        retries=1, output_mode=mode,
+    )
+    task = Answer(backend, "What color is the chair?", context="Assess the chair.")
+    assert task((image, "What is the chair made of?")) == AnswerResult("answered", "wood")
+    assert task(image) == AnswerResult("answered", "blue")
+    assert task.question == "What color is the chair?"
+    assert task.context == "Assess the chair."
+    assert [len(messages) for messages, _ in calls] == [1, 3, 1]
+
+
+def test_failed_answer_override_preserves_default_and_remains_an_error(image):
+    backend, _ = backend_for(
+        {"status": "answered", "answer": None},
+        {"status": "answered", "answer": "wood"},
+    )
+    task = Answer(backend, "What is the chair made of?", context="Assess the chair.")
+    with pytest.raises(InvalidModelResponseError):
+        task((image, "Who manufactured the chair?"))
+    assert task.question == "What is the chair made of?"
+    assert task.context == "Assess the chair."
+    assert task(image) == AnswerResult("answered", "wood")
+
+
+@pytest.mark.parametrize("default", [None, "What material is the chair?"])
+def test_answer_pipeline_publishes_and_checks_configured_inputs(image, default):
+    backend, calls = backend_for({"status": "answered", "answer": "wood"})
+    pipeline = Pipeline([Answer(backend, default)])
+    contract = pipeline.validate(strict=True)
+    expected = tuple[ImageInput, str] if default is None else ImageInput | tuple[ImageInput, str]
+    assert contract.input_type == expected
+    assert contract.output_type is AnswerResult
+    assert pipeline((image, "What material is the chair?")) == AnswerResult("answered", "wood")
+    if default is None:
+        with pytest.raises(PipelineValidationError):
+            pipeline.validate(pipeline_input_type=ImagePayload, strict=True)
+    else:
+        pipeline.validate(pipeline_input_type=ImagePayload, strict=True)
+        assert pipeline(image) == AnswerResult("answered", "wood")
+    with pytest.raises(PipelineValidationError):
+        pipeline.validate(pipeline_input_type=tuple[ImagePayload, int], strict=True)
+    assert len(calls) == (1 if default is None else 2)
+
+
 @pytest.mark.parametrize("mode", ["prompted", "native", "tool"])
 def test_dynamic_attributes_use_current_schema_with_fresh_backend_history(image, mode):
     backend, calls = backend_for(
@@ -449,13 +632,16 @@ def test_shared_backend_does_not_share_task_schema_or_history(image):
     (lambda b: Ground(b, "window"), {"status": "not_found", "box": None}, GroundingResult),
     (lambda b: Attributes(b, {"color": ["red"]}),
      {"attributes": {"color": "red"}}, AttributePredictionResult),
+    (lambda b: Describe(b), {"description": "A red chair."}, DescriptionResult),
+    (lambda b: Answer(b, "What color is the chair?"),
+     {"status": "answered", "answer": "red"}, AnswerResult),
 ])
 def test_operator_runs_and_validates_in_pipeline(image, task, payload, result_type):
     backend, _ = backend_for(payload)
     pipeline = Pipeline([task(backend)])
     contract = pipeline.validate(strict=True)
     expected_input = ImageInput
-    if result_type is GroundingResult:
+    if result_type in (GroundingResult, AnswerResult):
         expected_input = ImageInput | tuple[ImageInput, str]
     elif result_type is AttributePredictionResult:
         expected_input = ImageInput | tuple[ImageInput, AttributeChoices]

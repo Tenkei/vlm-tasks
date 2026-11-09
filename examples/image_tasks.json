@@ -25,5 +25,11 @@
       "setting": ["indoor", "outdoor", "unclear"]
     },
     "context": "Assess the overall scene. Use unclear when the attribute cannot be determined visually."
+  },
+  "describe": {
+    "context": "Describe the main subjects and their visible activities."
+  },
+  "answer": {
+    "question": "What is the main subject doing?"
   }
 }
