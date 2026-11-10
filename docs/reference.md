@@ -214,7 +214,7 @@ Import from `ml_pipes.vlm.validation`.
 | `elapsed_seconds` | Total validation duration in seconds |
 
 See [metric definitions](validation.md#metric-definitions-and-failures) and
-[results and reproducibility](validation.md#results-and-reproducibility).
+[results](validation.md#results).
 
 ### Validator classes
 
@@ -231,8 +231,8 @@ Concrete validators accept the same base arguments. `DetectionValidator` adds
 `DescribeValidator` adds `images=None, tokenizer_version="3.4.1"`.
 `validator()` returns fresh metrics and stores them as `validator.metrics`.
 
-See [custom validation](validation.md#custom-loaders-and-validators) for
-subclassing and hooks.
+See [custom validation](validation.md#custom-loaders-and-validators) for a
+subclassing example.
 
 ### Datasets and loaders
 
@@ -249,7 +249,7 @@ Public imports from `ml_pipes.vlm.validation`:
 | `DataLoader(dataset, indices=None)` | Iterator over all or selected dataset indices |
 
 See [custom loaders and validators](validation.md#custom-loaders-and-validators)
-for dataset interfaces, extension examples, and hooks.
+for an extension example.
 
 ## Errors
 

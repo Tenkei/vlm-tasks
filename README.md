@@ -117,7 +117,7 @@ the first 100 eligible OVAD objects (17 images), using Apple MPS and float16:
 | Inference failures | 1 / 100 |
 
 These results describe a small ordered subset using categorical attribute
-scoring. See the [attribute validation guide](docs/validation.md#attributes-ovad-object-crops)
+scoring. See the [attribute validation guide](docs/validation.md#attributes-ovad)
 for details.
 
 Answer validation uses VQA v2 and its per-question prompts:

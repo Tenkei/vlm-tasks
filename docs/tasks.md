@@ -99,7 +99,7 @@ it does not merge with the defaults. Stored choices and context stay unchanged,
 including after a failed call. Empty or invalid overrides raise `ValueError`.
 
 With `Attributes(backend)`, direct calls must supply `(image, attributes)`.
-[Validation](validation.md#attributes-ovad-object-crops) can discover choices
+[Validation](validation.md#attributes-ovad) can discover choices
 from the dataset instead.
 
 ## Descriptions and questions

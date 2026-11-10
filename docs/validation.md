@@ -84,7 +84,6 @@ the available automatic default in the table remains CIFAR-10.
 | Answer | Normalize the prediction and all ten references; average leave-one-annotator-out consensus per question, then average across evaluated questions |
 | Describe | PTB-tokenize candidates and references; compute corpus BLEU-1–4, mean COCO clipped CIDEr, and mean multi-reference ROUGE-L |
 
-Detection does not report AP/mAP because predictions have no confidence ranking.
 Attribute groups without target support do not contribute to group averages;
 values with neither target nor scored prediction support do not contribute to
 macro F1. Unknown targets are unscored, rather than an invented “none” category.
@@ -96,10 +95,9 @@ incorrect for every known target; failed answer calls score zero. Failed samples
 and their targets remain in the evaluation and relevant score denominators.
 Data, setup, and programming errors stop the run.
 
-Valid grounding absence and ambiguity responses also score zero against a
-positive target, but remain separate from execution failures in
-`status_counts`. Each referring expression is evaluated independently, even
-when several expressions use the same image.
+Grounding `not_found` and `ambiguous` responses score zero against a positive
+target. Each referring expression is evaluated independently, even when several
+expressions use the same image.
 
 ## Run validation
 
@@ -135,39 +133,24 @@ print(metrics.summary())
 print(metrics.failures)
 ```
 
-Omitting `data` selects the task's default dataset and prepares it automatically.
-Each call starts fresh metrics, returns them, and stores them as `task.metrics`.
-Start with `max_samples=10` to check execution and timing. Use
-`max_samples=None`, the default, to evaluate the complete selected split.
-Limits count images for classification, detection, and Describe; expressions
-for grounding; eligible objects for attributes; and questions for Answer.
-Selection is deterministic, not a random sample. Quality claims require
-representative data and a stated evaluation protocol.
+Each call returns fresh metrics and stores them as `task.metrics`.
 
-Configure labels, descriptions, context, and geometry on the task. Keep these
-settings fixed across samples; datasets supply per-sample inputs such as
-grounding expressions. Configure model settings, output mode, and correction
-retries on the [backend](model-backends.md#output-modes-and-retries). Validation
-adds no correction retry policy.
-
-| Validation setting | Purpose |
+| Common setting | Purpose |
 |---|---|
 | `data` | Registered name or local path; omitted for the task default |
 | `split` | Dataset split; defaults to `"val"` |
-| `max_samples` | Positive sample limit, or `None` for the full selection |
-| `class_map` | Dataset class names to task labels; classification/detection only |
-| `match_iou` | Detection matching threshold; defaults to `0.5` |
-| `cache_dir` | Override the dataset and tokenizer cache |
-| `tokenizer_version` | Describe only: pinned `"3.4.1"` default, or `"4.6.0"` |
-| `images`, `dataset` | Local annotation configuration; see [local data](#using-your-own-dataset) |
+| `max_samples` | Positive limit in dataset order, or `None` (default) for the full selection |
+| `cache_dir` | Override the cache directory |
 | `verbose=False` | Disable progress and aggregate output on stderr |
 
 For the complete argument contracts, see the
 [API reference](reference.md#task-validation).
 
-### Class selection and aliases
+### Classify: CIFAR-10
 
-Use `class_map` to select dataset classes and give them task-facing names:
+| Validation setting | Purpose |
+|---|---|
+| `class_map` | Select dataset classes and map their names to task labels; omitted when names match |
 
 ```python
 from ml_pipes.vlm import Classify
@@ -183,30 +166,33 @@ metrics = task.val(
 )
 ```
 
-Without a mapping, task labels must match dataset names. With a mapping, keys
-are dataset classes and values are configured task labels; several classes can
-map to one label.
+Several dataset classes can map to one task label.
 
-Classification selects examples from the mapped classes before applying the
-sample limit. Detection retains negative images and scores only selected
-classes; unmatched selected predictions are false positives. A classification
-prediction outside the evaluated subset still counts as incorrect.
+### Detect: COCO128
 
-### Detection matching
+| Validation setting | Purpose |
+|---|---|
+| `class_map` | Select dataset classes and map their names to task labels; omitted when names match |
+| `match_iou` | Inclusive box-matching IoU threshold; defaults to `0.5` |
 
 ```python
 from ml_pipes.vlm import Detect
 
 task = Detect(backend, labels=["person", "car"])
 metrics = task.val(data="coco128", match_iou=0.75, max_samples=100)
+print(metrics.precision, metrics.recall, metrics.f1)
 ```
 
-A higher `match_iou` requires closer box alignment. Keep the threshold and class
-selection fixed when comparing models.
+Detection does not report AP/mAP because predictions have no confidence ranking.
 
-### Grounding geometry
+### Ground: RefCOCOg
 
-Choose geometry on the task; each dataset expression supplies its target:
+| Validation setting | Purpose |
+|---|---|
+| `images` | Image directory for local grounding annotations |
+| `dataset` | Local annotation format: `"refcocog"` (default), `"refcoco"`, or `"refcoco+"` |
+
+The task's geometry selects point-in-box or box-IoU scoring:
 
 ```python
 task = Ground(backend, geometry="point", context="Locate the described object.")
@@ -214,12 +200,14 @@ metrics = task.val(data="refcocog", split="val", max_samples=100)
 print(metrics.results_dict["point_in_box_accuracy"])
 ```
 
-Use `geometry="box"` for IoU-based evaluation. Constructor context remains in
-effect, while dataset expressions override a constructor target. Keep context
-neutral for benchmark comparisons. Categories are reporting groups, rather
-than a grounding label vocabulary.
+Dataset expressions replace the constructor target. Dataset categories group
+the reported scores.
 
-### Attributes: OVAD object crops
+### Attributes: OVAD
+
+| Validation setting | Purpose |
+|---|---|
+| `images` | Image directory for local OVAD annotations |
 
 Omit constructor attributes to use the dataset's complete categorical schema:
 
@@ -229,15 +217,11 @@ from ml_pipes.vlm import Attributes
 task = Attributes(backend)
 metrics = task.val(data="ovad", max_samples=100)
 
-print(metrics.results_dict)
-print(metrics.summary())
 print(metrics.confusion_matrices["material"])
 ```
 
-Each eligible object produces one crop and one call. The model receives the same
-selected attribute fields and choices for every crop, including fields without
-annotations. Only known targets contribute to scoring. The task's stored
-configuration is unchanged.
+Each sample is an object crop. All crops use the same selected attribute choices,
+including groups whose target is unknown for that object.
 
 To evaluate fewer groups, prepare their choices and configure the task:
 
@@ -253,15 +237,18 @@ metrics = task.val(
 )
 ```
 
-Keep the complete dataset vocabulary within each selected group; descriptions
-and choice order may change. The categorical adaptation excludes overlapping
-color groups and objects without usable targets or sufficient annotated area.
-Selecting fewer groups can change which objects are eligible, so report the
-selection alongside the score.
+Each selected group requires its complete dataset vocabulary. The categorical
+adaptation excludes `color` and `clothes color`, objects with annotated area
+below 50 pixels², and objects without a known target in the selected groups.
+Group selection can therefore change sample eligibility before the sample limit.
 
 ### Answer: VQA v2
 
-Each question supplies the prompt and produces one independent task call:
+| Validation setting | Purpose |
+|---|---|
+| `images` | Image directory for local VQA v2 annotations |
+
+Each question is a sample, including questions that share an image:
 
 ```python
 from ml_pipes.vlm import Answer
@@ -270,45 +257,38 @@ task = Answer(backend)
 metrics = task.val(max_samples=100)
 print(metrics.results_dict["vqa_accuracy"])
 print(metrics.summary())
-print(metrics.status_counts)
 ```
 
-The dataset question overrides any constructor question without changing it.
-Constructor context remains effective. Gold answers, answer types, and question
-types are used only for evaluation. Repeated questions on one image remain
-separate samples; `unique_images` counts distinct image paths.
+Dataset questions replace the constructor question.
 
-The scorer follows the [lmms-eval VQA v2 implementation at the recorded revision](https://github.com/EvolvingLMMs-Lab/lmms-eval/blob/c7eaef373f4b1bd8a6b5f3e85c3391962c30068c/lmms_eval/tasks/vqav2/utils.py).
-Both predictions and references undergo newline/tab cleanup and trimming,
-punctuation processing, lowercasing, fixed number-word mapping, article removal,
-and contraction handling. Its punctuation rules preserve decimal points and
-apostrophes and treat numeric commas specially. No extra tokenization, answer
-extraction, synonym matching, or semantic judging is applied. For example,
-`Two!` matches `2`, while `The answer is blue` does not match `blue`.
+The scorer follows [lmms-eval's VQA v2 protocol](https://github.com/EvolvingLMMs-Lab/lmms-eval/blob/c7eaef373f4b1bd8a6b5f3e85c3391962c30068c/lmms_eval/tasks/vqav2/utils.py).
+Predictions and references are normalized for whitespace, punctuation, case,
+number words, articles, and contractions. Decimal points and apostrophes are
+preserved; numeric commas are removed. Matching uses normalized strings, without
+answer extraction or synonym matching: `Two!` matches `2`, while
+`The answer is blue` does not match `blue`.
 
 For each of the ten reference positions, hold out that vote and score
 `min(matching_remaining_votes / 3, 1)`; average the ten scores. Duplicates are
 retained. Exactly 0, 1, 2, 3, or at least 4 matching votes produce scores of
-0, 0.3, 0.6, 0.9, or 1. The overall `vqa_accuracy` is the unrounded mean across
-questions on a 0–1 scale, including failed calls and valid `unanswerable`
-responses as zero. Valid negative answers such as `no` and `zero` are scored
-normally. `status_counts` tracks valid `answered` and `unanswerable` responses;
-execution failures are reported separately.
+0, 0.3, 0.6, 0.9, or 1. Overall `vqa_accuracy` is the mean across questions on a
+0–1 scale. An `unanswerable` response scores zero; negative answers such as `no`
+and `zero` are scored normally.
 
 `summary()` reports support and accuracy by the three annotated answer types
 (`yes/no`, `number`, `other`) and by observed question types. Answer types with
-no evaluated questions have zero support and a `None` score. Overall accuracy
-weights questions equally rather than averaging type scores. Reports retain
-aggregates and groups, without per-question prediction records. Dataset metadata
-records scorer version, normalization, and the pinned upstream revision.
+no evaluated questions have zero support and a `None` score.
 
 This always-normalized protocol differs from the legacy official evaluator,
 which conditionally normalizes based on reference disagreement. VQA v2 does
-not measure answerability quality; its hidden-label test splits and submission
-export are unsupported. Keep the split, selection, task context, and generation
-settings fixed when comparing scores.
+not measure answerability quality.
 
 ### Describe: COCO Captions
+
+| Validation setting | Purpose |
+|---|---|
+| `images` | Image directory for local COCO caption annotations |
+| `tokenizer_version` | Pinned PTB tokenizer: `"3.4.1"` (default), or `"4.6.0"` |
 
 ```python
 from ml_pipes.vlm import Describe
@@ -319,11 +299,9 @@ print(metrics.cider, metrics.bleu_4, metrics.rouge_l)
 print(metrics.summary())
 ```
 
-The default is the labeled COCO Captions 2017 `val` split. Images follow source
-JSON order, and each prediction is compared with all of its reference captions,
-including duplicates. Custom data may have any positive number of references.
-`summary()` returns one corpus row: `support` counts evaluated images, and
-`reference_captions` counts all reference captions.
+Each image is a sample, scored against all its reference captions, including
+duplicates. Any positive number of references is supported. In the corpus
+summary, `support` counts images and `reference_captions` counts captions.
 
 Captions use COCO's lowercase Stanford PTB tokenization and punctuation filter,
 preserving articles and number words.
@@ -343,8 +321,7 @@ CIDEr's length penalty.
 
 ### Default datasets and downloads
 
-Select a registered name explicitly, or omit `data` for the default. To prepare
-data before model execution:
+To prepare data before model execution:
 
 ```python
 from ml_pipes.vlm.validation import prepare_dataset
@@ -363,16 +340,22 @@ Pass the returned paths as `data` and, where required, `images` to use prepared
 data without automatic downloading.
 
 Cache precedence is `cache_dir`, then `VLM_TASKS_DATASETS_DIR`, then
-`~/.cache/vlm-tasks/datasets`. Matching preparations reuse cached files.
-A small sample limit does not guarantee a small download: CIFAR-10 and COCO128
-require their full archives, and RefCOCOg streams a shared annotation archive
-before fetching selected images. RefCOCOg uses COCO train2014 images; OVAD uses
-COCO val2017 images. VQA v2 downloads both official split-specific JSON archives
-and only the selected questions' distinct COCO train2014 or val2014 images.
-COCO captions downloads the shared train/val annotation archive and only the
-selected split's COCO 2017 images.
+`~/.cache/vlm-tasks/datasets`. Download requirements, including full archives
+needed for small selections, are listed in [available validations](#available-validations).
 
-### Using your own dataset
+### Results
+
+| Result | Meaning |
+|---|---|
+| `metrics.results_dict` | Aggregate scores, evaluated samples, failures, and failure rate |
+| `metrics.summary()` | Per-class, per-category, per-attribute, or per-type scores and support; Describe returns one corpus row |
+| `metrics.failures` | Failed calls with image paths, error messages, and sample identifiers where available |
+| `metrics.dataset_counts` | Source (before selection), prepared (selected dataset), and evaluated (this run) counts, where available |
+| `metrics.dataset_metadata` | Dataset selection and preparation context when available |
+| `metrics.speed` | Mean milliseconds per evaluated sample for loading, inference (including correction attempts), and metric calculation |
+| `metrics.elapsed_seconds` | Total `.val()` time, including dataset preparation and cache checks; excludes prior backend setup |
+
+## Using your own dataset
 
 Follow the corresponding default dataset's format to reuse its reader and
 metrics. Local dataset paths skip dataset downloads.
@@ -399,10 +382,9 @@ Local grounding also accepts `dataset="refcoco"` or `"refcoco+"` with the
 corresponding split files; see the
 [MDETR preparation guide](https://github.com/ashkamath/mdetr/blob/main/.github/refexp.md).
 Use `Path("cifar10")` or `"./cifar10"` when a local directory's name matches a
-registered key. If your annotations or evaluation semantics differ, extend an
-existing validator rather than forcing them into an incompatible format.
+registered key.
 
-### Custom loaders and validators
+## Custom loaders and validators
 
 Extend a concrete validator when the task and scoring rules match; use
 `BaseValidator` for a different evaluation contract. For example, given a
@@ -420,65 +402,9 @@ task = Classify(backend, labels=["cat", "dog"])
 metrics = task.val(validator=CustomValidator, data="my-source")
 ```
 
-The supplied dataset must follow the corresponding dataset interface and
-already select the intended samples. `class_map` aligns labels but does not
-filter a custom dataset or injected loader. For an existing loader, pass
-`dataloader=my_loader` without `data`; it must expose `.dataset`, with
-`.names` or `.attributes` as appropriate. Answer and Describe datasets need
-neither class metadata nor a vocabulary. Answer samples contain `img`, `im_file`,
-`sample_id` (question ID), `image_id`, `question`, ten string `answers` including
-duplicate votes, `answer_type`, and `question_type`. Reuse the built-in dataset sample
-format; dataset class docstrings describe its fields.
+See the [API reference](reference.md#task-validation) for loader and validator
+arguments.
 
-Describe samples contain `img`, `im_file`, a nonnegative integer `image_id`
-(or `sample_id`), and a nonempty sequence of string `captions`. Yield one sample
-per image with every reference; image IDs and image paths must be unique.
+## Next read
 
-| Hook | Role |
-|---|---|
-| `setup()` | Set up task-specific runtime requirements |
-| `build_dataset()` | Return the dataset |
-| `prepare_named_dataset(task)` | Prepare a registered source, or return `None` for local data |
-| `get_dataloader(dataset)` | Return a loader; defaults to `DataLoader(dataset)` |
-| `init_metrics()` | Assign `self.metrics` |
-| `predict_sample(sample)` | Return a public task result |
-| `update_metrics(prediction, sample)` | Accumulate a result, or `None` for a failed call |
-| `finalize_metrics()` | Finalize the report and timings |
-
-Validators bind their task at construction and run when called without
-arguments. Custom constructors must accept `task` and forward it to the base
-constructor. When overriding `finalize_metrics()`, call the inherited method
-to retain timings. See the [validator reference](reference.md#validator-classes)
-for constructor contracts.
-
-### Results and reproducibility
-
-| Result | Use |
-|---|---|
-| `metrics.results_dict` | Aggregate scores, evaluated samples, failures, and failure rate |
-| `metrics.summary()` | Per-class, per-category, per-attribute, or per-type scores and support; Describe returns one corpus row |
-| `metrics.failures` | Failed calls with image paths, error messages, and sample identifiers where available |
-| `metrics.dataset_counts`, `metrics.dataset_metadata` | Dataset selection and preparation context when available |
-| `metrics.speed` | Mean milliseconds per evaluated sample for loading, inference, and metric calculation |
-| `metrics.elapsed_seconds` | Total validation time, including dataset preparation and cache checks |
-
-Use the metrics object's label metadata when interpreting confusion matrices.
-Grounding also reports response statuses and unique images; attributes report
-known decisions and per-group confusion matrices. Answer reports response
-statuses, unique images, and scorer provenance. Source, prepared, and
-evaluated counts describe different scopes and should remain distinct in
-reports.
-
-Loading time means sample loading, not model initialization. Backend setup
-before `.val()` is outside the reported timings; inference includes configured
-backend correction attempts.
-
-Keep dataset version, split, sample/class/group selection, geometry, context,
-model revision, generation settings, tokenizer version, output mode, and retry
-settings fixed when comparing runs. Record backend correction retries for
-invalid model responses separately from provider transport retries for failed
-API requests. Report the metric definition alongside the score. Validation
-returns measurements without an automatic accuracy pass/fail threshold.
-
-For command-line execution and saved JSON reports, see the
-[validation example](../examples/README.md#task-validation).
+- [Validation example](../examples/README.md#task-validation): command-line execution and saved JSON reports.
