@@ -12,11 +12,12 @@ import numpy as np
 from ..errors import InvalidModelResponseError, ModelExecutionError
 from ..types import AttributePredictionResult, ClassificationResult, DetectionResult, GroundingResult
 from ._vqa import SCORER_METADATA, validate_targets
+from ._caption_tokenizer import DEFAULT_TOKENIZER_VERSION
 from .data import (
-    ClassificationDataset, DataLoader, OVADDataset, RefCOCODataset, VQAv2Dataset, YOLODataset,
+    COCOCaptionsDataset, ClassificationDataset, DataLoader, OVADDataset, RefCOCODataset, VQAv2Dataset, YOLODataset,
     _classification_classes,
 )
-from .metrics import AnswerMetrics, AttributesMetrics, ClassificationMetrics, DetectionMetrics, GroundingMetrics
+from .metrics import AnswerMetrics, AttributesMetrics, ClassificationMetrics, DescribeMetrics, DetectionMetrics, GroundingMetrics
 from .prepare import DATASETS, prepare_dataset
 
 
@@ -26,7 +27,7 @@ class BaseValidator:
     Override dataset construction and metric methods for another task or data
     source. A supplied dataloader must expose its dataset through ``.dataset``;
     the dataset's ``names`` maps class IDs to names (or ``attributes`` defines
-    categorical choices). Answer datasets need neither class metadata nor a
+    categorical choices). Answer and Describe datasets need neither class metadata nor a
     vocabulary. Loaders yield the sample dictionaries documented by the concrete
     dataset classes.
     """
@@ -61,6 +62,7 @@ class BaseValidator:
 
     def __call__(self):
         started = perf_counter()
+        self.setup()
         self.prepared_dataset = None
         self.dataset = (
             self.build_dataset() if self._provided_dataloader is None
@@ -107,6 +109,9 @@ class BaseValidator:
         if self.verbose:
             print("\n" + json.dumps(self.metrics.results_dict, indent=2), file=sys.stderr)
         return self.metrics
+
+    def setup(self) -> None:
+        """Preflight task-specific runtime requirements before inference."""
 
     def _align_classes(self) -> None:
         self.class_map = self._resolve_class_map(self.dataset.names)
@@ -164,6 +169,72 @@ class BaseValidator:
             name: elapsed * 1000 / self.metrics.seen for name, elapsed in self._timings.items()
         }
         self.metrics.elapsed_seconds = perf_counter() - self._started
+
+
+class DescribeValidator(BaseValidator):
+    """Evaluate one Describe result per image against COCO reference captions."""
+
+    default_dataset = "coco_captions2017"
+
+    def __init__(self, *args, images=None, tokenizer_version=DEFAULT_TOKENIZER_VERSION, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self._requested_class_map is not None:
+            raise ValueError("class_map is not supported for describe validation")
+        if self.split not in ("train", "val"):
+            raise ValueError("COCO captions supports labeled train and val splits only")
+        automatic = isinstance(self.data, str) and self.data in DATASETS
+        if automatic and images is not None:
+            raise ValueError("Automatic COCO preparation supplies images; use local data with images")
+        if self._provided_dataloader is None and images is None and not automatic:
+            raise ValueError("Describe validation requires images or a supplied dataloader")
+        self.images = images
+        self.tokenizer_version = tokenizer_version
+        # Reject unsupported versions at construction, before I/O.
+        DescribeMetrics(tokenizer_version=tokenizer_version, cache_dir=self.cache_dir)
+
+    def setup(self):
+        self.metrics = DescribeMetrics(tokenizer_version=self.tokenizer_version, cache_dir=self.cache_dir).prepare()
+
+    def build_dataset(self):
+        prepared = self.prepare_named_dataset("describe")
+        return COCOCaptionsDataset(
+            self.data if prepared is None else prepared.data,
+            self.images if prepared is None else prepared.images,
+            split=self.split, max_samples=self.max_samples,
+        )
+
+    def _align_classes(self):
+        pass
+
+    def init_metrics(self):
+        self.metrics.dataset_metadata = {**getattr(self.dataset, "metadata", {}), **self.metrics.dataset_metadata}
+
+    def predict_sample(self, sample):
+        self.metrics._validate_sample(
+            sample["captions"], sample.get("image_id", sample.get("sample_id")), sample["im_file"],
+        )
+        return self.task(sample["img"])
+
+    def update_metrics(self, prediction, sample):
+        self.metrics.update(
+            sample["captions"], prediction,
+            image_id=sample.get("image_id", sample.get("sample_id")), im_file=sample["im_file"],
+        )
+
+    def finalize_metrics(self):
+        started = perf_counter()
+        self.metrics.finalize()
+        self._timings["metrics"] += perf_counter() - started
+        if self.prepared_dataset is not None:
+            self.metrics.dataset_counts.update({
+                key: self.prepared_dataset.metadata[key]
+                for key in ("source_images", "source_captions", "selected_images", "selected_captions")
+            })
+        self.metrics.dataset_counts.update(
+            evaluated_samples=self.metrics.seen, evaluated_images=self.metrics.unique_images,
+            evaluated_captions=self.metrics.reference_captions,
+        )
+        super().finalize_metrics()
 
 
 class AnswerValidator(BaseValidator):

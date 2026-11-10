@@ -8,20 +8,21 @@ import sys
 from time import perf_counter
 
 from examples.run_bedrock import DEFAULT_CONFIG, TASKS, create_backend
-from ml_pipes.vlm.validation import DATASETS, DEFAULT_DATASETS, OVADDataset, prepare_dataset
+from ml_pipes.vlm.validation import DATASETS, DEFAULT_DATASETS, DescribeMetrics, OVADDataset, prepare_dataset
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--backend", choices=["bedrock", "transformers"], default="bedrock")
-    parser.add_argument("--task", choices=["classify", "detect", "ground", "attributes", "answer"], required=True)
-    parser.add_argument("--data", help="Registered dataset name or local path; defaults: cifar10, coco128, refcocog, ovad, vqav2")
-    parser.add_argument("--images", type=Path, help="Local grounding, OVAD, or VQA v2 image directory")
+    parser.add_argument("--task", choices=list(DEFAULT_DATASETS), required=True)
+    parser.add_argument("--data", help="Registered dataset name or local path; defaults: " + ", ".join(DEFAULT_DATASETS.values()))
+    parser.add_argument("--images", type=Path, help="Local grounding, OVAD, VQA v2, or COCO captions image directory")
     parser.add_argument("--dataset", choices=["refcocog", "refcoco", "refcoco+"], help="Grounding dataset; default refcocog")
     parser.add_argument("--split", default="val")
-    parser.add_argument("--config", type=Path, help="Task settings JSON; attributes discovers the dataset schema, named classify/detect use dataset labels, local classify/detect use image_tasks.json, ground/answer use empty settings")
+    parser.add_argument("--config", type=Path, help="Task settings JSON; attributes discovers the dataset schema, named classify/detect use dataset labels, local classify/detect use image_tasks.json, ground/answer/describe use empty settings")
     parser.add_argument("--class-map", type=Path, help="JSON mapping of dataset class names to task labels")
-    parser.add_argument("--max-samples", type=int, help="Limit evaluated samples (expressions for grounding; eligible object crops for attributes; questions for answer)")
+    parser.add_argument("--max-samples", type=int, help="Limit evaluated samples (expressions for grounding; object crops for attributes; questions for answer; images for describe)")
+    parser.add_argument("--tokenizer-version", help="Describe PTB tokenizer version: 3.4.1 (default) or 4.6.0")
     parser.add_argument("--match-iou", type=float, help="Detection matching IoU; default 0.5")
     parser.add_argument("--model", help="Bedrock model ID or HF model/local directory; Transformers defaults to Qwen/Qwen3-VL-2B-Instruct")
     parser.add_argument("--device", default="auto", help="Transformers device: auto, mps, cuda, cpu, etc.")
@@ -46,6 +47,8 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("--max-samples must be positive")
     if args.task != "detect" and args.match_iou is not None:
         parser.error("--match-iou applies only to detection")
+    if args.task != "describe" and args.tokenizer_version is not None:
+        parser.error("--tokenizer-version applies only to describe")
     args.data = args.data or DEFAULT_DATASETS[args.task]
     automatic = args.data in DATASETS
     if automatic and DATASETS[args.data].task != args.task:
@@ -57,7 +60,7 @@ def main(argv: list[str] | None = None) -> int:
             parser.error("Automatic grounding preparation supports refcocog; provide local --data and --images for other sources")
         if args.class_map is not None:
             parser.error("--class-map is not supported for grounding")
-    elif args.task in {"attributes", "answer"}:
+    elif args.task in {"attributes", "answer", "describe"}:
         if args.images is None and not automatic:
             parser.error(f"--images is required for local {args.task} data")
         if automatic and args.images is not None:
@@ -67,9 +70,11 @@ def main(argv: list[str] | None = None) -> int:
         if args.class_map is not None:
             parser.error(f"--class-map is not supported for {args.task}")
     elif args.images is not None or args.dataset is not None:
-        parser.error("--images applies only to grounding/attributes/answer; --dataset applies only to grounding")
+        parser.error("--images applies only to grounding/attributes/answer/describe; --dataset applies only to grounding")
     if args.task == "answer" and args.split not in DATASETS["vqav2"].splits:
         parser.error("VQA v2 supports labeled train and val splits only")
+    if args.task == "describe" and args.split not in DATASETS["coco_captions2017"].splits:
+        parser.error("COCO captions supports labeled train and val splits only")
 
     try:
         task_settings = {}
@@ -81,6 +86,10 @@ def main(argv: list[str] | None = None) -> int:
                 raise ValueError(f"Configuration must contain an object for task {args.task!r}")
             task_settings = config[args.task]
         class_map = None if args.class_map is None else json.loads(args.class_map.read_text())
+        if args.task == "describe":
+            # Preflight before downloading data or loading expensive model weights.
+            args.tokenizer_version = "3.4.1" if args.tokenizer_version is None else args.tokenizer_version
+            DescribeMetrics(tokenizer_version=args.tokenizer_version).prepare()
         preparation_seconds = 0.0
         if automatic:
             classes = tuple(class_map or task_settings["labels"]) if args.task == "classify" else None
@@ -115,13 +124,15 @@ def main(argv: list[str] | None = None) -> int:
             settings["match_iou"] = args.match_iou
         if args.task == "ground":
             settings.update(images=args.images, dataset=args.dataset or "refcocog")
-        elif args.task in {"attributes", "answer"}:
+        elif args.task in {"attributes", "answer", "describe"}:
             settings["images"] = args.images
+        if args.task == "describe":
+            settings["tokenizer_version"] = args.tokenizer_version
         metrics = task.val(**settings)
     except Exception as exc:
         parser.exit(2, f"Validation failed: {exc}\n")
 
-    summary_key = {"attributes": "per_attribute", "answer": "per_type"}.get(args.task, "per_class")
+    summary_key = {"attributes": "per_attribute", "answer": "per_type", "describe": "summary"}.get(args.task, "per_class")
     report = {
         "metrics": metrics.results_dict,
         summary_key: metrics.summary(),

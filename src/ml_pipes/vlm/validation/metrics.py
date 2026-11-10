@@ -7,7 +7,9 @@ from typing import Literal
 
 import numpy as np
 
-from ..types import AnswerResult, GroundingResult
+from ..types import AnswerResult, DescriptionResult, GroundingResult
+from ._caption import SCORER_METADATA as CAPTION_SCORER_METADATA, score_captions, validate_captions
+from ._caption_tokenizer import CaptionTokenizer, DEFAULT_TOKENIZER_VERSION
 from ._vqa import ANSWER_TYPES, SCORER_METADATA, score_answer, validate_targets
 
 
@@ -20,10 +22,10 @@ def _ratios(tp: int, fp: int, fn: int) -> dict[str, float]:
 
 
 class _RunMetrics:
-    def __init__(self, names: Sequence[str]) -> None:
-        self.names = tuple(names)
+    def __init__(self, names: Sequence[str] | None = None, *, unlabeled: bool = False) -> None:
+        self.names = () if names is None else tuple(names)
         if (
-            not self.names
+            (not self.names and not (unlabeled and names is None))
             or any(not isinstance(name, str) or not name.strip() for name in self.names)
             or len(set(self.names)) != len(self.names)
         ):
@@ -44,6 +46,110 @@ class _RunMetrics:
             "failures": len(self.failures),
             "failure_rate": self.failure_rate,
         }
+
+
+class DescribeMetrics(_RunMetrics):
+    """COCO corpus caption scores; tokenization and scoring run in finalize().
+
+    Native scales are retained (CIDEr has a factor of ten). The IDF corpus
+    includes every evaluated image's references, including failed calls.
+    """
+
+    def __init__(self, *, tokenizer_version=DEFAULT_TOKENIZER_VERSION, cache_dir=None):
+        super().__init__(unlabeled=True)
+        self._tokenizer = CaptionTokenizer(tokenizer_version, cache_dir=cache_dir)
+        self._candidates: list[str] = []
+        self._references: list[tuple[str, ...]] = []
+        self._images: set[int] = set()
+        self._image_files: set[Path] = set()
+        self._scores = None
+        self.dataset_metadata = dict(CAPTION_SCORER_METADATA)
+
+    def prepare(self):
+        """Check Java and the pinned tokenizer artifact before model execution."""
+        self._tokenizer.prepare()
+        self.dataset_metadata.update(self._tokenizer.metadata)
+        return self
+
+    def _validate_sample(self, captions, image_id, im_file):
+        captions = validate_captions(captions)
+        if type(image_id) is not int or image_id < 0:
+            raise ValueError("Caption image_id must be a nonnegative integer")
+        if image_id in self._images:
+            raise ValueError(f"Duplicate caption image_id: {image_id}")
+        if not isinstance(im_file, (str, Path)) or not str(im_file).strip():
+            raise ValueError("Caption im_file must be a nonempty image path")
+        image_file = Path(im_file).resolve()
+        if image_file in self._image_files:
+            raise ValueError(f"Duplicate caption image path: {im_file}")
+        return captions, image_file
+
+    def update(self, captions, prediction: DescriptionResult | None, *, image_id: int, im_file: str):
+        captions, image_file = self._validate_sample(captions, image_id, im_file)
+        if prediction is not None:
+            if not isinstance(prediction, DescriptionResult):
+                raise TypeError("DescribeMetrics requires DescriptionResult outputs")
+            if not isinstance(prediction.description, str) or not prediction.description.strip():
+                raise ValueError("Description predictions require a nonempty string")
+        self._candidates.append("" if prediction is None else prediction.description)
+        self._references.append(captions)
+        self._images.add(image_id)
+        self._image_files.add(image_file)
+        self.seen += 1
+        self._scores = None
+
+    def finalize(self):
+        """Tokenize the selected corpus once and cache all six metric scores."""
+        if self._scores is not None:
+            return self
+        if not self.seen:
+            raise ValueError("No samples to evaluate")
+        self.prepare()
+        texts = self._tokenizer.tokenize(self._candidates + [text for refs in self._references for text in refs])
+        offset = self.seen
+        references = []
+        for refs in self._references:
+            references.append(texts[offset:offset + len(refs)])
+            offset += len(refs)
+        self._scores = score_captions(texts[:self.seen], references)
+        self.dataset_metadata.update(
+            idf_reference_images=self.unique_images,
+            degenerate_idf=self.unique_images == 1,
+            idf_diagnostic="One reference image gives zero IDF and CIDEr=0" if self.unique_images == 1 else None,
+        )
+        return self
+
+    @property
+    def unique_images(self):
+        return len(self._images)
+
+    @property
+    def reference_captions(self):
+        return sum(len(refs) for refs in self._references)
+
+    def _score(self, name):
+        self.finalize()
+        return self._scores[name]
+
+    cider = property(lambda self: self._score("cider"))
+    bleu_1 = property(lambda self: self._score("bleu_1"))
+    bleu_2 = property(lambda self: self._score("bleu_2"))
+    bleu_3 = property(lambda self: self._score("bleu_3"))
+    bleu_4 = property(lambda self: self._score("bleu_4"))
+    rouge_l = property(lambda self: self._score("rouge_l"))
+
+    @property
+    def results_dict(self):
+        self.finalize()
+        return {
+            **self._run_results(), "unique_images": self.unique_images,
+            "reference_captions": self.reference_captions, **self._scores,
+        }
+
+    def summary(self):
+        self.finalize()
+        return [{"support": self.seen, "unique_images": self.unique_images,
+                 "reference_captions": self.reference_captions, **self._scores}]
 
 
 class AnswerMetrics(_RunMetrics):

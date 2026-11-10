@@ -20,6 +20,16 @@ from pydantic_ai.usage import RequestUsage
 __all__ = ["TransformersModel"]
 
 
+_PROMPTED_OUTPUT_TEMPLATE = (
+    "Return a JSON object containing your prediction. Use the property names "
+    "defined by the JSON schema below as the keys, and fill in their predicted "
+    "values. Produce an instance of the schema. Do not return the schema itself "
+    "or wrap your prediction in its 'properties' field. "
+    "Return only the JSON object, without explanatory text or Markdown fences.\n\n"
+    "JSON schema:\n{schema}"
+)
+
+
 def _chat_messages(messages: list[ModelMessage], instructions: str | None) -> list[dict]:
     """Translate the supported PydanticAI messages, including correction history."""
     from PIL import Image
@@ -88,6 +98,7 @@ class TransformersModel(FunctionModel):
                 supports_json_schema_output=False,
                 supports_json_object_output=False,
                 supports_image_input=True,
+                prompted_output_template=_PROMPTED_OUTPUT_TEMPLATE,
             ),
         )
 

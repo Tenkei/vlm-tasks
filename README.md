@@ -130,6 +130,16 @@ print(metrics.vqa_accuracy)  # Consensus accuracy, on a 0–1 scale.
 See the [Answer validation guide](docs/validation.md#answer-vqa-v2) for scoring,
 normalization, and local data.
 
+Describe validation uses COCO Captions 2017 and requires Java:
+
+```python
+metrics = tasks.Describe(backend).val(max_samples=100)
+print(metrics.cider, metrics.bleu_4, metrics.rouge_l)
+```
+
+See the [Describe validation guide](docs/validation.md#describe-coco-captions)
+for scoring and local data.
+
 ### Validate on your own data
 
 ```python

@@ -10,6 +10,7 @@ import numpy as np
 from ml_pipes.vision import Decode, ImagePayload, LoadFile
 
 from ._vqa import validate_targets
+from ._caption import validate_captions
 
 _IMAGE_SUFFIXES = {".bmp", ".jpeg", ".jpg", ".png", ".tif", ".tiff", ".webp"}
 
@@ -407,6 +408,103 @@ def _vqav2_selection(questions, annotations, max_samples=None):
         "selected_questions": len(selected),
         "selected_images": len({sample["image_id"] for sample in selected}),
     }
+
+
+def _coco_captions_selection(data, max_samples=None):
+    """Join all captions to image IDs before selecting source-order images."""
+    if not isinstance(data, dict):
+        raise ValueError("Expected a COCO captions annotation mapping")
+    indexed = {}
+    for key in ("images", "annotations"):
+        records = data.get(key)
+        if not isinstance(records, list) or not records:
+            raise ValueError(f"COCO captions require a nonempty {key} list")
+        index = {}
+        for item in records:
+            if not isinstance(item, dict) or type(item.get("id")) is not int or item["id"] < 0:
+                raise ValueError(f"COCO captions {key} require nonnegative integer IDs")
+            if item["id"] in index:
+                raise ValueError(f"Duplicate COCO captions {key} ID: {item['id']}")
+            index[item["id"]] = item
+        indexed[key] = index
+    images = indexed["images"]
+    captions = {image_id: [] for image_id in images}
+    filenames = set()
+    for image in images.values():
+        size = (image.get("width"), image.get("height"))
+        if any(type(value) is not int or value <= 0 for value in size):
+            raise ValueError(f"Invalid COCO caption image dimensions: {image['id']}")
+        filename = image.get("file_name")
+        if (not isinstance(filename, str) or not filename.strip() or "\\" in filename
+                or Path(filename).is_absolute() or ".." in Path(filename).parts
+                or filename in {".", ".."}):
+            raise ValueError(f"Invalid COCO caption image filename: {filename!r}")
+        if filename in filenames:
+            raise ValueError(f"Duplicate COCO caption image filename: {filename}")
+        filenames.add(filename)
+    for annotation in indexed["annotations"].values():
+        image_id = annotation.get("image_id")
+        if type(image_id) is not int or image_id not in images:
+            raise ValueError(f"Unknown COCO caption image ID: {image_id!r}")
+        caption = annotation.get("caption")
+        validate_captions([caption])
+        captions[image_id].append(caption)
+    for refs in captions.values():
+        validate_captions(refs)
+    selected = [
+        {"sample_id": image_id, "image_id": image_id, "file_name": image["file_name"],
+         "image_size": (image["width"], image["height"]), "captions": tuple(captions[image_id])}
+        for image_id, image in list(images.items())[:max_samples]
+    ]
+    return selected, {
+        "source_images": len(images), "source_captions": len(indexed["annotations"]),
+        "selected_images": len(selected),
+        "selected_captions": sum(len(sample["captions"]) for sample in selected),
+    }
+
+
+class COCOCaptionsDataset:
+    """Read official COCO captions JSON and images, one sample per image.
+
+    All reference captions (including duplicates) are grouped before limiting
+    images in source JSON image order. Selected images are decoded lazily.
+    Samples contain ``img``, ``im_file``, ``sample_id``/``image_id``, and
+    ``captions`` (a tuple of reference strings); there is no class vocabulary.
+    """
+
+    def __init__(self, annotations: str | Path, images: str | Path, *, split="val", max_samples=None):
+        if split not in ("train", "val"):
+            raise ValueError("COCO captions supports labeled train and val splits only")
+        if max_samples is not None and (type(max_samples) is not int or max_samples < 1):
+            raise ValueError("max_samples must be a positive integer or None")
+        path = Path(annotations).expanduser().resolve()
+        image_root = Path(images).expanduser().resolve()
+        self.samples, self.counts = _coco_captions_selection(json.loads(path.read_text()), max_samples)
+        if not image_root.is_dir():
+            raise FileNotFoundError(f"COCO captions image directory not found: {image_root}")
+        for sample in self.samples:
+            image = (image_root / sample["file_name"]).resolve()
+            if not image.is_relative_to(image_root):
+                raise ValueError(f"COCO caption image path escapes image directory: {image}")
+            if not image.is_file():
+                raise FileNotFoundError(f"COCO caption image not found: {image}")
+            sample["im_file"] = str(image)
+        self.metadata = {
+            "dataset": "coco_captions2017", "split": split,
+            "annotations": str(path), "images": str(image_root),
+            "selection": "Source JSON image order; all reference captions retained",
+            "max_samples": max_samples,
+        }
+
+    def __len__(self):
+        return len(self.samples)
+
+    def __getitem__(self, index):
+        sample = self.samples[index]
+        image = _load_image(sample["im_file"])
+        if image.size != sample["image_size"]:
+            raise ValueError(f"Image dimensions differ from COCO caption annotation: {sample['im_file']}")
+        return {**sample, "img": image}
 
 
 class VQAv2Dataset:

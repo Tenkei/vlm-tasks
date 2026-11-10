@@ -82,7 +82,7 @@ class _Task:
         """
         if validator is None:
             from .validation import (
-                AnswerValidator, AttributesValidator, ClassificationValidator, DetectionValidator, GroundingValidator,
+                AnswerValidator, AttributesValidator, ClassificationValidator, DescribeValidator, DetectionValidator, GroundingValidator,
             )
 
             if isinstance(self, Classify):
@@ -95,6 +95,8 @@ class _Task:
                 validator = AttributesValidator
             elif isinstance(self, Answer):
                 validator = AnswerValidator
+            elif isinstance(self, Describe):
+                validator = DescribeValidator
             else:
                 raise NotImplementedError(
                     f"{type(self).__name__} has no default validator; supply validator= explicitly"

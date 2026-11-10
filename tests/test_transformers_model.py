@@ -128,6 +128,27 @@ def test_schema_failure_retries_with_response_and_feedback(adapter, image):
     assert "clean" in feedback
 
 
+def test_description_prompt_distinguishes_prediction_from_schema(adapter, image):
+    backend, processor = adapter(['{"description": "A clean window."}'])
+    task = Describe(backend)
+    assert task(image).description == "A clean window."
+    instructions = processor.chats[0][0]["content"][0]["text"]
+    assert "Produce an instance of the schema" in instructions
+    assert "Do not return the schema itself" in instructions
+    schema = json.loads(instructions.split("JSON schema:\n", 1)[1])
+    assert schema["properties"] == task._spec.schema["properties"]
+    assert schema["required"] == ["description"]
+
+
+def test_schema_shaped_caption_is_rejected_without_output_repair(adapter, image):
+    response = {"additionalProperties": False, "properties": {"description": "A clean window."},
+                "required": ["description"], "title": "_Description", "type": "object"}
+    backend, processor = adapter([json.dumps(response)])
+    with pytest.raises(InvalidModelResponseError):
+        Describe(backend)(image)
+    assert len(processor.chats) == 1
+
+
 @pytest.mark.parametrize("response", ['not JSON', '{"labels": ["unknown"]}'])
 def test_invalid_output_is_not_repaired(adapter, image, response):
     backend, processor = adapter([response])

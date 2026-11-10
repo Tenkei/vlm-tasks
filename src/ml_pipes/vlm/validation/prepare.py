@@ -62,10 +62,11 @@ DATASETS = {
     "refcocog": DatasetInfo("ground", ("train", "val", "test")),
     "ovad": DatasetInfo("attributes", ("test", "val")),
     "vqav2": DatasetInfo("answer", ("train", "val")),
+    "coco_captions2017": DatasetInfo("describe", ("train", "val")),
 }
 DEFAULT_DATASETS = {
     "classify": "cifar10", "detect": "coco128", "ground": "refcocog",
-    "attributes": "ovad", "answer": "vqav2",
+    "attributes": "ovad", "answer": "vqav2", "describe": "coco_captions2017",
 }
 
 _CIFAR_URL = "https://www.cs.toronto.edu/~kriz/cifar-10-binary.tar.gz"
@@ -79,7 +80,14 @@ _OVAD_CHECKSUM = "sha256:1716fc5216dd040c3803ca7d91444140d02bc6a98f40a60b85f16c9
 _OVAD_IMAGE_URL = "https://s3.amazonaws.com/images.cocodataset.org/val2017/"
 _VQA_URL = "https://cvmlp.s3.amazonaws.com/vqa/mscoco/vqa/v2_{kind}_{split}_mscoco.zip"
 _VQA_IMAGE_URL = "https://s3.amazonaws.com/images.cocodataset.org/{split}2014/"
+_CAPTIONS_URL = "https://s3.amazonaws.com/images.cocodataset.org/annotations/annotations_trainval2017.zip"
+_CAPTIONS_IMAGE_URL = "https://s3.amazonaws.com/images.cocodataset.org/{split}2017/"
 _FORMAT_VERSION = 1
+
+
+def _cache_root(cache_dir=None) -> Path:
+    location = cache_dir or os.environ.get("VLM_TASKS_DATASETS_DIR") or Path.home() / ".cache" / "vlm-tasks" / "datasets"
+    return Path(location).expanduser().resolve()
 
 
 def _hash(path: Path, algorithm: str = "sha256") -> str:
@@ -439,6 +447,54 @@ def _prepare_vqav2(root: Path, output: Path, split: str, limit, classes, bad):
     }
 
 
+def _prepare_captions(root: Path, output: Path, split: str, limit, classes, bad):
+    from .data import COCOCaptionsDataset, _coco_captions_selection
+
+    archive = root / "sources" / "annotations_trainval2017.zip"
+    _download(_CAPTIONS_URL, archive, force=archive in bad)
+    member = f"annotations/captions_{split}2017.json"
+    with ZipFile(archive) as source:
+        if source.namelist().count(member) != 1:
+            raise ValueError(f"COCO archive must contain exactly one {member}")
+        content = source.read(member)
+    original = json.loads(content)
+    selected, counts = _coco_captions_selection(original, limit)
+    ids = {sample["image_id"] for sample in selected}
+    subset = {
+        **original,
+        "images": [image for image in original["images"] if image["id"] in ids],
+        "annotations": [item for item in original["annotations"] if item["image_id"] in ids],
+    }
+    images = root / "images" / f"{split}2017"
+    files = [archive]
+    image_url = _CAPTIONS_IMAGE_URL.format(split=split)
+    for sample in selected:
+        filename = sample["file_name"]
+        if not re.fullmatch(r"[0-9]{12}\.jpg", filename):
+            raise ValueError(f"Invalid COCO {split}2017 filename: {filename!r}")
+        path = images / filename
+        _download(image_url + filename, path, force=path in bad)
+        decoded = cv2.imread(str(path))
+        if decoded is None or (decoded.shape[1], decoded.shape[0]) != sample["image_size"]:
+            _download(image_url + filename, path, force=True)
+            decoded = cv2.imread(str(path))
+            if decoded is None or (decoded.shape[1], decoded.shape[0]) != sample["image_size"]:
+                raise ValueError(f"Downloaded image dimensions differ from COCO caption annotation: {filename}")
+        files.append(path)
+    data = output / f"captions_{split}2017.json"
+    _write_json(data, subset)
+    COCOCaptionsDataset(data, images, split=split)
+    files.append(data)
+    return data, images, (), files, {
+        "source_url": _CAPTIONS_URL, "source_version": "COCO Captions 2017",
+        "source_archive_sha256": _hash(archive),
+        "source_annotation_sha256": hashlib.sha256(content).hexdigest(),
+        "image_url_prefix": image_url, "source_split": f"{split}2017",
+        "selection": "Source JSON image order; all reference captions retained",
+        "image_ids": [sample["image_id"] for sample in selected], **counts,
+    }
+
+
 def prepare_dataset(
     dataset: str, *, split: str = "val", max_samples: int | None = None,
     cache_dir: str | Path | None = None, classes: tuple[str, ...] | None = None,
@@ -454,6 +510,8 @@ def prepare_dataset(
     filtering/limiting objects and fetching distinct COCO val2017 images.
     VQA v2 limits source-order questions, retaining all ten answers and fetching
     only distinct referenced COCO 2014 images.
+    COCO captions limits images in source JSON image order, retaining every
+    reference caption and downloading only selected COCO 2017 images.
     """
     if not isinstance(dataset, str) or dataset not in DATASETS:
         raise ValueError(f"Supported downloadable datasets: {', '.join(DATASETS)}")
@@ -472,8 +530,7 @@ def prepare_dataset(
         if dataset != "ovad":
             raise ValueError("groups applies only to OVAD preparation")
         groups = _ovad_groups(groups)
-    location = cache_dir or os.environ.get("VLM_TASKS_DATASETS_DIR") or Path.home() / ".cache" / "vlm-tasks" / "datasets"
-    cache = Path(location).expanduser().resolve()
+    cache = _cache_root(cache_dir)
     class_key = "all" if classes is None else hashlib.sha256(json.dumps(classes).encode()).hexdigest()[:16]
     if groups is not None:
         from .data import OVAD_GROUPS
@@ -492,6 +549,7 @@ def prepare_dataset(
         preparer = {
             "cifar10": _prepare_cifar, "coco128": _prepare_coco,
             "refcocog": _prepare_ground, "vqav2": _prepare_vqav2,
+            "coco_captions2017": _prepare_captions,
         }[dataset]
         data, images, names, files, metadata = preparer(root, output, split, max_samples, classes, bad)
     if not files:

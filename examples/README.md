@@ -83,7 +83,7 @@ python -m examples.run_validation \
   --output /tmp/vlm-attributes-validation.json
 ```
 
-Use `--task classify`, `--task detect`, `--task ground`, or `--task answer` for
+Use `--task classify`, `--task detect`, `--task ground`, `--task answer`, or `--task describe` for
 the other [built-in validations](../docs/validation.md#available-validations).
 
 Evaluate Answer on VQA v2 with questions supplied by the dataset:
@@ -104,6 +104,25 @@ Use a configuration such as `{"answer": {"context": "Use visible evidence."}}`
 with `--config` to supply task context; dataset questions override any default.
 
 Start with `--max-samples 10` to check runtime, then try 100 samples.
+
+Evaluate Describe on COCO Captions 2017 (requires Java on `PATH`):
+
+```bash
+python -m examples.run_validation \
+  --backend transformers \
+  --task describe \
+  --max-samples 100 \
+  --output /tmp/vlm-describe-validation.json
+```
+
+`--max-samples` counts images. Reports contain `cider`, `bleu_1`–`bleu_4`,
+`rouge_l`, and one corpus `summary`. Use `--tokenizer-version` to select `3.4.1`
+(default) or `4.6.0`. For local data, provide
+`--data /datasets/captions_val2017.json` and `--images /datasets/val2017`.
+Task context can be supplied with a config such as
+`{"describe": {"context": "Describe the visible scene in one sentence."}}`.
+See [Describe validation](../docs/validation.md#describe-coco-captions) for scoring
+and comparison guidance.
 
 ### Your own data
 

@@ -1,0 +1,212 @@
+{
+  "provenance": {
+    "repository": "https://github.com/salaniz/pycocoevalcap",
+    "revision": "a24f74c408c918f1f4ec34e9514bc8a76ce41ffd",
+    "generation": "Unmodified Bleu(4), Cider(n=4, sigma=6.0), Rouge; inputs already tokenized; no local scorer imports"
+  },
+  "cases": [
+    {
+      "name": "perfect",
+      "candidates": [
+        "a cat sits on a mat",
+        "two dogs play in the grass"
+      ],
+      "references": [
+        [
+          "a cat sits on a mat",
+          "a cat on a mat"
+        ],
+        [
+          "two dogs play in the grass",
+          "two dogs play outdoors"
+        ]
+      ],
+      "scores": {
+        "cider": 7.0443697842079676,
+        "bleu_1": 0.9999999998333334,
+        "bleu_2": 0.9999999998250001,
+        "bleu_3": 0.9999999998138891,
+        "bleu_4": 0.9999999997979169,
+        "rouge_l": 1.0
+      }
+    },
+    {
+      "name": "partial_duplicates",
+      "candidates": [
+        "a cat cat sleeps",
+        "two dogs running",
+        "an airplane flies over blue water"
+      ],
+      "references": [
+        [
+          "a cat sleeps on a mat",
+          "a sleeping cat",
+          "a sleeping cat"
+        ],
+        [
+          "two dogs play outside",
+          "a dog runs in the park"
+        ],
+        [
+          "an airplane flying over the sea",
+          "a plane flies over blue water"
+        ]
+      ],
+      "scores": {
+        "cider": 2.041482619430064,
+        "bleu_1": 0.8461538460236689,
+        "bleu_2": 0.769615288382303,
+        "bleu_3": 0.5531290179168082,
+        "bleu_4": 0.4535287617247862,
+        "rouge_l": 0.6407391915600636
+      }
+    },
+    {
+      "name": "failure_retains_reference",
+      "candidates": [
+        "a cat sits on a mat",
+        "",
+        "an airplane flies"
+      ],
+      "references": [
+        [
+          "a cat sits on a mat"
+        ],
+        [
+          "two dogs play outside",
+          "dogs on the grass"
+        ],
+        [
+          "a blue airplane flies in the sky"
+        ]
+      ],
+      "scores": {
+        "cider": 3.86152299181534,
+        "bleu_1": 0.3654331470362928,
+        "bleu_2": 0.35884822665281957,
+        "bleu_3": 0.34857054494383666,
+        "bleu_4": 0.363252096189378,
+        "rouge_l": 0.4576962283384302
+      }
+    },
+    {
+      "name": "one_image_closest_tie",
+      "candidates": [
+        "a cat sits here"
+      ],
+      "references": [
+        [
+          "a cat sits",
+          "a cat sits right here"
+        ]
+      ],
+      "scores": {
+        "cider": 0.0,
+        "bleu_1": 0.9999999997500002,
+        "bleu_2": 0.8164965806895814,
+        "bleu_3": 0.6933612741002546,
+        "bleu_4": 0.0001351200154103285,
+        "rouge_l": 1.0
+      }
+    },
+    {
+      "name": "length_penalty_and_clipping",
+      "candidates": [
+        "cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat cat on a mat",
+        "the blue airplane flies high"
+      ],
+      "references": [
+        [
+          "cat on a mat",
+          "a cat on a mat",
+          "cat cat on a mat"
+        ],
+        [
+          "the blue airplane flies high above the water"
+        ]
+      ],
+      "scores": {
+        "cider": 3.2476142715584975,
+        "bleu_1": 0.26315789472991696,
+        "bleu_2": 0.2418254166967967,
+        "bleu_3": 0.21771686610776506,
+        "bleu_4": 0.18951629567047049,
+        "rouge_l": 0.5209906882054618
+      }
+    },
+    {
+      "name": "short_and_empty",
+      "candidates": [
+        "cat",
+        "",
+        "a dog"
+      ],
+      "references": [
+        [
+          "a cat"
+        ],
+        [
+          "the dog sits"
+        ],
+        [
+          "a dog",
+          "a black dog"
+        ]
+      ],
+      "scores": {
+        "cider": 1.7944742117223693,
+        "bleu_1": 0.26359713793999556,
+        "bleu_2": 0.26359713785212996,
+        "bleu_3": 0.0026359713791070712,
+        "bleu_4": 0.0002635971379399956,
+        "rouge_l": 0.5429553264604811
+      }
+    },
+    {
+      "name": "all_failed",
+      "candidates": [
+        "",
+        ""
+      ],
+      "references": [
+        [
+          "a cat sits"
+        ],
+        [
+          "a dog runs"
+        ]
+      ],
+      "scores": {
+        "cider": 0.0,
+        "bleu_1": 0.0,
+        "bleu_2": 0.0,
+        "bleu_3": 0.0,
+        "bleu_4": 0.0,
+        "rouge_l": 0.0
+      }
+    }
+  ],
+  "ptb_3.4.1": {
+    "raw": [
+      "A cat can't jump.",
+      "",
+      "The dog — runs…",
+      "“Café” (two cats), 1,000.5!",
+      "First line\nSecond line",
+      "A blue-red bus; isn't it?",
+      "東京の猫 🐈",
+      "... !!!"
+    ],
+    "tokenized": [
+      "a cat ca n't jump",
+      "",
+      "the dog runs",
+      "café -lrb- two cats -rrb- 1,000.5",
+      "first line second line",
+      "a blue-red bus is n't it",
+      "東京の猫",
+      "!!!"
+    ],
+    "provenance": "Unmodified reference PTBTokenizer and bundled COCO Stanford 3.4.1 artifact"
+  }
+}
