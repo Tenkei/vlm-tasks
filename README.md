@@ -120,6 +120,16 @@ These results describe a small ordered subset using categorical attribute
 scoring. See the [attribute validation guide](docs/validation.md#attributes-ovad-object-crops)
 for details.
 
+Answer validation uses VQA v2 and its per-question prompts:
+
+```python
+metrics = tasks.Answer(backend).val(max_samples=100)
+print(metrics.vqa_accuracy)  # Consensus accuracy, on a 0–1 scale.
+```
+
+See the [Answer validation guide](docs/validation.md#answer-vqa-v2) for scoring,
+normalization, and local data.
+
 ### Validate on your own data
 
 ```python

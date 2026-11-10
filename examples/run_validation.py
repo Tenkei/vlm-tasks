@@ -1,4 +1,4 @@
-"""Validate a configured classification, detection, grounding, or attributes task."""
+"""Validate a configured task on a registered or local labeled dataset."""
 from __future__ import annotations
 
 import argparse
@@ -14,14 +14,14 @@ from ml_pipes.vlm.validation import DATASETS, DEFAULT_DATASETS, OVADDataset, pre
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--backend", choices=["bedrock", "transformers"], default="bedrock")
-    parser.add_argument("--task", choices=["classify", "detect", "ground", "attributes"], required=True)
-    parser.add_argument("--data", help="Registered dataset name or local path; defaults: cifar10, coco128, refcocog, ovad")
-    parser.add_argument("--images", type=Path, help="Local grounding (COCO train2014) or OVAD (COCO val2017) image directory")
+    parser.add_argument("--task", choices=["classify", "detect", "ground", "attributes", "answer"], required=True)
+    parser.add_argument("--data", help="Registered dataset name or local path; defaults: cifar10, coco128, refcocog, ovad, vqav2")
+    parser.add_argument("--images", type=Path, help="Local grounding, OVAD, or VQA v2 image directory")
     parser.add_argument("--dataset", choices=["refcocog", "refcoco", "refcoco+"], help="Grounding dataset; default refcocog")
     parser.add_argument("--split", default="val")
-    parser.add_argument("--config", type=Path, help="Task settings JSON; attributes discovers the dataset schema, named classify/detect use dataset labels, local classify/detect use image_tasks.json, ground uses empty settings")
+    parser.add_argument("--config", type=Path, help="Task settings JSON; attributes discovers the dataset schema, named classify/detect use dataset labels, local classify/detect use image_tasks.json, ground/answer use empty settings")
     parser.add_argument("--class-map", type=Path, help="JSON mapping of dataset class names to task labels")
-    parser.add_argument("--max-samples", type=int, help="Limit evaluated samples (expressions for grounding; eligible object crops for attributes)")
+    parser.add_argument("--max-samples", type=int, help="Limit evaluated samples (expressions for grounding; eligible object crops for attributes; questions for answer)")
     parser.add_argument("--match-iou", type=float, help="Detection matching IoU; default 0.5")
     parser.add_argument("--model", help="Bedrock model ID or HF model/local directory; Transformers defaults to Qwen/Qwen3-VL-2B-Instruct")
     parser.add_argument("--device", default="auto", help="Transformers device: auto, mps, cuda, cpu, etc.")
@@ -57,17 +57,19 @@ def main(argv: list[str] | None = None) -> int:
             parser.error("Automatic grounding preparation supports refcocog; provide local --data and --images for other sources")
         if args.class_map is not None:
             parser.error("--class-map is not supported for grounding")
-    elif args.task == "attributes":
+    elif args.task in {"attributes", "answer"}:
         if args.images is None and not automatic:
-            parser.error("--images is required for local attributes data")
+            parser.error(f"--images is required for local {args.task} data")
         if automatic and args.images is not None:
-            parser.error("Automatic OVAD preparation supplies images; provide local --data with --images")
+            parser.error("Automatic preparation supplies images; provide local --data with --images")
         if args.dataset is not None:
             parser.error("--dataset applies only to grounding")
         if args.class_map is not None:
-            parser.error("--class-map is not supported for attributes")
+            parser.error(f"--class-map is not supported for {args.task}")
     elif args.images is not None or args.dataset is not None:
-        parser.error("--images applies only to grounding/attributes; --dataset applies only to grounding")
+        parser.error("--images applies only to grounding/attributes/answer; --dataset applies only to grounding")
+    if args.task == "answer" and args.split not in DATASETS["vqav2"].splits:
+        parser.error("VQA v2 supports labeled train and val splits only")
 
     try:
         task_settings = {}
@@ -113,15 +115,16 @@ def main(argv: list[str] | None = None) -> int:
             settings["match_iou"] = args.match_iou
         if args.task == "ground":
             settings.update(images=args.images, dataset=args.dataset or "refcocog")
-        elif args.task == "attributes":
+        elif args.task in {"attributes", "answer"}:
             settings["images"] = args.images
         metrics = task.val(**settings)
     except Exception as exc:
         parser.exit(2, f"Validation failed: {exc}\n")
 
+    summary_key = {"attributes": "per_attribute", "answer": "per_type"}.get(args.task, "per_class")
     report = {
         "metrics": metrics.results_dict,
-        "per_attribute" if args.task == "attributes" else "per_class": metrics.summary(),
+        summary_key: metrics.summary(),
         "failures": metrics.failures,
         "dataset_counts": metrics.dataset_counts,
         "dataset_metadata": getattr(metrics, "dataset_metadata", {}),

@@ -11,11 +11,12 @@ import numpy as np
 
 from ..errors import InvalidModelResponseError, ModelExecutionError
 from ..types import AttributePredictionResult, ClassificationResult, DetectionResult, GroundingResult
+from ._vqa import SCORER_METADATA, validate_targets
 from .data import (
-    ClassificationDataset, DataLoader, OVADDataset, RefCOCODataset, YOLODataset,
+    ClassificationDataset, DataLoader, OVADDataset, RefCOCODataset, VQAv2Dataset, YOLODataset,
     _classification_classes,
 )
-from .metrics import AttributesMetrics, ClassificationMetrics, DetectionMetrics, GroundingMetrics
+from .metrics import AnswerMetrics, AttributesMetrics, ClassificationMetrics, DetectionMetrics, GroundingMetrics
 from .prepare import DATASETS, prepare_dataset
 
 
@@ -25,8 +26,9 @@ class BaseValidator:
     Override dataset construction and metric methods for another task or data
     source. A supplied dataloader must expose its dataset through ``.dataset``;
     the dataset's ``names`` maps class IDs to names (or ``attributes`` defines
-    categorical choices). Loaders yield the sample dictionaries documented by
-    the concrete dataset classes.
+    categorical choices). Answer datasets need neither class metadata nor a
+    vocabulary. Loaders yield the sample dictionaries documented by the concrete
+    dataset classes.
     """
 
     default_dataset: str | None = None
@@ -100,7 +102,7 @@ class BaseValidator:
                 print(f"\rValidated {self.metrics.seen} samples", end="", file=sys.stderr, flush=True)
             last = perf_counter()
         if not self.metrics.seen:
-            raise ValueError("No samples belong to the evaluated classes")
+            raise ValueError("No samples to evaluate")
         self.finalize_metrics()
         if self.verbose:
             print("\n" + json.dumps(self.metrics.results_dict, indent=2), file=sys.stderr)
@@ -162,6 +164,66 @@ class BaseValidator:
             name: elapsed * 1000 / self.metrics.seen for name, elapsed in self._timings.items()
         }
         self.metrics.elapsed_seconds = perf_counter() - self._started
+
+
+class AnswerValidator(BaseValidator):
+    """Evaluate one Answer result per question using VQA v2 consensus."""
+
+    default_dataset = "vqav2"
+
+    def __init__(self, *args, images=None, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        if self._requested_class_map is not None:
+            raise ValueError("class_map is not supported for answer validation")
+        if self.split not in ("train", "val"):
+            raise ValueError("VQA v2 supports labeled train and val splits only")
+        automatic = isinstance(self.data, str) and self.data in DATASETS
+        if automatic and images is not None:
+            raise ValueError("Automatic VQA v2 preparation supplies images; use local data with images")
+        if self._provided_dataloader is None and images is None and not automatic:
+            raise ValueError("Answer validation requires images or a supplied dataloader")
+        self.images = images
+
+    def build_dataset(self):
+        prepared = self.prepare_named_dataset("answer")
+        return VQAv2Dataset(
+            self.data if prepared is None else prepared.data,
+            self.images if prepared is None else prepared.images,
+            split=self.split, max_samples=self.max_samples,
+        )
+
+    def _align_classes(self) -> None:
+        # Answers have no fixed vocabulary; answer types are reporting groups.
+        pass
+
+    def init_metrics(self) -> None:
+        self.metrics = AnswerMetrics()
+        self.metrics.dataset_metadata = {
+            **getattr(self.dataset, "metadata", {}), **SCORER_METADATA,
+        }
+
+    def predict_sample(self, sample: dict):
+        # Validate custom-loader targets before making a model call, too.
+        validate_targets(sample["answers"], sample["answer_type"], sample["question_type"])
+        return self.task((sample["img"], sample["question"]))
+
+    def update_metrics(self, prediction, sample: dict) -> None:
+        self.metrics.update(
+            sample["answers"], prediction, answer_type=sample["answer_type"],
+            question_type=sample["question_type"], im_file=sample["im_file"],
+        )
+
+    def finalize_metrics(self) -> None:
+        super().finalize_metrics()
+        if self.prepared_dataset is not None:
+            self.metrics.dataset_counts.update({
+                key: self.prepared_dataset.metadata[key]
+                for key in ("source_questions", "source_images", "selected_questions", "selected_images")
+            })
+        self.metrics.dataset_counts.update(
+            evaluated_questions=self.metrics.seen,
+            evaluated_images=self.metrics.unique_images,
+        )
 
 
 class AttributesValidator(BaseValidator):

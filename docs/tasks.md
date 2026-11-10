@@ -143,8 +143,10 @@ Output wording is preserved; benchmark normalization belongs in a validator.
 For allowed labels, categorical attributes, or coordinates, use the corresponding
 task contract. Descriptions and free-text answers do not enforce those formats.
 
-`Describe` and `Answer` currently require an explicit custom validator for
+`Describe` currently requires an explicit custom validator for
 `.val()`; see [custom validation](validation.md#custom-loaders-and-validators).
+`Answer.val()` defaults to [VQA v2](validation.md#answer-vqa-v2), with questions
+supplied by the dataset.
 
 ## Coordinates and results
 

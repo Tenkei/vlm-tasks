@@ -7,7 +7,9 @@ from typing import Literal
 
 import numpy as np
 
-from ..types import GroundingResult
+from ..types import AnswerResult, GroundingResult
+from ._vqa import ANSWER_TYPES, SCORER_METADATA, score_answer, validate_targets
+
 
 def _ratios(tp: int, fp: int, fn: int) -> dict[str, float]:
     return {
@@ -42,6 +44,77 @@ class _RunMetrics:
             "failures": len(self.failures),
             "failure_rate": self.failure_rate,
         }
+
+
+class AnswerMetrics(_RunMetrics):
+    """VQA v2 consensus accuracy over questions, including failures/abstentions.
+
+    Scores are fractions, not percentages. ``summary()`` reports answer types
+    (including unsupported types with ``None`` scores), then observed question
+    types in sorted order. References and predictions are not retained.
+    """
+
+    def __init__(self) -> None:
+        super().__init__(ANSWER_TYPES)
+        self._score_sum = 0.0
+        self._groups = {
+            "answer_type": {name: [0, 0.0] for name in ANSWER_TYPES},
+            "question_type": {},
+        }
+        self._images: set[Path] = set()
+        self.status_counts = dict.fromkeys(("answered", "unanswerable"), 0)
+        self.dataset_metadata: dict[str, object] = dict(SCORER_METADATA)
+
+    def update(
+        self, answers: Sequence[str], prediction: AnswerResult | None, *,
+        answer_type: str, question_type: str, im_file: str,
+    ) -> None:
+        validate_targets(answers, answer_type, question_type)
+        score = 0.0
+        if prediction is not None:
+            if not isinstance(prediction, AnswerResult):
+                raise TypeError("AnswerMetrics requires AnswerResult outputs")
+            if prediction.status == "answered":
+                if not isinstance(prediction.answer, str) or not prediction.answer.strip():
+                    raise ValueError("Answered predictions require a nonempty string answer")
+                score = score_answer(prediction.answer, answers)
+            elif prediction.status != "unanswerable" or prediction.answer is not None:
+                raise ValueError("Invalid answer status/answer combination")
+            self.status_counts[prediction.status] += 1
+        self.seen += 1
+        self._score_sum += score
+        self._images.add(Path(im_file).resolve())
+        for group_by, group in (("answer_type", answer_type), ("question_type", question_type)):
+            totals = self._groups[group_by].setdefault(group, [0, 0.0])
+            totals[0] += 1
+            totals[1] += score
+
+    @property
+    def vqa_accuracy(self) -> float:
+        return self._score_sum / self.seen if self.seen else 0.0
+
+    @property
+    def unique_images(self) -> int:
+        return len(self._images)
+
+    @property
+    def results_dict(self) -> dict[str, int | float]:
+        return {
+            **self._run_results(), "vqa_accuracy": self.vqa_accuracy,
+            "unique_images": self.unique_images,
+        }
+
+    def summary(self) -> list[dict]:
+        rows = []
+        for group_by, groups in self._groups.items():
+            names = ANSWER_TYPES if group_by == "answer_type" else sorted(groups)
+            for name in names:
+                support, score_sum = groups[name]
+                rows.append({
+                    "group_by": group_by, "group": name, "support": support,
+                    "vqa_accuracy": score_sum / support if support else None,
+                })
+        return rows
 
 
 class AttributesMetrics(_RunMetrics):

@@ -81,7 +81,9 @@ class _Task:
         See ``ml_pipes.vlm.validation``.
         """
         if validator is None:
-            from .validation import AttributesValidator, ClassificationValidator, DetectionValidator, GroundingValidator
+            from .validation import (
+                AnswerValidator, AttributesValidator, ClassificationValidator, DetectionValidator, GroundingValidator,
+            )
 
             if isinstance(self, Classify):
                 validator = ClassificationValidator
@@ -91,6 +93,8 @@ class _Task:
                 validator = GroundingValidator
             elif isinstance(self, Attributes):
                 validator = AttributesValidator
+            elif isinstance(self, Answer):
+                validator = AnswerValidator
             else:
                 raise NotImplementedError(
                     f"{type(self).__name__} has no default validator; supply validator= explicitly"

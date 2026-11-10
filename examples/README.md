@@ -83,7 +83,25 @@ python -m examples.run_validation \
   --output /tmp/vlm-attributes-validation.json
 ```
 
-Use `--task classify`, `--task detect`, or `--task ground` for the other [built-in validations](../docs/validation.md#available-validations).
+Use `--task classify`, `--task detect`, `--task ground`, or `--task answer` for
+the other [built-in validations](../docs/validation.md#available-validations).
+
+Evaluate Answer on VQA v2 with questions supplied by the dataset:
+
+```bash
+python -m examples.run_validation \
+  --backend transformers \
+  --task answer \
+  --max-samples 100 \
+  --output /tmp/vlm-answer-validation.json
+```
+
+Answer defaults to the labeled `val` split; `--max-samples` counts questions.
+Reports contain `vqa_accuracy` (0–1), `per_type` breakdowns, response statuses,
+and normalization provenance. For local data, provide `--data` with the official
+questions/annotations directory and `--images` with the COCO 2014 image directory.
+Use a configuration such as `{"answer": {"context": "Use visible evidence."}}`
+with `--config` to supply task context; dataset questions override any default.
 
 Start with `--max-samples 10` to check runtime, then try 100 samples.
 

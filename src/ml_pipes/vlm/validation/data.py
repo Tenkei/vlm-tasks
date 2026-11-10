@@ -1,4 +1,4 @@
-"""Local classification, detection, referring expression, and OVAD readers."""
+"""Local readers for labeled vision-language validation datasets."""
 from __future__ import annotations
 
 import json
@@ -8,6 +8,8 @@ from pathlib import Path
 import cv2
 import numpy as np
 from ml_pipes.vision import Decode, ImagePayload, LoadFile
+
+from ._vqa import validate_targets
 
 _IMAGE_SUFFIXES = {".bmp", ".jpeg", ".jpg", ".png", ".tif", ".tiff", ".webp"}
 
@@ -356,6 +358,101 @@ class RefCOCODataset:
                 f"expected {sample['image_size']}, got {image.size}"
             )
         return {**sample, "img": image, "cls": sample["cls"].copy(), "bboxes": sample["bboxes"].copy()}
+
+
+def _vqav2_selection(questions, annotations, max_samples=None):
+    """Validate ID joins and targets before selecting in source question order."""
+    indexed = []
+    for data, key in ((questions, "questions"), (annotations, "annotations")):
+        records = data.get(key) if isinstance(data, dict) else None
+        if not isinstance(records, list) or not records:
+            raise ValueError(f"VQA v2 requires a nonempty {key} list")
+        index = {}
+        for record in records:
+            if not isinstance(record, dict):
+                raise ValueError(f"Invalid VQA v2 {key} record")
+            question_id, image_id = record.get("question_id"), record.get("image_id")
+            if any(type(value) is not int or value < 0 for value in (question_id, image_id)):
+                raise ValueError(f"VQA v2 {key} require nonnegative integer question/image IDs")
+            if question_id in index:
+                raise ValueError(f"Duplicate VQA v2 {key} question ID: {question_id}")
+            index[question_id] = record
+        indexed.append(index)
+    queries, targets = indexed
+    if queries.keys() != targets.keys():
+        raise ValueError("VQA v2 questions and annotations must have matching question IDs")
+    selected = []
+    for question_id, query in queries.items():
+        target = targets[question_id]
+        if target["image_id"] != query["image_id"]:
+            raise ValueError(f"VQA v2 image IDs disagree for question {question_id}")
+        question = query.get("question")
+        if not isinstance(question, str) or not question.strip():
+            raise ValueError(f"Invalid VQA v2 question: {question_id}")
+        votes = target.get("answers")
+        if not isinstance(votes, list) or any(not isinstance(vote, dict) for vote in votes):
+            raise ValueError("VQA v2 answers must be a list of answer annotations")
+        answers = tuple(vote.get("answer") for vote in votes)
+        answer_type, question_type = target.get("answer_type"), target.get("question_type")
+        validate_targets(answers, answer_type, question_type)
+        if max_samples is None or len(selected) < max_samples:
+            selected.append({
+                "sample_id": question_id, "image_id": query["image_id"],
+                "question": question, "answers": answers,
+                "answer_type": answer_type, "question_type": question_type,
+            })
+    return selected, {
+        "source_questions": len(queries),
+        "source_images": len({query["image_id"] for query in queries.values()}),
+        "selected_questions": len(selected),
+        "selected_images": len({sample["image_id"] for sample in selected}),
+    }
+
+
+class VQAv2Dataset:
+    """Read official VQA v2 question/annotation JSON files from a directory.
+
+    Samples contain ``im_file``, ``img``, ``sample_id`` (question ID), ``image_id``,
+    ``question``, ten string ``answers`` (including duplicate votes),
+    ``answer_type``, and ``question_type``. ``max_samples`` counts questions in
+    source order; images are checked for selected questions and decoded lazily.
+    """
+
+    def __init__(
+        self, annotations: str | Path, images: str | Path, *, split: str = "val",
+        max_samples: int | None = None,
+    ) -> None:
+        if split not in ("train", "val"):
+            raise ValueError("VQA v2 supports labeled train and val splits only")
+        if max_samples is not None and (type(max_samples) is not int or max_samples < 1):
+            raise ValueError("max_samples must be a positive integer or None")
+        root = Path(annotations).expanduser().resolve()
+        image_root = Path(images).expanduser().resolve()
+        questions_path = root / f"v2_OpenEnded_mscoco_{split}2014_questions.json"
+        annotations_path = root / f"v2_mscoco_{split}2014_annotations.json"
+        questions = json.loads(questions_path.read_text())
+        targets = json.loads(annotations_path.read_text())
+        self.samples, self.counts = _vqav2_selection(questions, targets, max_samples)
+        if not image_root.is_dir():
+            raise FileNotFoundError(f"VQA v2 image directory not found: {image_root}")
+        for sample in self.samples:
+            image = image_root / f"COCO_{split}2014_{sample['image_id']:012d}.jpg"
+            if not image.is_file():
+                raise FileNotFoundError(f"VQA v2 image not found: {image}")
+            sample["im_file"] = str(image)
+        self.metadata = {
+            "dataset": "vqav2", "version": "2", "split": split,
+            "questions": str(questions_path), "annotations": str(annotations_path),
+            "images": str(image_root), "selection": "Source JSON question order",
+            "max_samples": max_samples,
+        }
+
+    def __len__(self) -> int:
+        return len(self.samples)
+
+    def __getitem__(self, index: int) -> dict:
+        sample = self.samples[index]
+        return {**sample, "img": _load_image(sample["im_file"])}
 
 
 OVAD_GROUPS = (

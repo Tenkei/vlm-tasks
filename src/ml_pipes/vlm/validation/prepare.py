@@ -61,8 +61,12 @@ DATASETS = {
     "coco128": DatasetInfo("detect", ("train", "val"), _COCO_NAMES),
     "refcocog": DatasetInfo("ground", ("train", "val", "test")),
     "ovad": DatasetInfo("attributes", ("test", "val")),
+    "vqav2": DatasetInfo("answer", ("train", "val")),
 }
-DEFAULT_DATASETS = {info.task: name for name, info in DATASETS.items()}
+DEFAULT_DATASETS = {
+    "classify": "cifar10", "detect": "coco128", "ground": "refcocog",
+    "attributes": "ovad", "answer": "vqav2",
+}
 
 _CIFAR_URL = "https://www.cs.toronto.edu/~kriz/cifar-10-binary.tar.gz"
 _CIFAR_CHECKSUM = "md5:c32a1d4ab5d03f1284b67883e8d87530"
@@ -73,6 +77,8 @@ _COCO_IMAGE_URL = "https://s3.amazonaws.com/images.cocodataset.org/train2014/"
 _OVAD_URL = "https://lmb.informatik.uni-freiburg.de/resources/datasets/ovad.zip"
 _OVAD_CHECKSUM = "sha256:1716fc5216dd040c3803ca7d91444140d02bc6a98f40a60b85f16c97174dc1ec"
 _OVAD_IMAGE_URL = "https://s3.amazonaws.com/images.cocodataset.org/val2017/"
+_VQA_URL = "https://cvmlp.s3.amazonaws.com/vqa/mscoco/vqa/v2_{kind}_{split}_mscoco.zip"
+_VQA_IMAGE_URL = "https://s3.amazonaws.com/images.cocodataset.org/{split}2014/"
 _FORMAT_VERSION = 1
 
 
@@ -382,6 +388,57 @@ def _prepare_ovad(root: Path, output: Path, split: str, limit, groups, bad):
     }, attributes
 
 
+def _prepare_vqav2(root: Path, output: Path, split: str, limit, classes, bad):
+    from .data import VQAv2Dataset, _vqav2_selection
+
+    filenames = {
+        "Questions": f"v2_OpenEnded_mscoco_{split}2014_questions.json",
+        "Annotations": f"v2_mscoco_{split}2014_annotations.json",
+    }
+    originals, files, urls, hashes = {}, [], {}, {}
+    for kind, filename in filenames.items():
+        url = _VQA_URL.format(kind=kind, split=split.title())
+        archive = root / "sources" / url.rsplit("/", 1)[-1]
+        _download(url, archive, force=archive in bad)
+        with ZipFile(archive) as source:
+            if source.namelist().count(filename) != 1:
+                raise ValueError(f"VQA v2 archive must contain exactly one {filename}")
+            originals[kind] = json.loads(source.read(filename))
+        files.append(archive)
+        urls[kind] = url
+        hashes[kind] = _hash(archive)
+    selected, counts = _vqav2_selection(originals["Questions"], originals["Annotations"], limit)
+    ids = {sample["sample_id"] for sample in selected}
+    data = output / "annotations"
+    for kind, filename in filenames.items():
+        key = kind.lower()
+        subset = {
+            **originals[kind],
+            key: [item for item in originals[kind][key] if item["question_id"] in ids],
+        }
+        path = data / filename
+        _write_json(path, subset)
+        files.append(path)
+    images = root / "images" / f"{split}2014"
+    image_url = _VQA_IMAGE_URL.format(split=split)
+    for image_id in dict.fromkeys(sample["image_id"] for sample in selected):
+        filename = f"COCO_{split}2014_{image_id:012d}.jpg"
+        path = images / filename
+        _download(image_url + filename, path, force=path in bad)
+        if cv2.imread(str(path)) is None:
+            _download(image_url + filename, path, force=True)
+            if cv2.imread(str(path)) is None:
+                raise ValueError(f"Could not decode downloaded VQA v2 image: {filename}")
+        files.append(path)
+    VQAv2Dataset(data, images, split=split)
+    return data, images, (), files, {
+        "source_urls": urls, "source_archive_sha256": hashes, "source_version": "VQA v2",
+        "image_url_prefix": image_url, "source_split": f"{split}2014",
+        "selection": "Source JSON question order", **counts,
+        "question_ids": [sample["sample_id"] for sample in selected],
+    }
+
+
 def prepare_dataset(
     dataset: str, *, split: str = "val", max_samples: int | None = None,
     cache_dir: str | Path | None = None, classes: tuple[str, ...] | None = None,
@@ -395,6 +452,8 @@ def prepare_dataset(
     streams a shared annotation archive and fetches only referenced images.
     OVAD ``groups`` selects categorical groups (all 22 by default) before
     filtering/limiting objects and fetching distinct COCO val2017 images.
+    VQA v2 limits source-order questions, retaining all ten answers and fetching
+    only distinct referenced COCO 2014 images.
     """
     if not isinstance(dataset, str) or dataset not in DATASETS:
         raise ValueError(f"Supported downloadable datasets: {', '.join(DATASETS)}")
@@ -430,7 +489,10 @@ def prepare_dataset(
     if dataset == "ovad":
         data, images, names, files, metadata, attributes = _prepare_ovad(root, output, split, max_samples, groups, bad)
     else:
-        preparer = {"cifar10": _prepare_cifar, "coco128": _prepare_coco, "refcocog": _prepare_ground}[dataset]
+        preparer = {
+            "cifar10": _prepare_cifar, "coco128": _prepare_coco,
+            "refcocog": _prepare_ground, "vqav2": _prepare_vqav2,
+        }[dataset]
         data, images, names, files, metadata = preparer(root, output, split, max_samples, classes, bad)
     if not files:
         raise ValueError(f"No samples available in {dataset} split {split!r}")

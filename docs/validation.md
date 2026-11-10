@@ -48,8 +48,9 @@ MB/GB, excluding model weights and expanded cache files.
 | `Ground`, box | **RefCOCOg UMD** (`refcocog`) | **val:** 1,300 unique images; 4,896 expressions; 80-category reporting vocabulary | train, val, test | Accuracy at IoU ≥0.5 / 0.75 / 0.9; mean IoU | Stream shared annotations; download images referenced by selected expressions | 1.08 GB shared archive; val JSON 2.27 MB; images additional |
 | `Ground`, point | **RefCOCOg UMD** (`refcocog`) | Same expressions and target boxes as box mode | train, val, test | Point-in-box accuracy | Shares box-mode data and cache | Same as box mode |
 | `Attributes` | **OVAD** (`ovad`) | 14,300 source objects; 14,072 eligible objects in 2,000 images; 22 categorical groups | test, val; **val aliases the same benchmark**; no train | Categorical accuracy; mean attribute accuracy; macro F1; per-group reports | Download annotations and images referenced by selected objects | 1.13 MB annotations; images additional |
+| `Answer` | **VQA v2** (`vqav2`) | **val:** 214,354 questions on 40,504 COCO val2014 images; ten human answers per question | train, val; labeled splits only | VQA consensus accuracy; answer-type and question-type reports | Download both split annotation archives and images referenced by selected questions | val: 14.01 MB for questions and annotations; images additional |
 
-`ClassifyMultiLabel`, `Describe`, and `Answer` require an explicit custom
+`ClassifyMultiLabel` and `Describe` require an explicit custom
 validator. Local RefCOCO/RefCOCO+ data can reuse grounding validation; see
 [local data](#using-your-own-dataset).
 
@@ -63,7 +64,8 @@ decisions; it is distinct from official OVAD attribute mAP.
 Dataset sources: [CIFAR-10](https://www.cs.toronto.edu/~kriz/cifar.html),
 [COCO128](https://github.com/ultralytics/assets/releases/download/v0.0.0/coco128.zip),
 [MDETR RefCOCO annotations](https://zenodo.org/records/4729015), and
-[OVAD](https://lmb.informatik.uni-freiburg.de/resources/datasets/ovad.zip).
+[OVAD](https://lmb.informatik.uni-freiburg.de/resources/datasets/ovad.zip), and
+[VQA v2](https://visualqa.org/download.html).
 The classification design target is [Imagenette](https://github.com/fastai/imagenette);
 the available automatic default in the table remains CIFAR-10.
 
@@ -76,6 +78,7 @@ the available automatic default in the table remains CIFAR-10.
 | Grounding, box | Continuous-coordinate IoU in original-image pixels; report mean IoU and accuracy at inclusive thresholds of 0.5, 0.75, and 0.9 |
 | Grounding, point | A hit when the point lies inside the target box, including its edges; a coarse proxy for object containment, distinct from box-IoU accuracy |
 | Attributes | Score only known targets; report accuracy across decisions, mean accuracy across supported groups, and macro F1 averaged within then across supported groups |
+| Answer | Normalize the prediction and all ten references; average leave-one-annotator-out consensus per question, then average across evaluated questions |
 
 Detection does not report AP/mAP because predictions have no confidence ranking.
 Attribute groups without target support do not contribute to group averages;
@@ -85,8 +88,9 @@ macro F1. Unknown targets are unscored, rather than an invented “none” categ
 `ModelExecutionError` and `InvalidModelResponseError` are recorded and evaluation
 continues. Failed classification calls are incorrect; failed detection calls
 produce no boxes; failed grounding calls score zero; failed attribute calls are
-incorrect for every known target. Failures remain in sample counts and relevant
-score denominators. Data, setup, and programming errors stop the run.
+incorrect for every known target; failed answer calls score zero. Failures
+remain in sample counts and relevant score denominators. Data, setup, and
+programming errors stop the run.
 
 Valid grounding absence and ambiguity responses also score zero against a
 positive target, but remain separate from execution failures in
@@ -129,9 +133,9 @@ Each call starts fresh metrics, returns them, and stores them as `task.metrics`.
 Start with `max_samples=10` to check execution and timing. Use
 `max_samples=None`, the default, to evaluate the complete selected split.
 Limits count images for classification/detection, expressions for grounding,
-and eligible objects for attributes. Selection is deterministic, not a random
-sample. Quality claims require representative data and a stated evaluation
-protocol.
+eligible objects for attributes, and questions for Answer. Selection is
+deterministic, not a random sample. Quality claims require representative data
+and a stated evaluation protocol.
 
 Configure labels, descriptions, context, and geometry on the task. Keep these
 settings fixed across samples; datasets supply per-sample inputs such as
@@ -179,7 +183,7 @@ Classification selects examples from the mapped classes before applying the
 sample limit. Detection retains negative images and scores only selected
 classes; unmatched selected predictions are false positives. A classification
 prediction outside the evaluated subset still counts as incorrect. Grounding
-and attributes do not accept `class_map`.
+and attributes do not accept `class_map`; neither does Answer.
 
 ### Detection matching
 
@@ -248,6 +252,54 @@ color groups and objects without usable targets or sufficient annotated area.
 Selecting fewer groups can change which objects are eligible, so report the
 selection alongside the score.
 
+### Answer: VQA v2
+
+Each question supplies the prompt and produces one independent task call:
+
+```python
+from ml_pipes.vlm import Answer
+
+task = Answer(backend)
+metrics = task.val(max_samples=100)
+print(metrics.results_dict["vqa_accuracy"])
+print(metrics.summary())
+print(metrics.status_counts)
+```
+
+The dataset question overrides any constructor question without changing it.
+Constructor context remains effective. Gold answers, answer types, and question
+types are used only for evaluation. Repeated questions on one image remain
+separate samples; `unique_images` counts distinct image paths.
+
+The scorer follows the [lmms-eval VQA v2 implementation at the recorded revision](https://github.com/EvolvingLMMs-Lab/lmms-eval/blob/c7eaef373f4b1bd8a6b5f3e85c3391962c30068c/lmms_eval/tasks/vqav2/utils.py).
+Both predictions and references undergo newline/tab cleanup and trimming,
+punctuation processing, lowercasing, fixed number-word mapping, article removal,
+and contraction handling. Its punctuation rules preserve decimal points and
+apostrophes and treat numeric commas specially. No extra tokenization, answer
+extraction, synonym matching, or semantic judging is applied. For example,
+`Two!` matches `2`, while `The answer is blue` does not match `blue`.
+
+For each of the ten reference positions, hold out that vote and score
+`min(matching_remaining_votes / 3, 1)`; average the ten scores. Duplicates are
+retained. Exactly 0, 1, 2, 3, or at least 4 matching votes produce scores of
+0, 0.3, 0.6, 0.9, or 1. The overall `vqa_accuracy` is the unrounded mean across
+questions on a 0–1 scale, including failed calls and valid `unanswerable`
+responses as zero. Valid negative answers such as `no` and `zero` are scored
+normally. Status counts exclude execution failures.
+
+`summary()` reports support and accuracy by the three annotated answer types
+(`yes/no`, `number`, `other`) and by observed question types. Unsupported answer
+types have a `None` score. Overall accuracy weights questions equally rather
+than averaging type scores. Reports retain aggregates and groups, without
+per-question prediction records. Dataset metadata records scorer version,
+normalization, and the pinned upstream revision.
+
+This always-normalized protocol differs from the legacy official evaluator,
+which conditionally normalizes based on reference disagreement. VQA v2 does
+not measure answerability quality; its hidden-label test splits and submission
+export are unsupported. Keep the split, selection, task context, and generation
+settings fixed when comparing scores.
+
 ### Default datasets and downloads
 
 Select a registered name explicitly, or omit `data` for the default. To prepare
@@ -274,7 +326,8 @@ Cache precedence is `cache_dir`, then `VLM_TASKS_DATASETS_DIR`, then
 A small sample limit does not guarantee a small download: CIFAR-10 and COCO128
 require their full archives, and RefCOCOg streams a shared annotation archive
 before fetching selected images. RefCOCOg uses COCO train2014 images; OVAD uses
-COCO val2017 images.
+COCO val2017 images. VQA v2 downloads both official split-specific JSON archives
+and only the selected questions' distinct COCO train2014 or val2014 images.
 
 ### Using your own dataset
 
@@ -287,6 +340,12 @@ metrics. Local paths bypass automatic downloading.
 | Detection | COCO128-style YOLO detection YAML, images, and normalized box labels | `data="/datasets/objects/data.yaml"` |
 | Grounding | MDETR RefCOCO annotations named `finetune_{dataset}_{split}.json`, plus images | `data="/datasets/annotations"`, `images="/datasets/images"`, `dataset="refcocog"` |
 | Attributes | OVAD annotation JSON and its referenced images | `data="/datasets/ovad2000.json"`, `images="/datasets/val2017"` |
+| Answer | Official VQA v2 questions and annotations JSON files in one directory, plus COCO 2014 images | `data="/datasets/vqa/annotations"`, `images="/datasets/val2014"`, `split="val"` |
+
+For local VQA v2 validation, the annotation directory must contain
+`v2_OpenEnded_mscoco_val2014_questions.json` and
+`v2_mscoco_val2014_annotations.json`; use `train2014` in both names for training
+data. Images retain names such as `COCO_val2014_000000000013.jpg`.
 
 Local grounding also accepts `dataset="refcoco"` or `"refcoco+"` with the
 corresponding split files; see the
@@ -317,7 +376,10 @@ The supplied dataset must follow the corresponding dataset interface and
 already select the intended samples. `class_map` aligns labels but does not
 filter a custom dataset or injected loader. For an existing loader, pass
 `dataloader=my_loader` without `data`; it must expose `.dataset`, with
-`.names` or `.attributes` as appropriate. Reuse the built-in dataset sample
+`.names` or `.attributes` as appropriate. Answer datasets need neither class
+metadata nor an answer vocabulary. Their samples contain `img`, `im_file`,
+`sample_id` (question ID), `image_id`, `question`, ten string `answers` including
+duplicate votes, `answer_type`, and `question_type`. Reuse the built-in dataset sample
 format; dataset class docstrings describe its fields.
 
 | Hook | Role |
@@ -341,7 +403,7 @@ for constructor contracts.
 | Result | Use |
 |---|---|
 | `metrics.results_dict` | Aggregate scores, evaluated samples, failures, and failure rate |
-| `metrics.summary()` | Per-class, per-category, or per-attribute scores and support |
+| `metrics.summary()` | Per-class, per-category, per-attribute, or per-type scores and support |
 | `metrics.failures` | Failed calls with image paths, error messages, and sample identifiers where available |
 | `metrics.dataset_counts`, `metrics.dataset_metadata` | Dataset selection and preparation context when available |
 | `metrics.speed` | Mean milliseconds per evaluated sample for loading, inference, and metric calculation |
@@ -349,7 +411,8 @@ for constructor contracts.
 
 Use the metrics object's label metadata when interpreting confusion matrices.
 Grounding also reports response statuses and unique images; attributes report
-known decisions and per-group confusion matrices. Source, prepared, and
+known decisions and per-group confusion matrices. Answer reports response
+statuses, unique images, and scorer provenance. Source, prepared, and
 evaluated counts describe different scopes and should remain distinct in
 reports.
 
