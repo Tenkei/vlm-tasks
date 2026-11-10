@@ -77,19 +77,12 @@ task = tasks.Attributes(
     },
     context="Describe the chair in the image.",
 )
+
 result = task("chair.jpg")
 
-print(result.attributes)
+print(result.attributes)  # {'material': 'wood', 'condition': 'clean'}
+print(result.attributes["material"])  # wood
 ```
-
-**Structured result:** each requested attribute maps to exactly one allowed
-value. Example output:
-
-```text
-{'material': 'wood', 'condition': 'clean'}
-```
-
-Access individual values with `result.attributes["material"]`.
 
 See [available tasks](#available-tasks) for the full list and the
 [API reference](docs/reference.md#operators) for task options.
@@ -99,46 +92,21 @@ See [available tasks](#available-tasks) for the full list and the
 A model can produce the right response format and still make the wrong
 prediction. Use built-in validation to measure accuracy on a dataset that is
 downloaded and prepared automatically. For attributes, OVAD supplies the
-benchmark's attribute choices:
-
-```python
-metrics = tasks.Attributes(backend).val(max_samples=10)
-print(metrics.results_dict)  # Accuracy and failure statistics.
-```
+benchmark's attribute choices.
 
 **Example result:** a local `Attributes` run with `Qwen/Qwen3-VL-2B-Instruct` on
 the first 100 eligible OVAD objects (17 images), using Apple MPS and float16:
 
-| Metric | Result |
-|---|---:|
-| Attribute accuracy | 58.52% (450 / 769 decisions) |
-| Mean attribute accuracy | 59.12% |
-| Macro F1 | 45.69% |
-| Inference failures | 1 / 100 |
-
-These results describe a small ordered subset using categorical attribute
-scoring. See the [attribute validation guide](docs/validation.md#attributes-ovad)
-for details.
-
-Answer validation uses VQA v2 and its per-question prompts:
-
 ```python
-metrics = tasks.Answer(backend).val(max_samples=100)
-print(metrics.vqa_accuracy)  # Consensus accuracy, on a 0–1 scale.
+metrics = tasks.Attributes(backend).val(max_samples=100)
+print(metrics.results_dict)
+# Attribute accuracy: 58.52% (450 / 769 decisions)
+# Mean attribute accuracy: 59.12%
+# Macro F1: 45.69%
+# Inference failures: 1 / 100
 ```
 
-See the [Answer validation guide](docs/validation.md#answer-vqa-v2) for scoring,
-normalization, and local data.
-
-Describe validation uses COCO Captions 2017 and requires Java:
-
-```python
-metrics = tasks.Describe(backend).val(max_samples=100)
-print(metrics.cider, metrics.bleu_4, metrics.rouge_l)
-```
-
-See the [Describe validation guide](docs/validation.md#describe-coco-captions)
-for scoring and local data.
+See the [validation](docs/validation.md) guide for details.
 
 ### Validate on your own data
 
@@ -148,18 +116,6 @@ metrics = tasks.Attributes(backend).val(data="./annotations.json", images="./ima
 
 See the [custom dataset guide](docs/validation.md#using-your-own-dataset) for
 supported formats and setup.
-
-## How tasks work
-
-```mermaid
-flowchart LR
-    Image[Image] --> Task[Task]
-    Settings[Task configuration] --> Task
-    Task --> Model[VLM] --> Response[Model response] --> Result[Structured result]
-```
-
-The framework builds the model instructions from your task settings and
-context, then checks and converts the response into a structured result.
 
 ## Available tasks
 
@@ -177,3 +133,17 @@ context, then checks and converts the response into a structured result.
 Planned tasks are the next additions; they are not available yet. For task
 options and result types, see the [API reference](docs/reference.md). For the
 broader roadmap, see the [task catalog](docs/design.md#task-catalog).
+
+## How tasks work
+
+```mermaid
+flowchart LR
+    Image[Image] --> Task[Task]
+    Settings[Task configuration] --> Task
+    Task --> Model[VLM] --> Response[Model response] --> Result[Structured result]
+```
+
+The framework builds the model instructions from your task settings and
+context, then checks and converts the response into a structured result.
+
+See the [design document](docs/design.md) for architecture and task semantics.
