@@ -15,7 +15,8 @@ from ..errors import InvalidModelResponseError, ModelExecutionError
 from ..types import AttributePredictionResult, ClassificationResult, DetectionResult, GroundingResult
 from ._vqa import validate_targets
 from ._caption_tokenizer import DEFAULT_TOKENIZER_VERSION
-from .data import ValidationDataset, _limit
+from .sample import ValidationDataset
+from ._dataset_utils import _limit
 from .metrics import AnswerMetrics, AttributesMetrics, ClassificationMetrics, DescribeMetrics, DetectionMetrics, GroundingMetrics
 
 

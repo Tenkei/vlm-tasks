@@ -126,6 +126,50 @@ def test_coco_returns_native_features_and_reuses_completed_arrow(tmp_path, http,
     assert again._fingerprint == first._fingerprint and len(http[1]) == count
 
 
+def test_coco_builder_direct_use_shares_loader_cache(tmp_path, http, monkeypatch):
+    from ml_pipes.vlm.validation.default_datasets import COCO128Builder
+
+    coco_source(http, monkeypatch)
+    builder = COCO128Builder(max_samples=2, cache_dir=tmp_path)
+    builder.download_and_prepare()
+    dataset = builder.as_dataset(split="val")
+    assert dataset.info.dataset_name == dataset.info.config_name == "coco128"
+    assert isinstance(dataset[0]["image"], Image.Image) and dataset.format["type"] is None
+    assert dataset[0]["objects"]["bbox"] == [[30, 15, 90, 45]]
+    monkeypatch.setattr(hf.DownloadManager, "download", lambda *args, **kwargs: pytest.fail("Must reuse Arrow cache"))
+    assert load_coco128(max_samples=2, cache_dir=tmp_path)._fingerprint == dataset._fingerprint
+    metrics = Detect(lambda request: ModelResponse({"detections": []})).val(dataset=dataset, verbose=False)
+    assert metrics.seen == 2
+
+
+def test_refcocog_builder_direct_use_has_source_and_split_defaults(tmp_path, http):
+    from ml_pipes.vlm.validation.default_datasets import RefCOCOBuilder
+
+    ground_source(http)
+    builder = RefCOCOBuilder(max_samples=1, cache_dir=tmp_path)
+    builder.download_and_prepare()
+    dataset = builder.as_dataset(split="val")
+    assert dataset.info.dataset_name == dataset.info.config_name == "refcocog"
+    assert dataset[0]["sample_id"] == 91 and dataset.features["label"].names == ["cat"]
+    assert load_refcocog(max_samples=1, cache_dir=tmp_path)._fingerprint == dataset._fingerprint
+
+
+@pytest.mark.parametrize("builder, options", [
+    (constants.COCO128Builder, {"source_split": "test"}),
+    (constants.RefCOCOBuilder, {"source_split": "testA"}),
+    (constants.RefCOCOBuilder, {"config_name": "refcoco"}),
+    (constants.OVADBuilder, {"groups": ["color"]}),
+    (constants.VQAv2Builder, {"source_split": "test"}),
+    (constants.COCOCaptionsBuilder, {"source_split": "test"}),
+    (constants.YOLOBuilder, {}),
+    (constants.COCO128Builder, {"max_samples": 0}),
+])
+def test_direct_builder_invalid_requests_fail_before_download(tmp_path, http, builder, options):
+    with pytest.raises(ValueError):
+        builder(cache_dir=tmp_path, **options).download_and_prepare()
+    assert not http[1]
+
+
 @pytest.mark.parametrize('split', ['train', 'val', 'test'])
 def test_refcocog_preserves_expressions_and_downloads_distinct_selected_images(tmp_path, http, split):
     ground_source(http)

@@ -315,6 +315,16 @@ def test_preparation_fetches_selected_images_keeps_references_and_repairs_cache(
     assert not list(tmp_path.rglob('captions_*.json'))
 
 
+def test_captions_builder_direct_use_preserves_references_and_loader_cache(tmp_path, http, tokenizer):
+    caption_source(http)
+    builder = constants.COCOCaptionsBuilder(max_samples=1, cache_dir=tmp_path)
+    builder.download_and_prepare()
+    dataset = builder.as_dataset(split="val")
+    assert dataset.info.dataset_name == "coco_captions2017" and len(dataset[0]["captions"]) == 3
+    assert load_coco_captions2017(max_samples=1, cache_dir=tmp_path)._fingerprint == dataset._fingerprint
+    assert Describe(Backend()).val(dataset=dataset, verbose=False).seen == 1
+
+
 def test_preparation_reuses_archive_for_larger_subsets_and_other_split(tmp_path, http, monkeypatch):
     caption_source(http)
     monkeypatch.setattr(CaptionTokenizer, 'prepare', lambda self: pytest.fail('Data preparation must not require Java'))

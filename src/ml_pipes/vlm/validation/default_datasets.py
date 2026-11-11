@@ -1,24 +1,26 @@
-"""Default validation datasets: source definitions, annotation joins, and HF loading.
-
-HF builder classes are defined inside loaders so importing validation does not
-require the optional dataset loading dependencies.
-"""
+"""Native Hugging Face builders and source definitions for validation datasets."""
 from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass
 import json
 from pathlib import Path
-from typing import TYPE_CHECKING
 
+try:
+    import datasets as hf
+except ImportError as exc:
+    raise ImportError("Dataset builders require: pip install 'ml-pipes-vlm[validation]'") from exc
 import numpy as np
+from PIL import Image
 
+from . import _dataset_utils as utils
 from ._caption import validate_captions
 from ._vqa import validate_targets
-from .data import _limit
 
-if TYPE_CHECKING:
-    from datasets import Dataset
+__all__ = [
+    "COCO128Builder", "YOLOBuilder", "RefCOCOBuilder", "OVADBuilder",
+    "VQAv2Builder", "COCOCaptionsBuilder",
+]
 
 
 @dataclass(frozen=True)
@@ -42,34 +44,55 @@ DEFAULT_DATASETS = {
 }
 
 
-# Shared loading options
+# Shared HF builder
 
-def _utils():
-    try:
-        from . import _dataset_utils
-    except ImportError as exc:
-        raise ImportError("Dataset loaders require: pip install 'ml-pipes-vlm[validation]'") from exc
-    return _dataset_utils
+@dataclass
+class _SourceConfig(hf.BuilderConfig):
+    source_split: str = "val"
+    max_samples: int | None = None
 
 
-def _split(split, allowed=None):
-    if (not isinstance(split, str) or not split or Path(split).name != split or split in {".", ".."}):
-        raise ValueError("split must be a nonempty split name")
-    if allowed is not None and split not in allowed:
-        raise ValueError(f"Unsupported split {split!r}; expected {allowed}")
+class _RowsBuilder(hf.GeneratorBasedBuilder):
+    """Share HF row writing; each source implements its own acquisition and joins."""
+
+    BUILDER_CONFIG_CLASS = _SourceConfig
+    VERSION = hf.Version("1.0.0")
+
+    def __init__(self, *args, config_name=None, dataset_name=None, source_split="val", max_samples=None, **kwargs):
+        utils._limit(max_samples)
+        utils._split(source_split)
+        config_name = self.DEFAULT_CONFIG_NAME if config_name is None else config_name
+        super().__init__(
+            *args, config_name=config_name, dataset_name=dataset_name or config_name,
+            source_split=source_split, max_samples=max_samples, **kwargs,
+        )
+
+    def _info(self):
+        return hf.DatasetInfo(description=self.__doc__ or "")
+
+    def _split(self, rows, features):
+        if not rows:
+            raise ValueError("No samples available for the selected dataset options")
+        self.info.features = hf.Features({
+            "image": hf.Image(), "im_file": hf.Value("string"), **features,
+        })
+        return [hf.SplitGenerator(name=self.config.source_split, gen_kwargs={"rows": rows})]
+
+    def _generate_examples(self, rows):
+        for index, original in enumerate(rows):
+            row = dict(original)
+            size = row.pop("image_size", None)
+            crop = row.pop("crop_box", None)
+            if size is not None:
+                with Image.open(row["image"]) as image:
+                    if image.size != tuple(size):
+                        raise ValueError("Image dimensions differ from dataset annotation")
+                    if crop is not None:
+                        row["image"] = image.convert("RGB").crop(crop)
+            yield index, row
 
 
-def _local_files(annotations, images):
-    if annotations is None:
-        if images is not None:
-            raise ValueError("images requires local annotations")
-        return None, None
-    if images is None:
-        raise ValueError("Local annotations require an images directory")
-    return str(Path(annotations).expanduser().resolve()), str(Path(images).expanduser().resolve())
-
-
-# Classification
+# Classification sources
 
 CIFAR_NAMES = (
     "airplane", "automobile", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck",
@@ -78,70 +101,6 @@ CIFAR_NAMES = (
 CIFAR_REPO = "uoft-cs/cifar10"
 
 CIFAR_REVISION = "0b2714987fa478483af9968de7c934580d0bb9a2"
-
-
-def load_cifar10(*, split: str = "test", classes=None, max_samples: int | None = None, cache_dir=None) -> Dataset:
-    """Load the pinned HF CIFAR-10 dataset; val aliases the held-out test split."""
-    _limit(max_samples)
-    _split(split, DATASETS["cifar10"].splits)
-    if classes is not None and (not classes or any(name not in CIFAR_NAMES for name in classes)):
-        raise ValueError("classes must contain supported CIFAR-10 class names")
-    utils = _utils()
-    hf = utils.hf
-    dataset = hf.load_dataset(CIFAR_REPO, revision=CIFAR_REVISION,
-                              split="test" if split == "val" else split, cache_dir=cache_dir)
-    dataset = dataset.rename_column("img", "image")
-    if classes is not None:
-        ids = {dataset.features["label"].str2int(name) for name in classes}
-        dataset = dataset.filter(lambda label: label in ids, input_columns=["label"])
-    if max_samples is not None:
-        dataset = dataset.select(range(min(max_samples, len(dataset))))
-    return dataset
-
-
-def load_classification(root: str | Path, *, split: str = "val", class_ids=None,
-                        max_samples: int | None = None, cache_dir=None) -> Dataset:
-    """Load local class folders with HF imagefolder and a complete vocabulary."""
-    _limit(max_samples)
-    _split(split)
-    utils = _utils()
-    hf = utils.hf
-    directory = Path(root).expanduser().resolve() / split
-    if not directory.is_dir():
-        raise FileNotFoundError(f"Classification split not found: {directory}")
-    names = sorted(path.name for path in directory.iterdir() if path.is_dir())
-    if not names:
-        raise ValueError(f"No classification images found in {directory}")
-    selected = None
-    if class_ids is not None:
-        try:
-            ids = tuple(class_ids)
-        except TypeError as exc:
-            raise ValueError("class_ids must contain known integer class IDs") from exc
-        if (isinstance(class_ids, (str, bytes)) or not ids
-                or any(isinstance(value, (bool, np.bool_)) or not isinstance(value, (int, np.integer))
-                       or not 0 <= value < len(names) for value in ids)):
-            raise ValueError("class_ids must contain known integer class IDs")
-        selected = set(ids)
-    try:
-        dataset = hf.load_dataset("imagefolder", data_files={split: str(directory / "**" / "*")},
-                                  split=split, cache_dir=cache_dir,
-                                  features=hf.Features({"image": hf.Image(), "label": hf.ClassLabel(names=names)}),
-                                  drop_labels=False)
-    except hf.data_files.EmptyDatasetError as exc:
-        raise ValueError(f"No classification images found in {directory}") from exc
-    dataset = dataset.cast_column("image", hf.Image(decode=False)).map(_image_paths, batched=True)
-    if selected is not None:
-        dataset = dataset.filter(lambda label: label in selected, input_columns=["label"])
-    if not len(dataset):
-        raise ValueError("No samples belong to the selected classification classes")
-    if max_samples is not None:
-        dataset = dataset.select(range(min(max_samples, len(dataset))))
-    return dataset.cast_column("image", hf.Image())
-
-
-def _image_paths(batch):
-    return {"im_file": [image["path"] for image in batch["image"]]}
 
 
 # Detection: COCO128 and local YOLO
@@ -166,61 +125,49 @@ COCO_URL = "https://github.com/ultralytics/assets/releases/download/v0.0.0/coco1
 COCO_CHECKSUM = "sha256:61e5e3028863d8ffc3b81d6a514603954889f0edd5e4b44c4ce60b2da99aeb8e"
 
 
-def load_coco128(*, split: str = "val", max_samples: int | None = None, cache_dir=None) -> Dataset:
-    """Load the original COCO128 archive through an HF builder."""
-    _limit(max_samples)
-    _split(split, DATASETS["coco128"].splits)
-    utils = _utils()
-    hf = utils.hf
+class COCO128Builder(_RowsBuilder):
+    """COCO128: train and val share the same 128 COCO training images."""
 
-    class COCO128Builder(utils._RowsBuilder):
-        """COCO128: train and val share the same 128 COCO training images."""
+    DEFAULT_CONFIG_NAME = "coco128"
 
-        def _split_generators(self, manager):
-            archive = manager.download(COCO_URL)
-            utils.check_checksum(archive, COCO_CHECKSUM)
-            directory = Path(manager.extract(archive)) / "coco128" / "images" / "train2017"
-            names = dict(enumerate(COCO_NAMES))
-            rows = _detection_rows(_image_files(directory), names, self.config.max_samples)
-            return self._split(rows, _detection_features(names.values(), hf))
-
-    return utils._build(COCO128Builder, name="coco128", split=split, max_samples=max_samples, cache_dir=cache_dir)
+    def _split_generators(self, manager):
+        utils._split(self.config.source_split, DATASETS["coco128"].splits)
+        archive = manager.download(COCO_URL)
+        utils.check_checksum(archive, COCO_CHECKSUM)
+        directory = Path(manager.extract(archive)) / "coco128" / "images" / "train2017"
+        names = dict(enumerate(COCO_NAMES))
+        rows = _detection_rows(_image_files(directory), names, self.config.max_samples)
+        return self._split(rows, _detection_features(names.values()))
 
 
-def load_yolo(data: str | Path, *, split: str = "val", max_samples: int | None = None, cache_dir=None) -> Dataset:
-    """Load local YOLO YAML/TXT into canonical image/objects rows."""
-    _limit(max_samples)
-    _split(split)
-    utils = _utils()
-    hf = utils.hf
+class YOLOBuilder(_RowsBuilder):
+    """Local YOLO YAML/TXT annotations with original-image pixel xyxy boxes."""
 
-    class YOLOBuilder(utils._RowsBuilder):
-        """Local YOLO YAML/TXT annotations with original-image pixel xyxy boxes."""
+    DEFAULT_CONFIG_NAME = "yolo"
 
-        def _split_generators(self, manager):
-            import yaml
+    def _split_generators(self, manager):
+        import yaml
 
-            path = Path(self.config.data_files["annotations"][0])
-            config = yaml.safe_load(path.read_text())
-            if not isinstance(config, dict):
-                raise ValueError(f"Expected a dataset YAML mapping: {path}")
-            names = _names(config.get("names"))
-            root_value = config.get("path", ".")
-            if not isinstance(root_value, str) or not root_value:
-                raise ValueError("Dataset path must be a nonempty string")
-            root = utils._resolve(root_value, path.parent)
-            entries = config.get(self.config.source_split)
-            if isinstance(entries, str):
-                entries = [entries]
-            if (not isinstance(entries, list) or not entries
-                    or any(not isinstance(entry, str) or not entry for entry in entries)):
-                raise ValueError(f"Dataset YAML must define a nonempty {self.config.source_split!r} split")
-            images = sorted({image for entry in entries for image in _detection_images(entry, root)})
-            rows = _detection_rows(images, names, self.config.max_samples)
-            return self._split(rows, _detection_features(names.values(), hf))
-
-    return utils._build(YOLOBuilder, name="yolo", split=split, max_samples=max_samples, cache_dir=cache_dir,
-                        files={"annotations": str(Path(data).expanduser().resolve())})
+        if not self.config.data_files or "annotations" not in self.config.data_files:
+            raise ValueError("YOLOBuilder requires data_files={'annotations': path_to_yaml}")
+        path = Path(self.config.data_files["annotations"][0])
+        config = yaml.safe_load(path.read_text())
+        if not isinstance(config, dict):
+            raise ValueError(f"Expected a dataset YAML mapping: {path}")
+        names = _names(config.get("names"))
+        root_value = config.get("path", ".")
+        if not isinstance(root_value, str) or not root_value:
+            raise ValueError("Dataset path must be a nonempty string")
+        root = utils._resolve(root_value, path.parent)
+        entries = config.get(self.config.source_split)
+        if isinstance(entries, str):
+            entries = [entries]
+        if (not isinstance(entries, list) or not entries
+                or any(not isinstance(entry, str) or not entry for entry in entries)):
+            raise ValueError(f"Dataset YAML must define a nonempty {self.config.source_split!r} split")
+        images = sorted({image for entry in entries for image in _detection_images(entry, root)})
+        rows = _detection_rows(images, names, self.config.max_samples)
+        return self._split(rows, _detection_features(names.values()))
 
 
 def _names(value: object) -> dict[int, str]:
@@ -242,7 +189,6 @@ def _names(value: object) -> dict[int, str]:
 
 
 def _detection_images(entry: str, root: Path) -> list[Path]:
-    utils = _utils()
     path = utils._resolve(entry, root)
     if path.is_dir():
         return _image_files(path)
@@ -273,8 +219,6 @@ def _image_files(directory: Path) -> list[Path]:
 
 
 def _detection_rows(images, names, max_samples):
-    from PIL import Image
-
     rows = []
     for path in images[:max_samples]:
         categories, boxes = _read_labels(_label_path(path), names)
@@ -325,7 +269,7 @@ def _label_path(image: Path) -> Path:
     return Path(*parts).with_suffix(".txt")
 
 
-def _detection_features(names, hf):
+def _detection_features(names):
     return {"objects": {
         "bbox": hf.List(hf.List(hf.Value("float64"), length=4)),
         "category": hf.List(hf.ClassLabel(names=list(names))),
@@ -339,48 +283,30 @@ MDETR_URL = "https://zenodo.org/records/4729015/files/mdetr_annotations.tar.gz?d
 COCO_IMAGE_URL = "https://s3.amazonaws.com/images.cocodataset.org/train2014/"
 
 
-def load_refcocog(*, split: str = "val", max_samples: int | None = None, cache_dir=None) -> Dataset:
-    """Load original RefCOCOg UMD annotations and selected COCO images."""
-    _limit(max_samples)
-    _split(split, DATASETS["refcocog"].splits)
-    return _load_refcoco(dataset="refcocog", split=split, max_samples=max_samples, cache_dir=cache_dir)
+class RefCOCOBuilder(_RowsBuilder):
+    """MDETR RefCOCO annotations; RefCOCOg uses UMD splits, RefCOCO/+ use UNC."""
 
+    DEFAULT_CONFIG_NAME = "refcocog"
 
-def load_refcoco(annotations: str | Path, images: str | Path, *, dataset: str = "refcocog",
-                 split: str = "val", max_samples: int | None = None, cache_dir=None) -> Dataset:
-    """Load local MDETR RefCOCO annotations, one row per expression."""
-    _limit(max_samples)
-    if not isinstance(dataset, str) or dataset not in ("refcocog", "refcoco", "refcoco+"):
-        raise ValueError("dataset must be refcocog, refcoco, or refcoco+")
-    _split(split)
-    path = Path(annotations).expanduser().resolve() / f"finetune_{dataset}_{split}.json"
-    return _load_refcoco(dataset=dataset, split=split, max_samples=max_samples, cache_dir=cache_dir,
-                         files={"annotations": str(path)}, images=str(Path(images).expanduser().resolve()))
-
-
-def _load_refcoco(*, dataset, split, max_samples, cache_dir, files=None, images=None):
-    utils = _utils()
-    hf = utils.hf
-
-    class RefCOCOBuilder(utils._RowsBuilder):
-        """MDETR RefCOCO annotations; RefCOCOg uses UMD splits, RefCOCO/+ use UNC."""
-
-        def _split_generators(self, manager):
-            filename = f"finetune_{self.config.name}_{self.config.source_split}.json"
-            if self.config.data_files:
-                data = json.loads(Path(self.config.data_files["annotations"][0]).read_text())
-            else:
-                data = utils._json_member(manager, manager.download(MDETR_URL), filename)
-            rows, names = _refcoco_selection(data)
-            rows = utils._images(rows[:self.config.max_samples], directory=self.config.data_dir,
-                                 manager=manager, prefix=COCO_IMAGE_URL)
-            return self._split(rows, {
-                "text": hf.Value("string"), "bbox": hf.List(hf.Value("float64"), length=4),
-                "label": hf.ClassLabel(names=names), "sample_id": hf.Value("int64"),
-            })
-
-    return utils._build(RefCOCOBuilder, name=dataset, split=split, max_samples=max_samples,
-                        cache_dir=cache_dir, files=files, images=images)
+    def _split_generators(self, manager):
+        if self.config.name not in ("refcocog", "refcoco", "refcoco+"):
+            raise ValueError("config_name must be refcocog, refcoco, or refcoco+")
+        if not self.config.data_files:
+            if self.config.name != "refcocog":
+                raise ValueError("Only RefCOCOg supports automatic downloads; supply local data_files for other variants")
+            utils._split(self.config.source_split, DATASETS["refcocog"].splits)
+        filename = f"finetune_{self.config.name}_{self.config.source_split}.json"
+        if self.config.data_files:
+            data = json.loads(Path(self.config.data_files["annotations"][0]).read_text())
+        else:
+            data = utils._json_member(manager, manager.download(MDETR_URL), filename)
+        rows, names = _refcoco_selection(data)
+        rows = utils._images(rows[:self.config.max_samples], directory=self.config.data_dir,
+                             manager=manager, prefix=COCO_IMAGE_URL)
+        return self._split(rows, {
+            "text": hf.Value("string"), "bbox": hf.List(hf.Value("float64"), length=4),
+            "label": hf.ClassLabel(names=names), "sample_id": hf.Value("int64"),
+        })
 
 
 def _refcoco_selection(data):
@@ -472,49 +398,41 @@ OVAD_CHECKSUM = "sha256:1716fc5216dd040c3803ca7d91444140d02bc6a98f40a60b85f16c97
 OVAD_IMAGE_URL = "https://s3.amazonaws.com/images.cocodataset.org/val2017/"
 
 
-def load_ovad(annotations=None, images=None, *, split: str = "val", groups=None,
-              max_samples: int | None = None, cache_dir=None) -> Dataset:
-    """Load categorical OVAD targets with cached subject crops."""
-    _limit(max_samples)
-    _split(split, DATASETS["ovad"].splits)
-    annotations, images = _local_files(annotations, images)
-    utils = _utils()
-    hf = utils.hf
+@dataclass
+class _OVADConfig(_SourceConfig):
+    groups: tuple[str, ...] | None = None
 
-    @dataclass
-    class _OVADConfig(utils._SourceConfig):
-        groups: tuple[str, ...] | None = None
 
-    class OVADBuilder(utils._RowsBuilder):
-        """Categorical OVAD targets and cached subject crops."""
+class OVADBuilder(_RowsBuilder):
+    """Categorical OVAD targets and cached subject crops."""
 
-        BUILDER_CONFIG_CLASS = _OVADConfig
+    DEFAULT_CONFIG_NAME = "ovad"
 
-        def _info(self):
-            return hf.DatasetInfo(description=OVAD_PROTOCOL)
+    BUILDER_CONFIG_CLASS = _OVADConfig
 
-        def _split_generators(self, manager):
-            if self.config.data_files:
-                data = json.loads(Path(self.config.data_files["annotations"][0]).read_text())
-            else:
-                archive = manager.download(OVAD_URL)
-                utils.check_checksum(archive, OVAD_CHECKSUM)
-                data = utils._json_member(manager, archive, "ovad2000.json")
-            attributes, rows = _ovad_selection(data, self.config.groups, self.config.max_samples)
-            if not rows:
-                raise ValueError("No eligible OVAD objects for the selected groups")
-            rows = utils._images(rows, directory=self.config.data_dir, manager=manager, prefix=OVAD_IMAGE_URL)
-            return self._split(rows, {
-                "attributes": {group: hf.ClassLabel(names=list(choices)) for group, choices in attributes.items()},
-                "sample_id": hf.Value("int64"), "image_id": hf.Value("int64"),
-            })
+    def __init__(self, *args, groups=None, **kwargs):
+        groups = _ovad_groups(groups)
+        super().__init__(*args, groups=None if groups == OVAD_GROUPS else groups, **kwargs)
 
-    groups = _ovad_groups(groups)
-    # Explicitly selecting all groups shares the same HF cache as the default.
-    if groups == OVAD_GROUPS:
-        groups = None
-    return utils._build(OVADBuilder, name="ovad", split=split, max_samples=max_samples, cache_dir=cache_dir,
-                        files=None if annotations is None else {"annotations": annotations}, images=images, groups=groups)
+    def _info(self):
+        return hf.DatasetInfo(description=OVAD_PROTOCOL)
+
+    def _split_generators(self, manager):
+        utils._split(self.config.source_split, DATASETS["ovad"].splits)
+        if self.config.data_files:
+            data = json.loads(Path(self.config.data_files["annotations"][0]).read_text())
+        else:
+            archive = manager.download(OVAD_URL)
+            utils.check_checksum(archive, OVAD_CHECKSUM)
+            data = utils._json_member(manager, archive, "ovad2000.json")
+        attributes, rows = _ovad_selection(data, self.config.groups, self.config.max_samples)
+        if not rows:
+            raise ValueError("No eligible OVAD objects for the selected groups")
+        rows = utils._images(rows, directory=self.config.data_dir, manager=manager, prefix=OVAD_IMAGE_URL)
+        return self._split(rows, {
+            "attributes": {group: hf.ClassLabel(names=list(choices)) for group, choices in attributes.items()},
+            "sample_id": hf.Value("int64"), "image_id": hf.Value("int64"),
+        })
 
 
 def _ovad_selection(data: dict, groups=None, max_samples=None):
@@ -635,45 +553,32 @@ VQA_URL = "https://cvmlp.s3.amazonaws.com/vqa/mscoco/vqa/v2_{kind}_{split}_mscoc
 VQA_IMAGE_URL = "https://s3.amazonaws.com/images.cocodataset.org/{split}2014/"
 
 
-def load_vqav2(annotations=None, images=None, *, split: str = "val",
-               max_samples: int | None = None, cache_dir=None) -> Dataset:
-    """Load VQA v2 questions with all ten reference answers."""
-    _limit(max_samples)
-    _split(split, DATASETS["vqav2"].splits)
-    annotations, images = _local_files(annotations, images)
-    utils = _utils()
-    hf = utils.hf
+class VQAv2Builder(_RowsBuilder):
+    """VQA v2 labeled questions, preserving all ten annotator answer votes."""
 
-    class VQAv2Builder(utils._RowsBuilder):
-        """VQA v2 labeled questions, preserving all ten annotator answer votes."""
+    DEFAULT_CONFIG_NAME = "vqav2"
 
-        def _split_generators(self, manager):
-            originals = {}
-            for kind, key in (("Questions", "questions"), ("Annotations", "annotations")):
-                filename = (f"v2_OpenEnded_mscoco_{self.config.source_split}2014_questions.json" if key == "questions"
-                            else f"v2_mscoco_{self.config.source_split}2014_annotations.json")
-                if self.config.data_files:
-                    originals[key] = json.loads(Path(self.config.data_files[key][0]).read_text())
-                else:
-                    url = VQA_URL.format(kind=kind, split=self.config.source_split.title())
-                    originals[key] = utils._json_member(manager, manager.download(url), filename)
-            rows = _vqav2_selection(originals["questions"], originals["annotations"], self.config.max_samples)
-            for row in rows:
-                row["file_name"] = f"COCO_{self.config.source_split}2014_{row['image_id']:012d}.jpg"
-            rows = utils._images(rows, directory=self.config.data_dir, manager=manager,
-                                 prefix=VQA_IMAGE_URL.format(split=self.config.source_split))
-            return self._split(rows, {
-                "question": hf.Value("string"), "answers": hf.List(hf.Value("string")),
-                "answer_type": hf.Value("string"), "question_type": hf.Value("string"),
-                "sample_id": hf.Value("int64"), "image_id": hf.Value("int64"),
-            })
-
-    files = None if annotations is None else {
-        "questions": str(Path(annotations) / f"v2_OpenEnded_mscoco_{split}2014_questions.json"),
-        "annotations": str(Path(annotations) / f"v2_mscoco_{split}2014_annotations.json"),
-    }
-    return utils._build(VQAv2Builder, name="vqav2", split=split, max_samples=max_samples, cache_dir=cache_dir,
-                        files=files, images=images)
+    def _split_generators(self, manager):
+        utils._split(self.config.source_split, DATASETS["vqav2"].splits)
+        originals = {}
+        for kind, key in (("Questions", "questions"), ("Annotations", "annotations")):
+            filename = (f"v2_OpenEnded_mscoco_{self.config.source_split}2014_questions.json" if key == "questions"
+                        else f"v2_mscoco_{self.config.source_split}2014_annotations.json")
+            if self.config.data_files:
+                originals[key] = json.loads(Path(self.config.data_files[key][0]).read_text())
+            else:
+                url = VQA_URL.format(kind=kind, split=self.config.source_split.title())
+                originals[key] = utils._json_member(manager, manager.download(url), filename)
+        rows = _vqav2_selection(originals["questions"], originals["annotations"], self.config.max_samples)
+        for row in rows:
+            row["file_name"] = f"COCO_{self.config.source_split}2014_{row['image_id']:012d}.jpg"
+        rows = utils._images(rows, directory=self.config.data_dir, manager=manager,
+                             prefix=VQA_IMAGE_URL.format(split=self.config.source_split))
+        return self._split(rows, {
+            "question": hf.Value("string"), "answers": hf.List(hf.Value("string")),
+            "answer_type": hf.Value("string"), "question_type": hf.Value("string"),
+            "sample_id": hf.Value("int64"), "image_id": hf.Value("int64"),
+        })
 
 
 def _vqav2_selection(questions, annotations, max_samples=None):
@@ -727,35 +632,25 @@ CAPTIONS_URL = "https://s3.amazonaws.com/images.cocodataset.org/annotations/anno
 CAPTIONS_IMAGE_URL = "https://s3.amazonaws.com/images.cocodataset.org/{split}2017/"
 
 
-def load_coco_captions2017(annotations=None, images=None, *, split: str = "val",
-                          max_samples: int | None = None, cache_dir=None) -> Dataset:
-    """Load COCO 2017 images with every reference caption."""
-    _limit(max_samples)
-    _split(split, DATASETS["coco_captions2017"].splits)
-    annotations, images = _local_files(annotations, images)
-    utils = _utils()
-    hf = utils.hf
+class COCOCaptionsBuilder(_RowsBuilder):
+    """COCO Captions 2017, one row per image with every reference caption."""
 
-    class COCOCaptionsBuilder(utils._RowsBuilder):
-        """COCO Captions 2017, one row per image with every reference caption."""
+    DEFAULT_CONFIG_NAME = "coco_captions2017"
 
-        def _split_generators(self, manager):
-            if self.config.data_files:
-                data = json.loads(Path(self.config.data_files["annotations"][0]).read_text())
-            else:
-                data = utils._json_member(manager, manager.download(CAPTIONS_URL),
-                                          f"captions_{self.config.source_split}2017.json")
-            rows = _coco_captions_selection(data, self.config.max_samples)
-            rows = utils._images(rows, directory=self.config.data_dir, manager=manager,
-                                 prefix=CAPTIONS_IMAGE_URL.format(split=self.config.source_split))
-            return self._split(rows, {
-                "captions": hf.List(hf.Value("string")),
-                "sample_id": hf.Value("int64"), "image_id": hf.Value("int64"),
-            })
-
-    return utils._build(COCOCaptionsBuilder, name="coco_captions2017", split=split,
-                        max_samples=max_samples, cache_dir=cache_dir,
-                        files=None if annotations is None else {"annotations": annotations}, images=images)
+    def _split_generators(self, manager):
+        utils._split(self.config.source_split, DATASETS["coco_captions2017"].splits)
+        if self.config.data_files:
+            data = json.loads(Path(self.config.data_files["annotations"][0]).read_text())
+        else:
+            data = utils._json_member(manager, manager.download(CAPTIONS_URL),
+                                      f"captions_{self.config.source_split}2017.json")
+        rows = _coco_captions_selection(data, self.config.max_samples)
+        rows = utils._images(rows, directory=self.config.data_dir, manager=manager,
+                             prefix=CAPTIONS_IMAGE_URL.format(split=self.config.source_split))
+        return self._split(rows, {
+            "captions": hf.List(hf.Value("string")),
+            "sample_id": hf.Value("int64"), "image_id": hf.Value("int64"),
+        })
 
 
 def _coco_captions_selection(data, max_samples=None):

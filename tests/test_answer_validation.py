@@ -329,6 +329,16 @@ def test_completed_dataset_uses_arrow_without_reparsing_sources(tmp_path, http, 
     assert len(http[1]) == 3
 
 
+def test_vqav2_builder_direct_use_preserves_votes_and_loader_cache(tmp_path, http):
+    add_sources(http)
+    builder = constants.VQAv2Builder(max_samples=1, cache_dir=tmp_path)
+    builder.download_and_prepare()
+    dataset = builder.as_dataset(split="val")
+    assert dataset.info.dataset_name == "vqav2" and dataset[0]["answers"] == ["2"] * 10
+    assert load_vqav2(max_samples=1, cache_dir=tmp_path)._fingerprint == dataset._fingerprint
+    assert Answer(Backend()).val(dataset=dataset, verbose=False).vqa_accuracy == 1
+
+
 def test_default_val_prepares_and_retains_source_and_evaluated_counts(tmp_path, http):
     add_sources(http)
     metrics = Answer(Backend()).val(max_samples=1, cache_dir=tmp_path, verbose=False)

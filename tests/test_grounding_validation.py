@@ -265,8 +265,15 @@ def test_limit_counts_evaluated_images_and_repeated_runs_reset(tmp_path):
     ("refcoco", "heldout"),
 ])
 def test_dataset_variants_and_exact_splits(tmp_path, dataset, split):
+    from ml_pipes.vlm.validation.default_datasets import RefCOCOBuilder
+
     annotations, images, _, _ = grounding_data(tmp_path, dataset=dataset, split=split)
     loaded = load_refcoco(annotations, images, dataset=dataset, split=split)
+    builder = RefCOCOBuilder(config_name=dataset, source_split=split,
+                            data_files={"annotations": str(annotations / f"finetune_{dataset}_{split}.json")},
+                            data_dir=str(images))
+    builder.download_and_prepare()
+    assert builder.as_dataset(split=split)._fingerprint == loaded._fingerprint
     with pytest.raises(FileNotFoundError):
         load_refcoco(annotations, images, dataset=dataset, split="val")
 

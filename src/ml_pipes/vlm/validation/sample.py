@@ -1,4 +1,4 @@
-"""Task columns and scoring identifiers for loaded datasets.
+"""Task sample schemas and the loaded dataset protocol.
 
 Rows may include additional reporting metadata such as sample_id and im_file.
 """
@@ -67,8 +67,3 @@ class ValidationDataset(Protocol):
     def features(self) -> Mapping[str, Any] | None: ...
 
     def __iter__(self) -> Iterator[Mapping[str, Any]]: ...
-
-
-def _limit(max_samples: int | None) -> None:
-    if max_samples is not None and (type(max_samples) is not int or max_samples < 1):
-        raise ValueError("max_samples must be a positive integer or None")

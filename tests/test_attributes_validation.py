@@ -332,6 +332,16 @@ def test_named_group_selection_cache_identity_and_validation(tmp_path, http):
     assert len(http[1]) == 2
 
 
+def test_ovad_builder_direct_use_preserves_group_selection_and_cached_crops(tmp_path, http):
+    builder = constants.OVADBuilder(groups=["material"], max_samples=1, cache_dir=tmp_path)
+    builder.download_and_prepare()
+    dataset = builder.as_dataset(split="val")
+    assert dataset.info.dataset_name == "ovad" and dataset[0]["attributes"] == {"material": 1}
+    assert dataset.features["attributes"]["material"].names == ["wood", "metal"]
+    assert load_ovad(groups=("material",), max_samples=1, cache_dir=tmp_path)._fingerprint == dataset._fingerprint
+    assert Attributes(Backend({"attributes": {"material": "metal"}})).val(dataset=dataset, verbose=False).accuracy == 1
+
+
 def test_hf_round_trip_preserves_crops_and_complete_group_vocabularies(tmp_path, http):
     import datasets as hf
 

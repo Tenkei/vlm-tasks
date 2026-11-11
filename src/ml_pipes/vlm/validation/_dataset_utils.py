@@ -1,70 +1,22 @@
-"""Shared HF builders, image resolution, and verified downloads."""
+"""Shared image resolution, archive reading, and verified downloads."""
 from __future__ import annotations
 
-from dataclasses import dataclass
 import hashlib
 import json
 from pathlib import Path
 
-import datasets as hf
-from PIL import Image
 
-from .data import _limit
-
-
-# HF dataset construction
-
-@dataclass
-class _SourceConfig(hf.BuilderConfig):
-    source_split: str = "val"
-    max_samples: int | None = None
+def _limit(max_samples: int | None) -> None:
+    if max_samples is not None and (type(max_samples) is not int or max_samples < 1):
+        raise ValueError("max_samples must be a positive integer or None")
 
 
-class _RowsBuilder(hf.GeneratorBasedBuilder):
-    """Share HF row writing; each source implements its own acquisition and joins."""
+def _split(split, allowed=None):
+    if (not isinstance(split, str) or not split or Path(split).name != split or split in {".", ".."}):
+        raise ValueError("split must be a nonempty split name")
+    if allowed is not None and split not in allowed:
+        raise ValueError(f"Unsupported split {split!r}; expected {allowed}")
 
-    BUILDER_CONFIG_CLASS = _SourceConfig
-    VERSION = hf.Version("1.0.0")
-
-    def _info(self):
-        return hf.DatasetInfo(description=self.__doc__ or "")
-
-    def _split(self, rows, features):
-        if not rows:
-            raise ValueError("No samples available for the selected dataset options")
-        self.info.features = hf.Features({
-            "image": hf.Image(), "im_file": hf.Value("string"), **features,
-        })
-        return [hf.SplitGenerator(name=self.config.source_split, gen_kwargs={"rows": rows})]
-
-    def _generate_examples(self, rows):
-        for index, original in enumerate(rows):
-            row = dict(original)
-            size = row.pop("image_size", None)
-            crop = row.pop("crop_box", None)
-            if size is not None:
-                with Image.open(row["image"]) as image:
-                    if image.size != tuple(size):
-                        raise ValueError("Image dimensions differ from dataset annotation")
-                    if crop is not None:
-                        row["image"] = image.convert("RGB").crop(crop)
-            yield index, row
-
-
-def _build(builder_type, *, name, split, max_samples, cache_dir, files=None, images=None, **options):
-    _limit(max_samples)
-    builder = builder_type(
-        dataset_name=name, config_name=name, source_split=split, max_samples=max_samples,
-        cache_dir=cache_dir, data_files=files, data_dir=images, **options,
-    )
-    # Local annotations may be edited between calls. Rebuild rows using HF's
-    # source cache; remote benchmark configurations reuse the completed dataset.
-    mode = hf.DownloadMode.REUSE_CACHE_IF_EXISTS if files else hf.DownloadMode.REUSE_DATASET_IF_EXISTS
-    builder.download_and_prepare(download_mode=mode)
-    return builder.as_dataset(split=split)
-
-
-# Source files and images
 
 def _json_member(manager, archive, filename):
     """Read one original annotation without writing an intermediate JSON file."""
@@ -108,9 +60,9 @@ def _resolve(path: str, parent: Path) -> Path:
     return (result if result.is_absolute() else parent / result).resolve()
 
 
-# Verified downloads
-
 def download_artifact(url, *, checksum, cache_dir=None):
+    import datasets as hf
+
     manager = hf.DownloadManager(download_config=hf.DownloadConfig(cache_dir=cache_dir, max_retries=2))
     path = Path(manager.download(url))
     # Tokenizers execute separately from dataset generation and need their pinned hash.

@@ -126,6 +126,17 @@ def test_original_detection_coordinates_and_metadata_are_preserved(tmp_path):
     assert (metrics.precision, metrics.recall, metrics.f1) == (1, 1, 1)
 
 
+def test_yolo_builder_returns_validation_ready_local_data(tmp_path):
+    from ml_pipes.vlm.validation.default_datasets import YOLOBuilder
+
+    path = detection_data(tmp_path, ["0 0.5 0.5 0.5 0.5\n"])
+    builder = YOLOBuilder(data_files={"annotations": str(path)}, cache_dir=tmp_path / "cache")
+    builder.download_and_prepare()
+    dataset = builder.as_dataset(split="val")
+    assert dataset.info.dataset_name == "yolo" and dataset[0]["image"].size == (120, 60)
+    assert Detect(Backend({"detections": [box("person")]})).val(dataset=dataset, verbose=False).f1 == 1
+
+
 def test_detection_scores_classes_absent_from_constructor_labels(tmp_path):
     data = detection_data(tmp_path, ["1 0.5 0.5 0.5 0.5\n"])
     metrics = Detect(Backend({"detections": [box("person")]}), ["person"]).val(dataset=load_local(data), verbose=False)
