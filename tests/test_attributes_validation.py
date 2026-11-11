@@ -4,6 +4,7 @@ from __future__ import annotations
 from ml_pipes.vlm.validation import load_ovad
 
 from copy import deepcopy
+from pathlib import Path
 from io import BytesIO
 import hashlib
 import json
@@ -23,9 +24,12 @@ from ml_pipes.vlm import (
 from ml_pipes.vlm._images import ImageInput
 from ml_pipes.vlm.ops import AttributeChoices
 from ml_pipes.vlm.validation import AttributesMetrics, AttributesValidator
-from ml_pipes.vlm.validation import dataset_constants as constants
-from ml_pipes.vlm.validation import prepare_data as preparation
+from ml_pipes.vlm.validation import default_datasets as constants
 from ml_pipes.vlm.validation.default_datasets import _ovad_selection
+
+
+def attribute_schema(dataset):
+    return {group: {name: name for name in feature.names} for group, feature in dataset.features['attributes'].items()}
 
 
 def ovad_data():
@@ -85,28 +89,20 @@ class Backend:
 def test_group_schema_synonyms_selection_and_crop(tmp_path):
     path, images = write_local(tmp_path)
     dataset = load_ovad(path, images)
-    assert dataset.metadata["attribute_descriptions"] == {
+    assert _ovad_selection(ovad_data())[0] == {
         "cleanliness": {"clean": "clean/neat", "unclean": "unclean/dirt/dirty/muddy"},
         "material": {"wood": "wood/wooden", "metal": "metal/metallic"},
     }
     assert [s["sample_id"] for s in dataset] == [70, 3, 88]
-    assert dataset.counts == {
-        "source_objects": 5, "source_images": 3, "excluded_small_objects": 1,
-        "excluded_unscored_objects": 1, "excluded_objects": 2, "eligible_objects": 3,
-        "prepared_objects": 3, "prepared_images": 2,
-    }
     sample = dataset[0]
     assert sample["attributes"] == {"cleanliness": 0, "material": None}
     assert sample["image_id"] == 13
-    assert sample["crop_box"] == [0, 2, 31, 23]
     assert sample["image"].shape == (21, 31, 3)
     np.testing.assert_array_equal(sample["image"], cv2.imread(sample["im_file"])[2:23, 0:31, ::-1])
     sample["attributes"].clear()
     assert dataset[0]["attributes"] == {"cleanliness": 0, "material": None}
     subset = load_ovad(path, images, groups=("material",), max_samples=1)
     assert [s["sample_id"] for s in subset] == [3]
-    assert subset.counts["excluded_unscored_objects"] == 2
-    assert subset.counts["eligible_objects"] == 2
     assert load_ovad(path, images, split="test").with_format(None).to_dict() == dataset.with_format(None).to_dict()
 
 
@@ -117,7 +113,7 @@ def test_default_schema_covers_all_22_types():
     ]
     for annotation in data["annotations"]:
         annotation["att_vec"] = [1] * 22
-    schema, samples, _ = _ovad_selection(data)
+    schema, samples = _ovad_selection(data)
     assert len(schema) == 22 and set(schema) == set(constants.OVAD_GROUPS)
     assert len(samples[0]["attributes"]) == 22
 
@@ -160,23 +156,29 @@ def test_invalid_dataset_configuration(tmp_path, settings):
 
 
 def test_unreadable_wrong_dimensions_and_empty_selection(tmp_path):
+    from datasets.exceptions import DatasetGenerationError
     path, images = write_local(tmp_path)
     dataset = load_ovad(path, images)
-    selected_image = images / "000000000013.jpg"
+    expected = dataset[0]['image'].copy()
+    selected_image = images / '000000000013.jpg'
     assert cv2.imwrite(str(selected_image), np.zeros((10, 20, 3), np.uint8))
-    with pytest.raises(ValueError, match="dimensions differ"):
-        dataset[0]
-    selected_image.write_bytes(b"bad image")
-    with pytest.raises(OSError, match="cannot identify image"):
-        dataset[0]
+    np.testing.assert_array_equal(dataset[0]['image'], expected)
+    with pytest.raises(DatasetGenerationError) as error:
+        load_ovad(path, images)
+    assert isinstance(error.value.__cause__, ValueError)
+    assert 'dimensions differ' in str(error.value.__cause__)
+    selected_image.write_bytes(b'bad image')
+    with pytest.raises(DatasetGenerationError) as error:
+        load_ovad(path, images)
+    assert isinstance(error.value.__cause__, OSError)
     selected_image.unlink()
-    with pytest.raises(FileNotFoundError, match="image not found"):
+    with pytest.raises(FileNotFoundError, match='image not found'):
         load_ovad(path, images)
     data = ovad_data()
-    for annotation in data["annotations"]:
-        annotation["att_vec"] = [-1] * 8
+    for annotation in data['annotations']:
+        annotation['att_vec'] = [-1] * 8
     path.write_text(json.dumps(data))
-    with pytest.raises(ValueError, match="No eligible"):
+    with pytest.raises(ValueError, match='No eligible'):
         load_ovad(path, images)
 
 
@@ -187,7 +189,7 @@ def test_masked_scoring_fixed_schema_and_failures(tmp_path):
         {"attributes": {"cleanliness": "unclean", "material": "wood"}},
         ModelExecutionError("offline"),
     )
-    schema = load_ovad(path, images).metadata["attribute_descriptions"]
+    schema = attribute_schema(load_ovad(path, images))
     schema["cleanliness"]["clean"] = "Custom description"
     task = Attributes(backend, schema, context="Describe the cropped object.")
     state = (deepcopy(task.attributes), task.context, task._spec, task._instruction)
@@ -217,7 +219,7 @@ def test_masked_scoring_fixed_schema_and_failures(tmp_path):
 def test_all_failed_runs_and_repeated_resets(tmp_path):
     path, images = write_local(tmp_path)
     backend = Backend({"attributes": {"cleanliness": "unsupported", "material": "wood"}})
-    task = Attributes(backend, load_ovad(path, images).metadata["attribute_descriptions"])
+    task = Attributes(backend, attribute_schema(load_ovad(path, images)))
     validator = AttributesValidator(task, dataset=load_ovad(path, images), verbose=False)
     first, second = validator(), validator()
     assert first is not second
@@ -282,8 +284,8 @@ def test_metrics_group_weighting_prediction_support_and_zero_support():
 
 
 @pytest.fixture
-def http(monkeypatch):
-    sources, calls = {}, []
+def http(monkeypatch, hf_downloads):
+    sources, calls = hf_downloads
     data = ovad_data()
     stream = BytesIO()
     with ZipFile(stream, "w") as archive:
@@ -297,70 +299,69 @@ def http(monkeypatch):
         assert ok
         sources[constants.OVAD_IMAGE_URL + image["file_name"]] = pixels.tobytes()
 
-    def open_url(url):
-        calls.append(url)
-        return BytesIO(sources[url])
-
-    monkeypatch.setattr(preparation, "_open_url", open_url)
     return sources, calls
 
 
 def test_named_preparation_filters_before_limit_and_reuses_cache(tmp_path, http):
-    prepared = preparation.prepare_ovad(max_samples=2, cache_dir=tmp_path)
-    dataset = load_ovad(prepared.data, prepared.images)
-    assert [s["sample_id"] for s in dataset] == [70, 3]
-    assert prepared.metadata["selected_groups"] == list(dataset.features["attributes"])
-    assert prepared.metadata["counts"]["source_objects"] == 5
-    assert prepared.metadata["counts"]["excluded_objects"] == 2
-    assert prepared.metadata["counts"]["prepared_objects"] == 2
-    assert len(http[1]) == 2  # archive + one distinct selected image
-    assert not (tmp_path / "outside").exists()
-    assert preparation.prepare_ovad(max_samples=2, cache_dir=tmp_path) == prepared
+    dataset = load_ovad(max_samples=2, cache_dir=tmp_path)
+    assert [s['sample_id'] for s in dataset] == [70, 3]
+    assert dataset[0]['image'].shape == (21, 31, 3)
     assert len(http[1]) == 2
-    image = next(prepared.images.glob("*.jpg"))
-    image.write_bytes(b"corrupt")
-    assert preparation.prepare_ovad(max_samples=2, cache_dir=tmp_path) == prepared
-    assert len(http[1]) == 3
-    full = preparation.prepare_ovad(split="test", cache_dir=tmp_path)
-    assert full.metadata["counts"]["prepared_objects"] == 3
-    assert len(http[1]) == 4
-    assert not any("000000000035.jpg" in url for url in http[1])
+    assert not (tmp_path / 'outside').exists()
+    again = load_ovad(max_samples=2, cache_dir=tmp_path)
+    assert again._fingerprint == dataset._fingerprint and len(http[1]) == 2
+    # Crops live in Arrow, so cached runs do not need the original image.
+    Path(dataset[0]['im_file']).unlink()
+    assert load_ovad(max_samples=2, cache_dir=tmp_path)[0]['image'].shape == (21, 31, 3)
+    full = load_ovad(split='test', cache_dir=tmp_path)
+    assert len(full) == 3 and len(http[1]) == 4
+    assert not any('000000000035.jpg' in url for url in http[1])
 
 
 def test_named_group_selection_cache_identity_and_validation(tmp_path, http):
-    material = preparation.prepare_ovad(groups=("material",), max_samples=1, cache_dir=tmp_path)
-    cleanliness = preparation.prepare_ovad(groups=("cleanliness",), max_samples=1, cache_dir=tmp_path)
-    assert material.data != cleanliness.data
-    assert material.metadata["sample_ids"] == [3]
-    assert cleanliness.metadata["sample_ids"] == [70]
-    dataset = load_ovad(material.data, material.images, groups=("material",))
-    descriptions = dataset.metadata["attribute_descriptions"]
-    assert descriptions == {"material": {"wood": "wood/wooden", "metal": "metal/metallic"}}
-    backend = Backend({"attributes": {"material": "metal"}})
-    metrics = Attributes(backend, descriptions).val(max_samples=1, cache_dir=tmp_path, verbose=False)
+    material = load_ovad(groups=('material',), max_samples=1, cache_dir=tmp_path)
+    cleanliness = load_ovad(groups=('cleanliness',), max_samples=1, cache_dir=tmp_path)
+    assert material.cache_files != cleanliness.cache_files
+    assert material[0]['sample_id'] == 3 and cleanliness[0]['sample_id'] == 70
+    assert material.features['attributes']['material'].names == ['wood', 'metal']
+    backend = Backend({'attributes': {'material': 'metal'}})
+    metrics = Attributes(backend, {'material': ['wood', 'metal']}).val(max_samples=1, cache_dir=tmp_path, verbose=False)
     assert metrics.accuracy == 1 and metrics.seen == 1
-    assert metrics.dataset_counts["source_objects"] == 5
-    assert metrics.dataset_counts["excluded_unscored_objects"] == 2
-    assert metrics.dataset_counts["prepared_objects"] == 1
-    assert metrics.dataset_metadata["preparation"]["selected_groups"] == ["material"]
+    assert metrics.dataset_counts['evaluated_objects'] == 1
+    assert metrics.dataset_metadata['dataset_name'] == 'ovad'
     assert len(http[1]) == 2
+
+
+def test_hf_round_trip_preserves_crops_and_complete_group_vocabularies(tmp_path, http):
+    import datasets as hf
+
+    dataset = load_ovad(groups=("material",), max_samples=1, cache_dir=tmp_path).select([0])
+    expected = dataset[0]["image"].copy()
+    destination = tmp_path / "export"
+    dataset.save_to_disk(destination)
+    Path(dataset[0]["im_file"]).unlink()
+    restored = hf.load_from_disk(destination)
+    assert restored.features["attributes"]["material"].names == ["wood", "metal"]
+    assert restored[0]["attributes"] == {"material": 1}
+    np.testing.assert_array_equal(restored[0]["image"], expected)
+    metrics = Attributes(Backend({"attributes": {"material": "metal"}})).val(dataset=restored, verbose=False)
+    assert metrics.accuracy == 1 and metrics.dataset_metadata["dataset_name"] == "ovad"
 
 
 @pytest.mark.parametrize("settings", [{"split": "train"}, {"groups": ("color",)}, {"groups": []}, {"classes": ("chair",)}])
 def test_invalid_named_requests_do_not_download(tmp_path, http, settings):
     with pytest.raises((ValueError, TypeError)):
-        preparation.prepare_ovad(cache_dir=tmp_path, **settings)
+        load_ovad(cache_dir=tmp_path, **settings)
     assert not http[1]
 
 
 def test_runner_schema_discovery_and_explicit_config(tmp_path, http, monkeypatch, capsys):
     from examples import run_validation
 
-    monkeypatch.setenv("VLM_TASKS_DATASETS_DIR", str(tmp_path))
     monkeypatch.setattr(run_validation, "create_backend", lambda args: Backend())
     assert run_validation.main(["--task", "attributes", "--model", "test", "--max-samples", "2"]) == 0
     report = json.loads(capsys.readouterr().out)
-    assert report["task_config"]["attributes"]["material"]["wood"] == "wood/wooden"
+    assert report["task_config"]["attributes"]["material"]["wood"] == "wood"
     assert "categorical" in report["protocol"]
     assert report["selected_groups"] == ["cleanliness", "material"]
     assert report["metrics"]["attribute_decisions"] == 2
@@ -382,15 +383,14 @@ def test_runner_local_automatic_schema(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(run_validation, "create_backend", lambda args: Backend())
     assert run_validation.main(["--task", "attributes", "--data", str(path), "--images", str(images), "--model", "test"]) == 0
     report = json.loads(capsys.readouterr().out)
-    assert report["task_config"]["attributes"] == load_ovad(path, images).metadata["attribute_descriptions"]
-    assert report["dataset_counts"]["source_objects"] == 5
+    assert report["task_config"]["attributes"] == attribute_schema(load_ovad(path, images))
+    assert report["dataset_counts"]["evaluated_objects"] == 3
 
 
 @pytest.mark.parametrize("source", ["named", "local"])
 def test_runner_discovers_explicit_null_attribute_schema(tmp_path, http, monkeypatch, capsys, source):
     from examples import run_validation
 
-    monkeypatch.setenv("VLM_TASKS_DATASETS_DIR", str(tmp_path))
     backend = Backend()
     monkeypatch.setattr(run_validation, "create_backend", lambda args: backend)
     config = tmp_path / "task.json"

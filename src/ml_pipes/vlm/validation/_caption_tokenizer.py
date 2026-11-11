@@ -6,8 +6,6 @@ import shutil
 import subprocess
 from types import MappingProxyType
 
-from .prepare_data import _cache_root, _download
-
 
 @dataclass(frozen=True)
 class _Artifact:
@@ -50,8 +48,9 @@ class CaptionTokenizer:
             raise RuntimeError(f"Could not run Java for caption tokenization: {exc}") from exc
         java_version = (result.stderr or result.stdout).strip()
         artifact = TOKENIZER_ARTIFACTS[self.version]
-        self.jar = _cache_root(self.cache_dir) / "tokenizers" / "stanford-corenlp" / self.version / f"stanford-corenlp-{self.version}.jar"
-        _download(artifact.url, self.jar, checksum="sha256:" + artifact.sha256)
+        from ._dataset_utils import download_artifact
+
+        self.jar = download_artifact(artifact.url, cache_dir=self.cache_dir, checksum="sha256:" + artifact.sha256)
         self.metadata = {
             "tokenizer": "Stanford PTBTokenizer", "tokenizer_version": self.version,
             "tokenizer_sha256": artifact.sha256, "tokenizer_url": artifact.url,

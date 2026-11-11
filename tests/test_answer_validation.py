@@ -14,8 +14,7 @@ import pytest
 
 from ml_pipes.vlm import Answer, AnswerResult, ModelExecutionError, ModelResponse
 from ml_pipes.vlm.validation import AnswerMetrics, AnswerValidator
-from ml_pipes.vlm.validation import dataset_constants as constants
-from ml_pipes.vlm.validation import prepare_data as preparation
+from ml_pipes.vlm.validation import default_datasets as constants
 from ml_pipes.vlm.validation._vqa import normalize_answer, score_answer
 
 
@@ -139,12 +138,11 @@ def test_local_dataset_joins_by_id_and_limits_questions_before_image_io(tmp_path
     (images / f"COCO_{split}2014_{24:012d}.jpg").unlink()
     dataset = load_vqav2(annotations, images, split=split, max_samples=2)
     assert [sample["sample_id"] for sample in dataset] == [91, 7]
-    assert dataset.counts == {"source_questions": 3, "source_images": 2, "selected_questions": 2, "selected_images": 1}
     assert dataset[0]["answers"] == ["2"] * 10
     assert dataset[1]["answers"] == ["no"] * 10
     assert dataset[0]["image"].shape == (12, 20, 3)
     assert "multiple_choice_answer" not in dataset[0]
-    assert dataset.metadata["split"] == split
+    assert str(dataset.split) == split
     with pytest.raises(FileNotFoundError, match="image not found"):
         load_vqav2(annotations, images, split=split)
     (images / f"COCO_{split}2014_{13:012d}.jpg").write_bytes(b"not an image")
@@ -285,15 +283,8 @@ def test_invalid_validator_settings_fail_before_inference(settings, match):
 
 
 @pytest.fixture
-def http(monkeypatch):
-    sources, calls = {}, []
-
-    def open_url(url):
-        calls.append(url)
-        return BytesIO(sources[url])
-
-    monkeypatch.setattr(preparation, "_open_url", open_url)
-    return sources, calls
+def http(hf_downloads):
+    return hf_downloads
 
 
 def add_sources(http, split="val", data=None):
@@ -316,54 +307,34 @@ def add_sources(http, split="val", data=None):
 @pytest.mark.parametrize("split", ["train", "val"])
 def test_preparation_downloads_distinct_selected_images_and_reuses_cache(tmp_path, http, split):
     add_sources(http, split)
-    first = preparation.prepare_vqav2(split=split, max_samples=2, cache_dir=tmp_path)
-    assert constants.DEFAULT_DATASETS["answer"] == "vqav2"
-    dataset = load_vqav2(first.data, first.images, split=split)
-    assert [sample["sample_id"] for sample in dataset] == [91, 7]
-    assert dataset[0]["answers"] == ["2"] * 10
-    assert first.metadata["source_questions"] == 3 and first.metadata["selected_images"] == 1
-    assert len(http[1]) == 3  # two archives, one shared image
-    assert preparation.prepare_vqav2(split=split, max_samples=2, cache_dir=tmp_path) == first
+    dataset = load_vqav2(split=split, max_samples=2, cache_dir=tmp_path)
+    assert [sample['sample_id'] for sample in dataset] == [91, 7]
+    assert dataset[0]['answers'] == ['2'] * 10
     assert len(http[1]) == 3
-    larger = preparation.prepare_vqav2(split=split, max_samples=3, cache_dir=tmp_path)
-    assert larger.images == first.images and larger.data != first.data
+    assert load_vqav2(split=split, max_samples=2, cache_dir=tmp_path)._fingerprint == dataset._fingerprint
+    assert len(http[1]) == 3
+    larger = load_vqav2(split=split, max_samples=3, cache_dir=tmp_path)
+    assert len(larger) == 3 and larger.cache_files != dataset.cache_files
     assert len(http[1]) == 4
-    assert larger.metadata["selected_questions"] == 3
-    assert not list(tmp_path.rglob("unwanted.txt"))
+    assert not list(tmp_path.rglob('unwanted.txt'))
 
 
-@pytest.mark.parametrize("corrupt", ["image", "questions", "archive", "missing_annotations"])
-def test_cache_repairs_selected_images_annotations_and_source_archives(tmp_path, http, corrupt):
+def test_completed_dataset_uses_arrow_without_reparsing_sources(tmp_path, http, monkeypatch):
+    from ml_pipes.vlm.validation import default_datasets as builders
     add_sources(http)
-    first = preparation.prepare_vqav2(max_samples=2, cache_dir=tmp_path)
-    if corrupt == "image":
-        path = next(first.images.glob("*.jpg"))
-    elif corrupt == "archive":
-        path = next((tmp_path / "vqav2" / "sources").glob("*.zip"))
-    elif corrupt == "questions":
-        path = next(first.data.glob("*questions.json"))
-    else:
-        path = next(first.data.glob("*annotations.json"))
-    if corrupt == "missing_annotations":
-        path.unlink()
-    else:
-        path.write_bytes(b"corrupt")
-    assert preparation.prepare_vqav2(max_samples=2, cache_dir=tmp_path) == first
-    assert load_vqav2(first.data, first.images)[0]["answers"] == ["2"] * 10
-    assert len(http[1]) == (4 if corrupt in {"image", "archive"} else 3)
+    first = load_vqav2(max_samples=2, cache_dir=tmp_path)
+    monkeypatch.setattr(builders, '_vqav2_selection', lambda *args: pytest.fail('Must reuse generated Arrow'))
+    again = load_vqav2(max_samples=2, cache_dir=tmp_path)
+    assert again[0]['answers'] == ['2'] * 10 and again._fingerprint == first._fingerprint
+    assert len(http[1]) == 3
 
 
 def test_default_val_prepares_and_retains_source_and_evaluated_counts(tmp_path, http):
     add_sources(http)
     metrics = Answer(Backend()).val(max_samples=1, cache_dir=tmp_path, verbose=False)
     assert metrics.vqa_accuracy == 1 and metrics.seen == 1
-    assert metrics.dataset_counts == {
-        "source_questions": 3, "source_images": 2,
-        "selected_questions": 1, "selected_images": 1,
-        "evaluated_questions": 1, "evaluated_images": 1,
-    }
-    assert metrics.dataset_metadata["preparation"]["source_questions"] == 3
-    assert metrics.dataset_metadata["preparation"]["question_ids"] == [91]
+    assert metrics.dataset_counts == {'evaluated_samples': 1, 'evaluated_questions': 1, 'evaluated_images': 1}
+    assert metrics.dataset_metadata['dataset_name'] == 'vqav2'
 
 
 def test_invalid_source_joins_fail_before_any_image_download(tmp_path, http):
@@ -371,8 +342,8 @@ def test_invalid_source_joins_fail_before_any_image_download(tmp_path, http):
     annotations["annotations"].pop()
     add_sources(http, data=(questions, annotations))
     with pytest.raises(ValueError, match="matching question IDs"):
-        preparation.prepare_vqav2(max_samples=1, cache_dir=tmp_path)
-    assert len(http[1]) == 2 and not list(tmp_path.rglob("prepared.json"))
+        load_vqav2(max_samples=1, cache_dir=tmp_path)
+    assert len(http[1]) == 2 and not list(tmp_path.rglob("*.arrow"))
 
 
 @pytest.mark.parametrize("automatic", [False, True])
@@ -384,7 +355,6 @@ def test_cli_answer_reports_local_or_automatic_data(tmp_path, http, monkeypatch,
     args = ["--task", "answer", "--max-samples", "1", "--model", "test"]
     if automatic:
         add_sources(http)
-        monkeypatch.setenv("VLM_TASKS_DATASETS_DIR", str(tmp_path / "cache"))
     else:
         annotations, images = write_local(tmp_path)
         args += ["--data", str(annotations), "--images", str(images)]

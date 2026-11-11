@@ -15,8 +15,7 @@ import pytest
 
 from ml_pipes.vlm import Describe, DescriptionResult, ModelExecutionError, ModelResponse
 from ml_pipes.vlm.validation import DescribeMetrics, DescribeValidator, ClassificationMetrics, DetectionMetrics, GroundingMetrics
-from ml_pipes.vlm.validation import dataset_constants as constants
-from ml_pipes.vlm.validation import prepare_data as preparation
+from ml_pipes.vlm.validation import default_datasets as constants
 from ml_pipes.vlm.validation._caption import score_captions
 from ml_pipes.vlm.validation._caption_tokenizer import CaptionTokenizer
 
@@ -144,13 +143,13 @@ def test_dataset_groups_all_references_before_limit_in_source_image_order(tmp_pa
     assert dataset[0]["captions"] == ["a cat sits on a mat", "a cat on a mat", "a cat sits on a mat"]
     assert dataset[1]["captions"] == ["two dogs play outside"] * 2
     assert dataset[0]["image"].shape == (12, 20, 3) and "label" not in dataset.features
-    assert dataset.counts == {"source_images": 3, "source_captions": 6, "selected_images": 2, "selected_captions": 5}
     with pytest.raises(FileNotFoundError, match="image not found"):
         load_coco_captions2017(annotations, images)
     (images / f"{13:012d}.jpg").write_bytes(b"corrupt")
-    dataset = load_coco_captions2017(annotations, images, max_samples=1)
-    with pytest.raises(OSError, match="cannot identify image"):
-        dataset[0]
+    from datasets.exceptions import DatasetGenerationError
+    with pytest.raises(DatasetGenerationError) as error:
+        load_coco_captions2017(annotations, images, max_samples=1)
+    assert isinstance(error.value.__cause__, OSError)
 
 
 @pytest.mark.parametrize("mutate,match", [
@@ -177,9 +176,11 @@ def test_dataset_checks_dimensions_on_decode_and_rejects_symlink_escape(tmp_path
     data = caption_data()
     data["images"][0]["width"] += 1
     annotations, images = write_local(tmp_path, data)
-    dataset = load_coco_captions2017(annotations, images, max_samples=1)
-    with pytest.raises(ValueError, match="dimensions differ"):
-        dataset[0]
+    from datasets.exceptions import DatasetGenerationError
+    with pytest.raises(DatasetGenerationError) as error:
+        load_coco_captions2017(annotations, images, max_samples=1)
+    assert isinstance(error.value.__cause__, ValueError)
+    assert 'dimensions differ' in str(error.value.__cause__)
     outside = tmp_path / "outside.jpg"
     outside.write_bytes(jpeg())
     image = images / f"{13:012d}.jpg"
@@ -286,15 +287,8 @@ def test_invalid_settings_fail_without_model_execution(settings, tokenizer):
 
 
 @pytest.fixture
-def http(monkeypatch):
-    sources, calls = {}, []
-
-    def open_url(url):
-        calls.append(url)
-        return BytesIO(sources[url])
-
-    monkeypatch.setattr(preparation, "_open_url", open_url)
-    return sources, calls
+def http(hf_downloads):
+    return hf_downloads
 
 
 def caption_source(http):
@@ -312,47 +306,30 @@ def caption_source(http):
 @pytest.mark.parametrize("split", ["train", "val"])
 def test_preparation_fetches_selected_images_keeps_references_and_repairs_cache(tmp_path, http, split):
     caption_source(http)
-    first = preparation.prepare_coco_captions2017(split=split, max_samples=1, cache_dir=tmp_path)
-    assert constants.DEFAULT_DATASETS["describe"] == "coco_captions2017"
-    assert first.data.is_file() and first.metadata["source_images"] == 3
-    assert first.metadata["source_captions"] == 6 and first.metadata["selected_captions"] == 3
-    assert load_coco_captions2017(first.data, first.images, split=split)[0]["captions"] == [
-        "a cat sits on a mat", "a cat on a mat", "a cat sits on a mat",
-    ]
-    assert len(http[1]) == 2 and not (tmp_path / "outside").exists()
-    assert preparation.prepare_coco_captions2017(split=split, max_samples=1, cache_dir=tmp_path) == first
-    assert len(http[1]) == 2
-    image = first.images / f"{13:012d}.jpg"
-    image.write_bytes(b"corrupt")
-    preparation.prepare_coco_captions2017(split=split, max_samples=1, cache_dir=tmp_path)
-    assert len(http[1]) == 3 and image.read_bytes() == jpeg()
-    first.data.write_text("{}")
-    preparation.prepare_coco_captions2017(split=split, max_samples=1, cache_dir=tmp_path)
-    assert len(http[1]) == 3 and len(json.loads(first.data.read_text())["annotations"]) == 3
-    archive = tmp_path / "coco_captions2017/sources/annotations_trainval2017.zip"
-    archive.write_bytes(b"corrupt source")
-    preparation.prepare_coco_captions2017(split=split, max_samples=1, cache_dir=tmp_path)
-    assert len(http[1]) == 4
+    first = load_coco_captions2017(split=split, max_samples=1, cache_dir=tmp_path)
+    assert first[0]['captions'] == ['a cat sits on a mat', 'a cat on a mat', 'a cat sits on a mat']
+    assert len(http[1]) == 2 and not (tmp_path / 'outside').exists()
+    again = load_coco_captions2017(split=split, max_samples=1, cache_dir=tmp_path)
+    assert first._fingerprint == again._fingerprint and len(http[1]) == 2
+    assert first.info.dataset_name == 'coco_captions2017'
+    assert not list(tmp_path.rglob('captions_*.json'))
 
 
 def test_preparation_reuses_archive_for_larger_subsets_and_other_split(tmp_path, http, monkeypatch):
     caption_source(http)
-    monkeypatch.setattr(CaptionTokenizer, "prepare", lambda self: pytest.fail("Data preparation must not require Java"))
-    preparation.prepare_coco_captions2017(max_samples=1, cache_dir=tmp_path)
-    larger = preparation.prepare_coco_captions2017(max_samples=2, cache_dir=tmp_path)
-    train = preparation.prepare_coco_captions2017(split="train", max_samples=1, cache_dir=tmp_path)
+    monkeypatch.setattr(CaptionTokenizer, 'prepare', lambda self: pytest.fail('Data preparation must not require Java'))
+    load_coco_captions2017(max_samples=1, cache_dir=tmp_path)
+    larger = load_coco_captions2017(max_samples=2, cache_dir=tmp_path)
+    train = load_coco_captions2017(split='train', max_samples=1, cache_dir=tmp_path)
     assert len(http[1]) == 4
-    assert larger.metadata["selected_images"] == 2 and train.metadata["split"] == "train"
+    assert len(larger) == 2 and str(train.split) == 'train'
 
 
-def test_automatic_validation_reports_original_counts(tmp_path, http, tokenizer):
+def test_automatic_validation_reports_evaluated_counts(tmp_path, http, tokenizer):
     caption_source(http)
     metrics = Describe(Backend()).val(max_samples=1, cache_dir=tmp_path, verbose=False)
-    assert metrics.dataset_counts == {
-        "source_images": 3, "source_captions": 6, "selected_images": 1, "selected_captions": 3,
-        "evaluated_samples": 1, "evaluated_images": 1, "evaluated_captions": 3,
-    }
-    assert metrics.dataset_metadata["preparation"]["source_version"] == "COCO Captions 2017"
+    assert metrics.dataset_counts == {'evaluated_samples': 1, 'evaluated_images': 1, 'evaluated_captions': 3}
+    assert metrics.dataset_metadata['dataset_name'] == 'coco_captions2017'
 
 
 @pytest.mark.parametrize("automatic", [False, True])
@@ -360,7 +337,6 @@ def test_cli_describe_reports_corpus_summary_and_context(tmp_path, http, tokeniz
     from examples import run_validation
 
     caption_source(http)
-    monkeypatch.setenv("VLM_TASKS_DATASETS_DIR", str(tmp_path / "cache"))
     backend = Backend()
     monkeypatch.setattr(run_validation, "create_backend", lambda args: backend)
     config = tmp_path / "config.json"

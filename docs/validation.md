@@ -39,14 +39,14 @@ Dataset loading and validation have separate responsibilities:
 ### Available validations
 
 Sizes and counts below describe the source dataset or named split before class
-selection or sample limits. Download sizes are compressed archives in decimal
-MB/GB, excluding model weights and expanded cache files.
+selection or sample limits. Download sizes are compressed source files in decimal MB/GB, excluding model
+weights and generated cache files.
 
 | Task | Default dataset | Dataset scope | Splits | Metrics | Download behavior | Archive size |
 |---|---|---|---|---|---|---|
-| `Classify` | **CIFAR-10** (`cifar10`) | 60,000 images at 32×32; 10 classes; 50,000 train / 10,000 test | train, val, test; **val aliases test** | Top-1 accuracy; per-class precision/recall/F1; confusion matrix | Full archive; prepare only the selected subset | ≈170 MB |
-| `Detect` | **COCO128** (`coco128`) | 128 images; 941 boxes; 71 represented classes in an 80-class vocabulary | train, val; **same images in both** | Precision/recall/F1 and TP/FP/FN at a selected IoU threshold | Full archive; prepare selected images | 6.98 MB |
-| `Ground`, box | **RefCOCOg UMD** (`refcocog`) | **val:** 1,300 unique images; 4,896 expressions; 80-category reporting vocabulary | train, val, test | Accuracy at IoU ≥0.5 / 0.75 / 0.9; mean IoU | Stream shared annotations; download images referenced by selected expressions | 1.08 GB shared archive; val JSON 2.27 MB; images additional |
+| `Classify` | **CIFAR-10** (`cifar10`) | 60,000 images at 32×32; 10 classes; 50,000 train / 10,000 test | train, val, test; **val aliases test** | Top-1 accuracy; per-class precision/recall/F1; confusion matrix | Pinned HF Parquet dataset; select examples after loading | ≈144 MB full dataset |
+| `Detect` | **COCO128** (`coco128`) | 128 images; 941 boxes; 71 represented classes in an 80-class vocabulary | train, val; **same images in both** | Precision/recall/F1 and TP/FP/FN at a selected IoU threshold | HF caches the archive and builds selected rows | 6.98 MB |
+| `Ground`, box | **RefCOCOg UMD** (`refcocog`) | **val:** 1,300 unique images; 4,896 expressions; 80-category reporting vocabulary | train, val, test | Accuracy at IoU ≥0.5 / 0.75 / 0.9; mean IoU | Cache the shared annotation archive; download images referenced by selected expressions | 1.08 GB shared archive; val JSON 2.27 MB; images additional |
 | `Ground`, point | **RefCOCOg UMD** (`refcocog`) | Same expressions and target boxes as box mode | train, val, test | Point-in-box accuracy | Shares box-mode data and cache | Same as box mode |
 | `Attributes` | **OVAD** (`ovad`) | 14,300 source objects; 14,072 eligible objects in 2,000 images; 22 categorical groups | test, val; **val aliases the same benchmark**; no train | Categorical accuracy; mean attribute accuracy; macro F1; per-group reports | Download annotations and images referenced by selected objects | 1.13 MB annotations; images additional |
 | `Answer` | **VQA v2** (`vqav2`) | **val:** 214,354 questions on 40,504 COCO val2014 images; ten human answers per question | train, val; labeled splits only | VQA consensus accuracy; answer-type and question-type reports | Download both split annotation archives and images referenced by selected questions | val: 14.01 MB for questions and annotations; images additional |
@@ -63,7 +63,7 @@ measure annotated ambiguity, rejection quality, or multiple-target resolution.
 The OVAD protocol here adapts independent attribute annotations to categorical
 decisions; it is distinct from official OVAD attribute mAP.
 
-Dataset sources: [CIFAR-10](https://www.cs.toronto.edu/~kriz/cifar.html),
+Dataset sources: [CIFAR-10 on HF](https://huggingface.co/datasets/uoft-cs/cifar10),
 [COCO128](https://github.com/ultralytics/assets/releases/download/v0.0.0/coco128.zip),
 [MDETR RefCOCO annotations](https://zenodo.org/records/4729015),
 [OVAD](https://lmb.informatik.uni-freiburg.de/resources/datasets/ovad.zip),
@@ -305,17 +305,28 @@ print(dataset.features)
 metrics = Ground(backend).val(dataset=dataset)
 ```
 
-Built-in loaders return Hugging Face `Dataset` objects. CIFAR-10 defaults to
-`test`; the other loaders default to their evaluation `val` data. Choose another
-split in the loader. `task.val()` and validators accept already selected data.
+Built-in loaders return ordinary Hugging Face `Dataset` objects. CIFAR-10 loads
+from a pinned Hub revision; the other benchmarks use HF builders for their
+original sources. Images are formatted as RGB NumPy arrays, and categorical
+features retain the complete vocabulary after selection.
 
-Use a loader's `max_samples` to limit preparation and image downloads where
-supported. `task.val(dataset=dataset, max_samples=...)` limits evaluation of the
-loaded dataset.
+CIFAR-10 defaults to `test`; the other loaders default to their evaluation `val`
+data. Choose another split in the loader. `task.val()` and validators accept
+already selected data.
 
-Cache precedence is `cache_dir`, then `VLM_TASKS_DATASETS_DIR`, then
-`~/.cache/vlm-tasks/datasets`. Download requirements, including full archives
-needed for small selections, are listed in [available validations](#available-validations).
+Use a loader's `max_samples` to limit the generated rows and referenced image
+downloads. CIFAR-10 selection happens after HF loads the source dataset. Sample
+limits do not avoid annotation archive downloads; see
+[available validations](#available-validations). `task.val(dataset=dataset,
+max_samples=...)` limits evaluation of the loaded dataset.
+
+HF manages downloads and generated Arrow datasets. Set `cache_dir` for a loader
+or use HF's cache settings (`HF_DATASETS_CACHE`, `HF_HOME`, and `HF_HUB_CACHE`).
+Repeated default loads with the same split and selection reuse the generated
+dataset. Local benchmark annotations are reread on each load so edits take effect.
+
+Use `dataset.save_to_disk(path)` and HF's `load_from_disk(path)` to export and
+reload a selected dataset, including its images and feature vocabulary.
 
 ### Results
 
@@ -324,10 +335,10 @@ needed for small selections, are listed in [available validations](#available-va
 | `metrics.results_dict` | Aggregate scores, evaluated samples, failures, and failure rate |
 | `metrics.summary()` | Per-class, per-category, per-attribute, or per-type scores and support; Describe returns one corpus row |
 | `metrics.failures` | Failed calls with image paths, error messages, and sample identifiers where available |
-| `metrics.dataset_counts` | Source (before selection), prepared (selected dataset), and evaluated (this run) counts, where available |
-| `metrics.dataset_metadata` | Dataset selection and preparation context when available |
+| `metrics.dataset_counts` | Evaluated sample counts and task-specific image, expression, question, object, or caption counts |
+| `metrics.dataset_metadata` | Standard HF dataset information when available, plus scoring and tokenizer settings |
 | `metrics.speed` | Mean milliseconds per evaluated sample for loading, inference (including correction attempts), and metric calculation |
-| `metrics.elapsed_seconds` | Total `.val()` time, including dataset preparation and cache checks; excludes prior backend setup |
+| `metrics.elapsed_seconds` | Total `.val()` time, including default dataset loading; excludes prior backend setup |
 
 ## Using your own dataset
 
@@ -396,7 +407,10 @@ validation; stored task configuration and context are preserved.
 
 ### Local benchmark formats
 
-These loaders adapt existing local annotations into the same sample schemas:
+These loaders adapt existing local annotations into the same sample schemas.
+Classification folders use HF `imagefolder`; the annotation formats use HF
+builders. Optional attribute label descriptions can be supplied in the task
+configuration.
 
 | Loader | Local data |
 |---|---|

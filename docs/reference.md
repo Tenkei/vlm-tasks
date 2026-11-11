@@ -155,7 +155,7 @@ Validation arguments:
 | `match_iou` | `0.5` | Detection only; finite value in `(0, 1]` |
 | `tokenizer_version` | `"3.4.1"` | Describe only: Stanford PTB `"3.4.1"` or `"4.6.0"`; requires Java |
 | `verbose` | `True` | Progress and aggregate metrics on stderr |
-| `cache_dir` | `None` | Dataset/tokenizer cache; falls back to `VLM_TASKS_DATASETS_DIR`, then `~/.cache/vlm-tasks/datasets` |
+| `cache_dir` | `None` | Dataset/tokenizer cache override; otherwise uses Hugging Face cache settings |
 
 `validator` is a class instantiated with `task=self`, `dataset=dataset`, and
 forwarded keywords, then called without arguments.
@@ -177,9 +177,10 @@ load_vqav2(annotations=None, images=None, *, split="val",
            max_samples=None, cache_dir=None)
 load_coco_captions2017(annotations=None, images=None, *, split="val",
                        max_samples=None, cache_dir=None)
-load_classification(root, *, split="val", class_ids=None, max_samples=None)
-load_yolo(data, *, split="val", max_samples=None)
-load_refcoco(annotations, images, *, dataset="refcocog", split="val", max_samples=None)
+load_classification(root, *, split="val", class_ids=None, max_samples=None, cache_dir=None)
+load_yolo(data, *, split="val", max_samples=None, cache_dir=None)
+load_refcoco(annotations, images, *, dataset="refcocog", split="val",
+             max_samples=None, cache_dir=None)
 ```
 
 See [dataset loading](validation.md#default-datasets-and-downloads) and

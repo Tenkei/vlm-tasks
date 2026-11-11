@@ -108,7 +108,7 @@ def test_detection_counts_duplicates_wrong_classes_and_failed_images(tmp_path):
         "class": "person", "support": 2, "tp": 1, "fp": 2, "fn": 1,
         "precision": 1 / 3, "recall": 0.5, "f1": 0.4,
     }
-    assert metrics.dataset_counts == {"labeled_images": 2, "empty_labels": 1, "missing_labels": 1}
+    assert metrics.dataset_counts == {"evaluated_samples": 4}
     assert len(backend.calls) == 4
 
 
@@ -182,24 +182,16 @@ def test_sample_limit_and_repeated_validator_runs(tmp_path):
 
 
 @pytest.mark.parametrize("class_ids", [[2, 0, 2], {0, 2}, np.array([2, 0], dtype=np.int64)])
-def test_classification_dataset_filters_classes_and_preserves_ids(tmp_path, monkeypatch, class_ids):
-    from ml_pipes.vlm.validation import default_datasets as readers
-
-    root = classification_data(tmp_path, classes=("cat", "dog", "fox"), per_class=2)
-    image_files = readers._image_files
-    visited = []
-
-    def selected_image_files(directory):
-        visited.append(directory.name)
-        assert directory.name != "dog", "Unselected classes must not be scanned for images"
-        return image_files(directory)
-
-    monkeypatch.setattr(readers, "_image_files", selected_image_files)
+def test_classification_dataset_filters_classes_and_preserves_ids(tmp_path, class_ids):
+    root = classification_data(tmp_path, classes=('cat', 'dog', 'fox'), per_class=2)
+    # HF may enumerate all files; unselected images must not be decoded.
+    for path in (root / 'val' / 'dog').glob('*.png'):
+        path.write_bytes(b'invalid pixels')
     dataset = load_classification(root, class_ids=class_ids)
-    assert dataset.features["label"].names == ["cat", "dog", "fox"]
+    assert dataset.features['label'].names == ['cat', 'dog', 'fox']
     assert len(dataset) == 4
-    assert visited == ["cat", "fox"]
-    assert [sample["label"] for sample in dataset] == [0, 0, 2, 2]
+    assert [sample['label'] for sample in dataset] == [0, 0, 2, 2]
+    assert all(sample['image'].shape == (60, 120, 3) for sample in dataset)
 
 
 @pytest.mark.parametrize("class_ids", [[], [-1], [2], [1.0], [0, True], [np.bool_(False)], 1, "1", b"\x01"])
@@ -324,7 +316,7 @@ def test_exact_split_and_empty_evaluation_errors(tmp_path):
     empty = tmp_path / "empty_dataset"
     (empty / "val" / "empty").mkdir(parents=True)
     backend = Backend({"labels": ["empty"]})
-    with pytest.raises(ValueError, match="No classification images"):
+    with pytest.raises(ValueError, match="No classification images|no data"):
         Classify(backend, ["empty"]).val(dataset=load_local(empty), verbose=False)
 
     with pytest.raises(ValueError, match="No samples to evaluate"):
@@ -431,7 +423,7 @@ import importlib.abc
 import sys
 class BlockOptional(importlib.abc.MetaPathFinder):
     def find_spec(self, fullname, path=None, target=None):
-        if fullname.split('.')[0] in {'torch', 'torchvision', 'ultralytics', 'yaml', 'transformers'}:
+        if fullname.split('.')[0] in {'torch', 'torchvision', 'ultralytics', 'yaml', 'transformers', 'datasets', 'PIL'}:
             raise ImportError('blocked optional dependency: ' + fullname)
 sys.meta_path.insert(0, BlockOptional())
 from ml_pipes.vlm import Classify, ModelResponse
@@ -451,7 +443,7 @@ except ImportError as exc:
     assert 'ml-pipes-vlm[validation]' in str(exc)
 else:
     raise AssertionError('Missing optional YAML dependency was not reported')
-assert all(name not in sys.modules for name in ('torch', 'torchvision', 'ultralytics', 'yaml'))
+assert all(name not in sys.modules for name in ('torch', 'torchvision', 'ultralytics', 'yaml', 'datasets', 'PIL'))
 """
     subprocess.run([sys.executable, "-c", script, str(data)], check=True, capture_output=True, text=True)
 

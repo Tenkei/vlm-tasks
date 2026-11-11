@@ -185,8 +185,6 @@ def test_loader_preserves_expression_order_sparse_ids_and_original_pixels(tmp_pa
     dataset = load_refcoco(annotations, images)
     assert dataset.features["label"].names == ["cat", "dog"]
     assert [sample["sample_id"] for sample in dataset] == [91, 7, 440, 42]
-    assert dataset.counts == {"expressions": 4, "unique_images": 2}
-    assert dataset.metadata["expected_split_by"] == "umd"
     sample = dataset[1]
     assert sample["image"].shape == (60, 120, 3)
     assert sample["text"] == "the animal numbered 1"
@@ -212,8 +210,8 @@ def test_expression_scoring_statuses_and_failures_keep_all_denominators(tmp_path
         "mean_iou": .2,
     }
     assert metrics.status_counts == {"found": 1, "not_found": 1, "ambiguous": 1}
-    assert metrics.dataset_counts == {"expressions": 5, "unique_images": 2}
-    assert metrics.dataset_metadata["dataset"] == "refcocog"
+    assert metrics.dataset_counts == {"evaluated_samples": 5, "evaluated_expressions": 5, "evaluated_images": 2}
+    assert metrics.dataset_metadata["dataset_name"] == "refcocog"
     assert metrics.summary()[0] == {
         "class": "cat", "support": 3, "accuracy_iou_0.5": 1 / 3,
         "accuracy_iou_0.75": 1 / 3, "accuracy_iou_0.9": 1 / 3, "mean_iou": 1 / 3,
@@ -258,17 +256,17 @@ def test_limit_counts_evaluated_images_and_repeated_runs_reset(tmp_path):
         assert metrics.mean_iou == 0
         assert metrics.results_dict["accuracy_iou_0.5"] == 0
         assert metrics.status_counts == {"found": 0, "not_found": 0, "ambiguous": 0}
-        assert metrics.dataset_counts == {"expressions": 4, "unique_images": 2}
+        assert metrics.dataset_counts == {"evaluated_samples": 2, "evaluated_expressions": 2, "evaluated_images": 1}
     assert len(backend.calls) == 4
 
 
 @pytest.mark.parametrize("dataset,split", [
     ("refcocog", "train"), ("refcocog", "test"), ("refcoco", "testA"), ("refcoco+", "testB"),
+    ("refcoco", "heldout"),
 ])
 def test_dataset_variants_and_exact_splits(tmp_path, dataset, split):
     annotations, images, _, _ = grounding_data(tmp_path, dataset=dataset, split=split)
     loaded = load_refcoco(annotations, images, dataset=dataset, split=split)
-    assert loaded.metadata["expected_split_by"] == ("umd" if dataset == "refcocog" else "unc")
     with pytest.raises(FileNotFoundError):
         load_refcoco(annotations, images, dataset=dataset, split="val")
 
@@ -284,7 +282,7 @@ def test_dataset_variants_and_exact_splits(tmp_path, dataset, split):
     (lambda d: d["images"][0].update(caption=" "), "Invalid expression"),
     (lambda d: d["images"][0].update(caption=["animal"]), "Invalid expression"),
     (lambda d: d["images"][0].update(width=0), "Invalid image dimensions"),
-    (lambda d: d["images"][0].update(file_name="missing.jpg"), "Grounding image not found"),
+    (lambda d: d["images"][0].update(file_name="missing.jpg"), "Dataset image not found"),
     (lambda d: d["annotations"][0].update(bbox=[0, 0, float("nan"), 1]), "Invalid box"),
     (lambda d: d["annotations"][0].update(bbox=[0, 0, 1, float("inf")]), "Invalid box"),
     (lambda d: d["annotations"][0].update(bbox=[0, 0, -1, 1]), "Invalid box"),
@@ -315,12 +313,20 @@ def test_image_dimensions_corruption_and_invalid_options(tmp_path):
     data["images"][0]["height"] = 61
     path.write_text(json.dumps(data))
     backend = Backend(FOUND)
-    with pytest.raises(ValueError, match="dimensions differ"):
+    from datasets.exceptions import DatasetGenerationError
+    with pytest.raises(DatasetGenerationError) as error:
         Ground(backend).val(dataset=load_refcoco(annotations, images), verbose=False)
+    assert isinstance(error.value.__cause__, ValueError)
+    assert 'dimensions differ' in str(error.value.__cause__)
+    data['images'][0]['height'] = 60
+    path.write_text(json.dumps(data))
+    original_pixels = (images / 'a.png').read_bytes()
     (images / "a.png").write_bytes(b"not an image")
-    with pytest.raises(OSError, match="cannot identify image"):
-        load_refcoco(annotations, images)[0]
-    for dataset, split in [("unknown", "val"), ("refcocog", "testA"), ("refcoco", "test"), ("refcocog", "../val")]:
+    with pytest.raises(DatasetGenerationError) as error:
+        load_refcoco(annotations, images)
+    assert isinstance(error.value.__cause__, OSError)
+    (images / 'a.png').write_bytes(original_pixels)
+    for dataset, split in [("unknown", "val"), ("refcocog", "../val")]:
         with pytest.raises(ValueError):
             load_refcoco(annotations, images, dataset=dataset, split=split)
     with pytest.raises(TypeError, match="loaded dataset"):
@@ -371,7 +377,7 @@ def test_grounding_example_defaults_to_neutral_context_and_reports_settings(tmp_
     assert report["metrics"]["samples"] == 2 and report["metrics"]["unique_images"] == 1
     assert report["metrics"]["mean_iou"] == 1
     assert report["status_counts"]["found"] == 2
-    assert report["dataset_metadata"]["expected_split_by"] == "umd"
+    assert "UMD" in report["dataset_metadata"]["description"]
     assert report["model_settings"] == {"temperature": 0.0, "max_tokens": 4096}
     assert all("Context:" not in request.instruction for request in backend.calls)
 
@@ -445,16 +451,22 @@ from ml_pipes.vlm import Ground, ModelResponse
 task = Ground(lambda request: ModelResponse({'status': 'not_found', 'box': None}))
 import cv2
 from types import SimpleNamespace
-from ml_pipes.vlm.validation.default_datasets import _refcoco_selection
 import json
 from pathlib import Path
-rows, names = _refcoco_selection(json.loads((Path(sys.argv[1]) / 'finetune_refcocog_val.json').read_text()))
+data = json.loads((Path(sys.argv[1]) / 'finetune_refcocog_val.json').read_text())
+names = [category['name'] for category in data['categories']]
+category_ids = {category['id']: index for index, category in enumerate(data['categories'])}
+targets = {item['image_id']: item for item in data['annotations']}
 class Dataset:
     features = {'image': object(), 'text': object(), 'bbox': object(),
                 'label': SimpleNamespace(names=names)}
     def __iter__(self):
-        for row in rows:
-            yield {**row, 'image': cv2.imread(str(Path(sys.argv[2]) / row['file_name']))[:, :, ::-1]}
+        for query in data['images']:
+            target = targets[query['id']]
+            x, y, w, h = target['bbox']
+            yield {'image': cv2.imread(str(Path(sys.argv[2]) / query['file_name']))[:, :, ::-1],
+                   'text': query['caption'], 'bbox': [x, y, x+w, y+h],
+                   'label': category_ids[target['category_id']]}
 metrics = task.val(dataset=Dataset(), verbose=False)
 assert metrics.seen == 4 and metrics.mean_iou == 0
 """

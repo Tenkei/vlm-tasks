@@ -74,9 +74,17 @@ class BaseValidator:
         started = perf_counter()
         self.setup()
         self.init_metrics()
-        self.metrics.dataset_counts = dict(getattr(self.dataset, "counts", {}))
+        self.metrics.dataset_counts = {}
+        info = getattr(self.dataset, "info", None)
+        source = {
+            key: str(value) for key in ("dataset_name", "config_name", "version", "description", "homepage")
+            if (value := getattr(info, key, None))
+        }
+        split = getattr(self.dataset, "split", None)
+        if split is not None:
+            source["split"] = str(split)
         self.metrics.dataset_metadata = {
-            **getattr(self.dataset, "metadata", {}), **getattr(self.metrics, "dataset_metadata", {}),
+            **source, **getattr(self.metrics, "dataset_metadata", {}),
         }
         self._timings = {"load": 0.0, "inference": 0.0, "metrics": 0.0}
         self._started = started
@@ -142,6 +150,7 @@ class BaseValidator:
         raise NotImplementedError
 
     def finalize_metrics(self):
+        self.metrics.dataset_counts["evaluated_samples"] = self.metrics.seen
         self.metrics.speed = {name: elapsed * 1000 / self.metrics.seen for name, elapsed in self._timings.items()}
         self.metrics.elapsed_seconds = perf_counter() - self._started
 
@@ -220,9 +229,7 @@ class AttributesValidator(BaseValidator):
         if not isinstance(feature, Mapping) or not feature:
             raise ValueError("Attributes datasets require per-group ClassLabel features")
         self.vocabularies = {group: _names(value, f'attributes.{group}') for group, value in feature.items()}
-        descriptions = getattr(self.dataset, "metadata", {}).get("attribute_descriptions", {})
-        schema = {group: {name: descriptions.get(group, {}).get(name, name) for name in names}
-                  for group, names in self.vocabularies.items()}
+        schema = {group: dict.fromkeys(names, "") for group, names in self.vocabularies.items()}
         self.attributes = _attribute_choices(schema if self.task.attributes is None else self.task.attributes)
         missing = self.attributes.keys() - schema.keys()
         if missing:
@@ -364,3 +371,8 @@ class GroundingValidator(BaseValidator):
             self.names[sample["label"]], sample["bbox"],
             prediction, self.sample_path(sample),
         )
+
+    def finalize_metrics(self):
+        self.metrics.dataset_counts.update(evaluated_expressions=self.metrics.seen,
+                                           evaluated_images=self.metrics.unique_images)
+        super().finalize_metrics()

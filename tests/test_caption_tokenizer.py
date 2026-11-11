@@ -14,7 +14,6 @@ import pytest
 from ml_pipes.vlm import Describe
 from ml_pipes.vlm.validation import DescribeMetrics
 from ml_pipes.vlm.validation import _caption_tokenizer as ptb
-from ml_pipes.vlm.validation import prepare_data as preparation
 
 
 @pytest.fixture
@@ -34,19 +33,13 @@ def java(monkeypatch):
 
 
 @pytest.fixture
-def artifacts(monkeypatch):
-    calls = []
+def artifacts(monkeypatch, hf_downloads):
     content = {version: f"artifact {version}".encode() for version in ptb.TOKENIZER_ARTIFACTS}
     registry = MappingProxyType({version: ptb._Artifact(f"https://example.test/{version}.jar", hashlib.sha256(data).hexdigest())
                                  for version, data in content.items()})
     monkeypatch.setattr(ptb, "TOKENIZER_ARTIFACTS", registry)
-
-    def open_url(url):
-        calls.append(url)
-        return BytesIO(content[url.rsplit("/", 1)[-1][:-4]])
-
-    monkeypatch.setattr(preparation, "_open_url", open_url)
-    return content, calls
+    hf_downloads[0].update({registry[version].url: data for version, data in content.items()})
+    return content, hf_downloads[1]
 
 
 def test_artifact_allowlist_is_immutable_and_default_is_reference_build():
@@ -122,8 +115,8 @@ def test_unsupported_versions_fail_without_setup(version, monkeypatch):
         ptb.CaptionTokenizer(version)
 
 
-def test_checksum_failure_does_not_run_model(tmp_path, java, artifacts, monkeypatch):
-    monkeypatch.setattr(preparation, "_open_url", lambda url: BytesIO(b"unexpected build"))
+def test_checksum_failure_does_not_run_model(tmp_path, java, artifacts, hf_downloads):
+    hf_downloads[0].update({artifact.url: b"unexpected build" for artifact in ptb.TOKENIZER_ARTIFACTS.values()})
     backend = lambda request: pytest.fail("Must fail before inference")
     with pytest.raises(ValueError, match="checksum mismatch"):
         Describe(backend).val(dataset=[], cache_dir=tmp_path, max_samples=1, verbose=False)
