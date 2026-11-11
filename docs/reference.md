@@ -5,6 +5,23 @@ Public imports: `ml_pipes.vlm` and `ml_pipes.vlm.validation`. Python 3.11+.
 Usage guides: [tasks](tasks.md), [model backends](model-backends.md),
 and [validation](validation.md). For installation, see the [README](../README.md).
 
+## Operators
+
+Import from `ml_pipes.vlm`. `model` must be a callable `ModelBackend`, normally
+`PydanticAIBackend`.
+
+| Constructor | Call input | Return type |
+|---|---|---|
+| `Classify(model, labels=None, *, context=None)` | `ImageInput` or `tuple[ImageInput, LabelChoices]` | `ClassificationResult` with exactly one allowed label |
+| `ClassifyMultiLabel(model, labels, *, context=None)` | `ImageInput` | `ClassificationResult` with zero or more distinct allowed labels |
+| `Detect(model, labels=None, *, context=None)` | `ImageInput` or `tuple[ImageInput, LabelChoices]` | `DetectionResult`; empty detections are valid |
+| `Ground(model, target=None, *, context=None, geometry="box")` | `ImageInput` or `tuple[ImageInput, str]` | `GroundingResult` |
+| `Attributes(model, attributes=None, *, context=None)` | `ImageInput` or `tuple[ImageInput, AttributeChoices]` | `AttributePredictionResult` with exactly one allowed value per attribute |
+| `Describe(model, *, context=None)` | `ImageInput` | `DescriptionResult` with one factual natural-language description |
+| `Answer(model, question=None, *, context=None)` | `ImageInput` or `tuple[ImageInput, str]` | `AnswerResult` with an answer or an unanswerable outcome |
+
+Ground's `geometry` constructor setting accepts `"box"` (default) or `"point"`.
+
 ## Task inputs
 
 `ImageInput`, `LabelChoices`, and `AttributeChoices` below describe accepted
@@ -56,23 +73,6 @@ Target, question, and attribute overrides preserve context. Describe uses
 context to guide the subject, focus, language, and level of detail.
 
 See the [task guide](tasks.md) for configuration examples.
-
-## Operators
-
-Import from `ml_pipes.vlm`. `model` must be a callable `ModelBackend`, normally
-`PydanticAIBackend`.
-
-| Constructor | Call input | Return type |
-|---|---|---|
-| `Classify(model, labels=None, *, context=None)` | `ImageInput` or `tuple[ImageInput, LabelChoices]` | `ClassificationResult` with exactly one allowed label |
-| `ClassifyMultiLabel(model, labels, *, context=None)` | `ImageInput` | `ClassificationResult` with zero or more distinct allowed labels |
-| `Detect(model, labels=None, *, context=None)` | `ImageInput` or `tuple[ImageInput, LabelChoices]` | `DetectionResult`; empty detections are valid |
-| `Ground(model, target=None, *, context=None, geometry="box")` | `ImageInput` or `tuple[ImageInput, str]` | `GroundingResult` |
-| `Attributes(model, attributes=None, *, context=None)` | `ImageInput` or `tuple[ImageInput, AttributeChoices]` | `AttributePredictionResult` with exactly one allowed value per attribute |
-| `Describe(model, *, context=None)` | `ImageInput` | `DescriptionResult` with one factual natural-language description |
-| `Answer(model, question=None, *, context=None)` | `ImageInput` or `tuple[ImageInput, str]` | `AnswerResult` with an answer or an unanswerable outcome |
-
-Ground's `geometry` constructor setting accepts `"box"` (default) or `"point"`.
 
 ## Result types
 
@@ -163,6 +163,23 @@ forwarded keywords, then called without arguments.
 See the [validation guide](validation.md) for dataset formats, sample selection,
 scoring, failure handling, and examples.
 
+### Dataset protocol
+
+Import `ValidationDataset` and the sample TypedDicts from `ml_pipes.vlm.validation`:
+`ClassificationSample`, `DetectionSample` (with `DetectionObjects`),
+`GroundingSample`, `AttributesSample`, `AnswerSample`, and `DescribeSample`.
+
+```python
+class ValidationDataset(Protocol):
+    @property
+    def features(self) -> Mapping[str, Any] | None: ...
+
+    def __iter__(self) -> Iterator[Mapping[str, Any]]: ...
+```
+
+See [sample schemas](validation.md#sample-schemas) and
+[custom validation](validation.md#custom-loaders-and-validators).
+
 ### Dataset loaders
 
 Import from `ml_pipes.vlm.validation`. Return type: Hugging Face `Dataset`.
@@ -185,6 +202,24 @@ load_refcoco(annotations, images, *, dataset="refcocog", split="val",
 
 See [dataset loading](validation.md#default-datasets-and-downloads) and
 [local benchmark formats](validation.md#local-benchmark-formats).
+
+### Validator classes
+
+Import from `ml_pipes.vlm.validation`.
+
+```text
+BaseValidator(task, dataset, *, max_samples=None, verbose=True, cache_dir=None)
+```
+
+`DetectionValidator` adds `match_iou=0.5`;
+`DescribeValidator` adds `tokenizer_version="3.4.1"`.
+`validator()` returns fresh metrics and stores them as `validator.metrics`.
+
+| Extension hook | Contract |
+|---|---|
+| `validate_sample(sample)` | Check required columns and target values; returns `None` |
+| `predict_sample(sample)` | Return a task result from the dataset row |
+| `update_metrics(prediction, sample)` | Score the prediction; `None` represents a failed model call |
 
 ### Metrics
 
@@ -213,41 +248,6 @@ Import from `ml_pipes.vlm.validation`.
 
 See [metric definitions](validation.md#metric-definitions-and-failures) and
 [results](validation.md#results).
-
-### Validator classes
-
-Import from `ml_pipes.vlm.validation`.
-
-```text
-BaseValidator(task, dataset, *, max_samples=None, verbose=True, cache_dir=None)
-```
-
-`DetectionValidator` adds `match_iou=0.5`;
-`DescribeValidator` adds `tokenizer_version="3.4.1"`.
-`validator()` returns fresh metrics and stores them as `validator.metrics`.
-
-| Extension hook | Contract |
-|---|---|
-| `validate_sample(sample)` | Check required columns and target values; returns `None` |
-| `predict_sample(sample)` | Return a task result from the dataset row |
-| `update_metrics(prediction, sample)` | Score the prediction; `None` represents a failed model call |
-
-### Dataset protocol
-
-Import `ValidationDataset` and the sample TypedDicts from `ml_pipes.vlm.validation`:
-`ClassificationSample`, `DetectionSample` (with `DetectionObjects`),
-`GroundingSample`, `AttributesSample`, `AnswerSample`, and `DescribeSample`.
-
-```python
-class ValidationDataset(Protocol):
-    @property
-    def features(self) -> Mapping[str, Any] | None: ...
-
-    def __iter__(self) -> Iterator[Mapping[str, Any]]: ...
-```
-
-See [sample schemas](validation.md#sample-schemas) and
-[custom validation](validation.md#custom-loaders-and-validators).
 
 ## Errors
 
