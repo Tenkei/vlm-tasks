@@ -111,7 +111,10 @@ See the [validation](docs/validation.md) guide for details.
 ### Validate on your own data
 
 ```python
-metrics = tasks.Attributes(backend).val(data="./annotations.json", images="./images")
+from ml_pipes.vlm.validation import load_ovad
+
+dataset = load_ovad("./annotations.json", "./images")
+metrics = tasks.Attributes(backend).val(dataset=dataset)
 ```
 
 See the [custom dataset guide](docs/validation.md#using-your-own-dataset) for

@@ -1,6 +1,8 @@
 """Dataset validation with local images and deterministic task backends."""
 from __future__ import annotations
 
+from ml_pipes.vlm.validation import load_classification, load_yolo
+
 import json
 import subprocess
 import sys
@@ -14,11 +16,7 @@ from ml_pipes.vlm import (
     Classify, Detect, Ground, InvalidModelResponseError,
     ModelExecutionError, ModelResponse,
 )
-from ml_pipes.vlm.validation import (
-    BaseValidator, ClassificationDataset, ClassificationMetrics,
-    ClassificationValidator, DataLoader, DetectionMetrics, DetectionValidator,
-    YOLODataset,
-)
+from ml_pipes.vlm.validation import BaseValidator, ClassificationMetrics, ClassificationValidator, DetectionMetrics, DetectionValidator
 
 
 def write_image(path: Path, size=(60, 120)) -> Path:
@@ -71,12 +69,12 @@ def test_classification_uses_dataset_labels_and_keeps_failures(tmp_path):
         ModelExecutionError("unavailable"), {"labels": ["cat"]},
     )
     task = Classify(backend, ["feline", "dog", "other"])
-    metrics = task.val(data=data, verbose=False)
+    metrics = task.val(dataset=load_local(data), verbose=False)
     assert isinstance(metrics, ClassificationMetrics)
     assert task.metrics is metrics
     assert metrics.results_dict == {"samples": 4, "failures": 1, "failure_rate": 0.25, "accuracy_top1": 0.25}
     np.testing.assert_array_equal(metrics.confusion_matrix, [[1, 1, 0], [1, 0, 1]])
-    assert metrics.names == metrics.prediction_names == ("cat", "dog")
+    assert metrics.names == ("cat", "dog")
     assert metrics.summary()[0] == {"class": "cat", "support": 2, "precision": 0.5, "recall": 0.5, "f1": 0.5}
     assert metrics.failures[0]["type"] == "ModelExecutionError"
     assert metrics.failures[0]["message"] == "unavailable"
@@ -101,7 +99,7 @@ def test_detection_counts_duplicates_wrong_classes_and_failed_images(tmp_path):
         {"detections": [box("dog")]},
         InvalidModelResponseError("bad response"), ModelExecutionError("unavailable"),
     )
-    metrics = Detect(backend, ["pedestrian", "dog", "ignored"]).val(data=data, verbose=False)
+    metrics = Detect(backend, ["pedestrian", "dog", "ignored"]).val(dataset=load_local(data), verbose=False)
     assert metrics.results_dict == {
         "samples": 4, "failures": 2, "failure_rate": 0.5, "match_iou": 0.5,
         "tp": 1, "fp": 3, "fn": 2, "precision": 0.25, "recall": 1 / 3, "f1": 2 / 7,
@@ -116,20 +114,21 @@ def test_detection_counts_duplicates_wrong_classes_and_failed_images(tmp_path):
 
 def test_original_detection_coordinates_and_metadata_are_preserved(tmp_path):
     data = detection_data(tmp_path, ["0 0.5 0.5 0.5 0.5\n"])
-    dataset = YOLODataset(data)
+    dataset = load_yolo(data)
     sample = dataset[0]
-    assert sample["img"].size == (120, 60)
-    np.testing.assert_array_equal(sample["bboxes"], [[30, 15, 90, 45]])
-    np.testing.assert_array_equal(dataset[0]["bboxes"], sample["bboxes"])
-    np.testing.assert_array_equal(dataset.samples[0]["bboxes"], [[0.25, 0.25, 0.75, 0.75]])
+    assert sample["image"].shape == (60, 120, 3)
+    np.testing.assert_array_equal(sample["objects"]["bbox"], [[30, 15, 90, 45]])
+    np.testing.assert_array_equal(dataset[0]["objects"]["bbox"], sample["objects"]["bbox"])
+    sample["objects"]["bbox"][0][0] = 999
+    assert dataset[0]["objects"]["bbox"] == [[30, 15, 90, 45]]
     backend = Backend({"detections": [box("person")]})
-    metrics = Detect(backend, ["person"]).val(data=data, verbose=False)
+    metrics = Detect(backend, ["person"]).val(dataset=load_local(data), verbose=False)
     assert (metrics.precision, metrics.recall, metrics.f1) == (1, 1, 1)
 
 
 def test_detection_scores_classes_absent_from_constructor_labels(tmp_path):
     data = detection_data(tmp_path, ["1 0.5 0.5 0.5 0.5\n"])
-    metrics = Detect(Backend({"detections": [box("person")]}), ["person"]).val(data=data, verbose=False)
+    metrics = Detect(Backend({"detections": [box("person")]}), ["person"]).val(dataset=load_local(data), verbose=False)
     assert metrics.results_dict["samples"] == 1
     assert metrics.results_dict["fp"] == 1
     assert metrics.results_dict["fn"] == 1
@@ -137,7 +136,7 @@ def test_detection_scores_classes_absent_from_constructor_labels(tmp_path):
 
 def test_constructor_only_labels_are_invalid_validation_predictions(tmp_path):
     data = classification_data(tmp_path)
-    metrics = Classify(Backend({"labels": ["animal"]}), ["animal"]).val(data=data, verbose=False)
+    metrics = Classify(Backend({"labels": ["animal"]}), ["animal"]).val(dataset=load_local(data), verbose=False)
     assert metrics.names == ("cat", "dog")
     assert metrics.top1 == 0
     assert len(metrics.failures) == 2
@@ -153,7 +152,7 @@ def test_all_failed_runs_keep_denominators(tmp_path, task_kind):
     else:
         data = detection_data(tmp_path, ["0 0.5 0.5 0.5 0.5\n"])
         task = Detect(backend, ["person"])
-    metrics = task.val(data=data, verbose=False)
+    metrics = task.val(dataset=load_local(data), verbose=False)
     assert metrics.seen == 1
     assert metrics.failure_rate == 1
     if task_kind == "classify":
@@ -169,7 +168,7 @@ def test_sample_limit_and_repeated_validator_runs(tmp_path):
     data = classification_data(tmp_path, per_class=2)
     backend = Backend({"labels": ["cat"]})
     task = Classify(backend, ["cat", "dog"])
-    validator = ClassificationValidator(task, data=data, max_samples=1, verbose=False)
+    validator = ClassificationValidator(task, dataset=load_local(data), max_samples=1, verbose=False)
     assert validator.task is task
     first = validator()
     second = validator()
@@ -178,13 +177,13 @@ def test_sample_limit_and_repeated_validator_runs(tmp_path):
     assert first.top1 == second.top1 == 1
     assert len(backend.calls) == 2
     assert len(second.failures) == 0
-    third = task.val(data=data, max_samples=1, verbose=False)
+    third = task.val(dataset=load_local(data), max_samples=1, verbose=False)
     assert third is task.metrics and third is not second
 
 
 @pytest.mark.parametrize("class_ids", [[2, 0, 2], {0, 2}, np.array([2, 0], dtype=np.int64)])
 def test_classification_dataset_filters_classes_and_preserves_ids(tmp_path, monkeypatch, class_ids):
-    from ml_pipes.vlm.validation import data as readers
+    from ml_pipes.vlm.validation import default_datasets as readers
 
     root = classification_data(tmp_path, classes=("cat", "dog", "fox"), per_class=2)
     image_files = readers._image_files
@@ -196,37 +195,34 @@ def test_classification_dataset_filters_classes_and_preserves_ids(tmp_path, monk
         return image_files(directory)
 
     monkeypatch.setattr(readers, "_image_files", selected_image_files)
-    dataset = ClassificationDataset(root, class_ids=class_ids)
-    assert dataset.names == {0: "cat", 1: "dog", 2: "fox"}
+    dataset = load_classification(root, class_ids=class_ids)
+    assert dataset.features["label"].names == ["cat", "dog", "fox"]
     assert len(dataset) == 4
     assert visited == ["cat", "fox"]
-    loader = DataLoader(dataset)
-    assert len(loader) == 4
-    assert [int(sample["cls"][0]) for sample in loader] == [0, 0, 2, 2]
+    assert [sample["label"] for sample in dataset] == [0, 0, 2, 2]
 
 
 @pytest.mark.parametrize("class_ids", [[], [-1], [2], [1.0], [0, True], [np.bool_(False)], 1, "1", b"\x01"])
 def test_classification_dataset_rejects_invalid_class_ids(tmp_path, class_ids):
     root = classification_data(tmp_path)
     with pytest.raises(ValueError, match="class_ids"):
-        ClassificationDataset(root, class_ids=class_ids)
+        load_classification(root, class_ids=class_ids)
 
 
 def test_classification_dataset_selection_does_not_decode_excluded_images(tmp_path):
     data = classification_data(tmp_path, per_class=2)
     (data / "val" / "cat" / "0.png").write_bytes(b"corrupt but outside selected classes")
     (data / "val" / "dog" / "1.png").write_bytes(b"corrupt but past sample limit")
-    dataset = ClassificationDataset(data, class_ids=[1])
-    loader = DataLoader(dataset)
-    assert len(loader) == 2
-    metrics = Classify(Backend({"labels": ["dog"]})).val(dataloader=loader, max_samples=1, verbose=False)
+    dataset = load_classification(data, class_ids=[1])
+    assert len(dataset) == 2
+    metrics = Classify(Backend({"labels": ["dog"]})).val(dataset=load_classification(data, class_ids=[1]), max_samples=1, verbose=False)
     assert metrics.seen == 1 and metrics.top1 == 1
     assert metrics.names == ("cat", "dog")
 
 
 def test_custom_validator_class():
     class CustomValidator:
-        def __init__(self, *, task, marker):
+        def __init__(self, *, task, dataset, marker):
             assert isinstance(task, Ground)
             self.task = task
             self.metrics = marker
@@ -235,31 +231,20 @@ def test_custom_validator_class():
             assert self.task is task
 
     task = Ground(Backend(), "the person")
-    assert task.val(validator=CustomValidator, marker="custom metrics") == "custom metrics"
+    assert task.val(dataset=(), validator=CustomValidator, marker="custom metrics") == "custom metrics"
 
 
 def test_injected_loader_and_custom_dataset_construction(tmp_path):
-    data = classification_data(tmp_path)
-    dataset = ClassificationDataset(data, class_ids=[1])
-    loader = DataLoader(dataset)
+    dataset = load_classification(classification_data(tmp_path), class_ids=[1])
     task = Classify(Backend({"labels": ["dog"]}), ["dog"])
-    metrics = task.val(dataloader=loader, verbose=False)
-    assert metrics.seen == 1 and metrics.top1 == 1
+    assert task.val(dataset=dataset, verbose=False).top1 == 1
 
-    class IndexedDataset:
-        names = dataset.names
+    class CustomDataset:
+        features = dataset.features
+        def __iter__(self):
+            return iter(dataset)
 
-        def __len__(self):
-            return len(dataset)
-
-        def __getitem__(self, index):
-            return dataset[index]
-
-    class CustomDatasetValidator(ClassificationValidator):
-        def build_dataset(self):
-            return IndexedDataset()
-
-    assert task.val(validator=CustomDatasetValidator, data="unused", verbose=False).top1 == 1
+    assert task.val(dataset=CustomDataset(), verbose=False).top1 == 1
 
 
 @pytest.mark.parametrize("task_type", [Classify, Detect, Ground])
@@ -267,7 +252,7 @@ def test_removed_class_map_fails_before_execution(tmp_path, task_type):
     data = classification_data(tmp_path)
     backend = Backend({"labels": ["cat"]})
     with pytest.raises(TypeError, match="class_map"):
-        task_type(backend).val(data=data, class_map={"cat": "cat"}, verbose=False)
+        task_type(backend).val(dataset=load_local(data), class_map={"cat": "cat"}, verbose=False)
     assert not backend.calls
 
 
@@ -276,20 +261,20 @@ def test_removed_class_map_fails_before_execution(tmp_path, task_type):
 def test_validation_overrides_labels_without_mutating_task(tmp_path, custom_loader, task_type):
     if task_type is Classify:
         data = classification_data(tmp_path)
-        dataset = ClassificationDataset(data)
+        dataset = load_classification(data)
         payload = {"labels": ["cat"]}
         labels = ("cat", "dog")
         original_payload = {"labels": ["original"]}
     else:
         data = detection_data(tmp_path, ["0 0.5 0.5 0.5 0.5"])
-        dataset = YOLODataset(data)
+        dataset = load_yolo(data)
         payload = {"detections": [box("person")]}
         labels = ("person", "dog")
         original_payload = {"detections": [box("original")]}
     backend = Backend(payload, original_payload)
     task = task_type(backend, {"original": "Original description"}, context="Keep this context.")
     spec, instruction = task._spec, task._instruction
-    settings = {"dataloader": DataLoader(dataset)} if custom_loader else {"data": data}
+    settings = {"dataset": load_local(data).select([0]) if custom_loader else load_local(data)}
     metrics = task.val(**settings, max_samples=1, verbose=False)
     assert metrics.names == labels
     assert metrics.summary()[1]["support"] == 0
@@ -300,7 +285,7 @@ def test_validation_overrides_labels_without_mutating_task(tmp_path, custom_load
     assert all(label in json.dumps(request.response_spec.schema) for label in labels)
     assert task.labels == {"original": "Original description"}
     assert task._spec is spec and task._instruction == instruction
-    task(dataset[0]["img"])
+    task(dataset[0]["image"])
     assert backend.calls[1].response_spec is spec
 
 
@@ -313,7 +298,7 @@ def test_validation_accepts_tasks_without_constructor_labels(tmp_path, task_type
         data = detection_data(tmp_path, ["0 0.5 0.5 0.5 0.5"])
         payload = {"detections": [box("person")]}
     task = task_type(Backend(payload))
-    metrics = task.val(data=data, max_samples=1, verbose=False)
+    metrics = task.val(dataset=load_local(data), max_samples=1, verbose=False)
     assert metrics.seen == 1 and not metrics.failures
     assert task.labels is task._spec is task._instruction is None
 
@@ -321,13 +306,13 @@ def test_validation_accepts_tasks_without_constructor_labels(tmp_path, task_type
 @pytest.mark.parametrize("max_samples", [0, -1, True, 1.5])
 def test_invalid_sample_limits(max_samples):
     with pytest.raises(ValueError, match="max_samples"):
-        BaseValidator(Classify(Backend(), ["cat"]), data="unused", max_samples=max_samples)
+        BaseValidator(Classify(Backend(), ["cat"]), dataset=(), max_samples=max_samples)
 
 
 @pytest.mark.parametrize("iou", [0, -0.1, 1.1, float("nan"), float("inf"), True, "0.5"])
 def test_invalid_matching_thresholds(iou):
     with pytest.raises(ValueError, match="match_iou"):
-        DetectionValidator(Detect(Backend(), ["person"]), data="unused", match_iou=iou)
+        DetectionValidator(Detect(Backend(), ["person"]), dataset=(), match_iou=iou)
     with pytest.raises(ValueError, match="match_iou"):
         DetectionMetrics(["person"], match_iou=iou)
 
@@ -335,24 +320,18 @@ def test_invalid_matching_thresholds(iou):
 def test_exact_split_and_empty_evaluation_errors(tmp_path):
     data = classification_data(tmp_path)
     with pytest.raises(FileNotFoundError, match="split not found"):
-        ClassificationDataset(data, split="test")
+        load_classification(data, split="test")
     empty = tmp_path / "empty_dataset"
     (empty / "val" / "empty").mkdir(parents=True)
     backend = Backend({"labels": ["empty"]})
     with pytest.raises(ValueError, match="No classification images"):
-        Classify(backend, ["empty"]).val(data=empty, verbose=False)
-
-    class EmptyLoader:
-        dataset = ClassificationDataset(data)
-
-        def __iter__(self):
-            return iter(())
+        Classify(backend, ["empty"]).val(dataset=load_local(empty), verbose=False)
 
     with pytest.raises(ValueError, match="No samples to evaluate"):
-        Classify(backend).val(dataloader=EmptyLoader(), verbose=False)
+        Classify(backend).val(dataset=load_classification(data).select([]), verbose=False)
     assert not backend.calls
     with pytest.raises(ValueError, match="split name"):
-        ClassificationDataset(data, split="../val")
+        load_classification(data, split="../val")
 
 
 @pytest.mark.parametrize("annotation", [
@@ -365,7 +344,7 @@ def test_invalid_annotations_are_rejected_before_task_calls(tmp_path, annotation
     data = detection_data(tmp_path, [annotation])
     backend = Backend({"detections": []})
     with pytest.raises(ValueError, match="Invalid detection annotation"):
-        Detect(backend, ["person"]).val(data=data, verbose=False)
+        Detect(backend, ["person"]).val(dataset=load_local(data), verbose=False)
     assert not backend.calls
 
 
@@ -376,38 +355,38 @@ def test_detection_relative_roots_lists_and_split_entries(tmp_path):
     config = tmp_path / "configs" / "eval.yaml"
     config.parent.mkdir()
     config.write_text("path: ../dataset\nval: [val.txt, images/val]\nnames:\n  0: person\n  1: dog\n")
-    dataset = YOLODataset(config)
+    dataset = load_yolo(config)
     assert len(dataset) == 2
-    assert dataset.names == {0: "person", 1: "dog"}
+    assert dataset.features["objects"]["category"].feature.names == ["person", "dog"]
     assert dataset[0]["im_file"].endswith("0.png")
     with pytest.raises(ValueError, match="split"):
-        YOLODataset(config, split="test")
+        load_yolo(config, split="test")
     (root / "val.txt").write_text("images/val/missing.png\n")
     with pytest.raises(ValueError, match="Invalid image entry"):
-        YOLODataset(config)
+        load_yolo(config)
 
 
 def test_yolo_annotation_rounding_at_image_edges_is_preserved(tmp_path):
     # COCO128 contains this valid six-decimal annotation at the right edge.
     data = detection_data(tmp_path, ["0 0.662641 0.494385 0.674719 0.988771"])
-    dataset = YOLODataset(data)
-    box = dataset.samples[0]["bboxes"][0]
-    assert box[2] == pytest.approx(1.0000005)
-    assert box[1] == pytest.approx(-0.0000005)
-    assert dataset[0]["bboxes"][0, 2] > 120
+    dataset = load_yolo(data)
+    box = dataset[0]["objects"]["bbox"][0]
+    assert box[2] == pytest.approx(120 * 1.0000005)
+    assert box[1] == pytest.approx(60 * -0.0000005)
+    assert dataset[0]["objects"]["bbox"][0][2] > 120
 
 
 def test_corrupt_images_and_unexpected_exceptions_stop_the_run(tmp_path):
     data = classification_data(tmp_path)
     backend = Backend(RuntimeError("programming error"))
     with pytest.raises(RuntimeError, match="programming error"):
-        Classify(backend, ["cat"]).val(data=data, verbose=False)
+        Classify(backend, ["cat"]).val(dataset=load_local(data), verbose=False)
     (data / "val" / "cat" / "0.png").write_bytes(b"not an image")
-    with pytest.raises(ValueError, match="Could not read image.*0.png"):
-        Classify(backend, ["cat"]).val(data=data, verbose=False)
+    with pytest.raises(OSError, match="0.png"):
+        Classify(backend, ["cat"]).val(dataset=load_local(data), verbose=False)
     (data / "val" / "cat" / "0.png").write_bytes(b"")
-    with pytest.raises(ValueError, match="Could not read image.*0.png"):
-        Classify(backend, ["cat"]).val(data=data, verbose=False)
+    with pytest.raises(OSError, match="0.png"):
+        Classify(backend, ["cat"]).val(dataset=load_local(data), verbose=False)
 
 
 @pytest.mark.parametrize("threshold,expected_tp", [(0.5, 1), (0.50001, 0), (1.0, 0)])
@@ -431,14 +410,14 @@ def test_detection_matching_uses_largest_iou_and_unique_targets():
 
 def test_all_negative_detection_dataset_returns_defined_metrics(tmp_path):
     data = detection_data(tmp_path, [None, ""])
-    metrics = Detect(Backend({"detections": []}), ["person"]).val(data=data, verbose=False)
+    metrics = Detect(Backend({"detections": []}), ["person"]).val(dataset=load_local(data), verbose=False)
     assert metrics.seen == 2
     assert (metrics.precision, metrics.recall, metrics.f1) == (0, 0, 0)
 
 
 def test_verbose_output_stays_on_stderr(tmp_path, capsys):
     data = classification_data(tmp_path, classes=("cat",))
-    Classify(Backend({"labels": ["cat"]}), ["cat"]).val(data=data)
+    Classify(Backend({"labels": ["cat"]}), ["cat"]).val(dataset=load_local(data))
     captured = capsys.readouterr()
     assert captured.out == ""
     assert "Validated 1 samples" in captured.err
@@ -456,11 +435,18 @@ class BlockOptional(importlib.abc.MetaPathFinder):
             raise ImportError('blocked optional dependency: ' + fullname)
 sys.meta_path.insert(0, BlockOptional())
 from ml_pipes.vlm import Classify, ModelResponse
-from ml_pipes.vlm.validation import YOLODataset
+from ml_pipes.vlm.validation import load_yolo
+from types import SimpleNamespace
+from pathlib import Path
+import cv2
+class Dataset:
+    features = {'image': object(), 'label': SimpleNamespace(names=['cat'])}
+    def __iter__(self):
+        yield {'image': cv2.imread(str(next(Path(sys.argv[1]).rglob('*.png'))))[:, :, ::-1], 'label': 0}
 task = Classify(lambda request: ModelResponse({'labels': ['cat']}), ['cat'])
-assert task.val(data=sys.argv[1], verbose=False).top1 == 1
+assert task.val(dataset=Dataset(), verbose=False).top1 == 1
 try:
-    YOLODataset('unused.yaml')
+    load_yolo('unused.yaml')
 except ImportError as exc:
     assert 'ml-pipes-vlm[validation]' in str(exc)
 else:
@@ -508,3 +494,7 @@ def test_detection_example_and_execution_failure_exit_code(tmp_path, monkeypatch
     report = json.loads(capsys.readouterr().out)
     assert report["metrics"]["failure_rate"] == 1
     assert report["failures"][0]["message"] == "offline"
+
+
+def load_local(path):
+    return load_yolo(path) if Path(path).suffix == ".yaml" else load_classification(path)

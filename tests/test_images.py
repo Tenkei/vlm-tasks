@@ -30,6 +30,27 @@ def test_loading_a_payload_preserves_its_identity():
     assert load_image(image) is image
 
 
+def test_loading_an_rgb_array_preserves_pixels_and_dimensions():
+    pixels = np.full((3, 5, 3), (200, 30, 10), dtype=np.uint8)[:, ::-1]
+    image = load_image(pixels)
+    assert image.size == (5, 3) and image.color_space == "RGB"
+    assert image.layout == "HWC" and image.array.flags.c_contiguous
+    np.testing.assert_array_equal(image.array, pixels)
+    decoded = cv2.imdecode(np.frombuffer(encode_image(image), dtype=np.uint8), cv2.IMREAD_COLOR)
+    np.testing.assert_array_equal(decoded, pixels[..., ::-1])
+
+
+@pytest.mark.parametrize("pixels", [
+    np.zeros((3, 5, 3), dtype=np.float32),
+    np.zeros((3, 5), dtype=np.uint8),
+    np.zeros((3, 5, 4), dtype=np.uint8),
+    np.zeros((0, 5, 3), dtype=np.uint8),
+])
+def test_loading_an_array_requires_uint8_hwc_rgb(pixels):
+    with pytest.raises(ValueError):
+        load_image(pixels)
+
+
 @pytest.mark.parametrize("color_space", ["RGB", "BGR"])
 def test_encoded_png_preserves_colors_and_input(color_space):
     array = np.zeros((3, 5, 3), dtype=np.uint8)

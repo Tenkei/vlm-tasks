@@ -14,7 +14,7 @@ import pytest
 from ml_pipes.vlm import Describe
 from ml_pipes.vlm.validation import DescribeMetrics
 from ml_pipes.vlm.validation import _caption_tokenizer as ptb
-from ml_pipes.vlm.validation import prepare as preparation
+from ml_pipes.vlm.validation import prepare_data as preparation
 
 
 @pytest.fixture
@@ -126,7 +126,7 @@ def test_checksum_failure_does_not_run_model(tmp_path, java, artifacts, monkeypa
     monkeypatch.setattr(preparation, "_open_url", lambda url: BytesIO(b"unexpected build"))
     backend = lambda request: pytest.fail("Must fail before inference")
     with pytest.raises(ValueError, match="checksum mismatch"):
-        Describe(backend).val(cache_dir=tmp_path, max_samples=1, verbose=False)
+        Describe(backend).val(dataset=[], cache_dir=tmp_path, max_samples=1, verbose=False)
     assert not list(tmp_path.rglob("*.jar"))
 
 
@@ -144,7 +144,7 @@ def test_java_setup_failures_stop_before_inference(tmp_path, java, artifacts, mo
 
         monkeypatch.setattr(ptb.subprocess, "run", run)
     with pytest.raises(RuntimeError):
-        Describe(lambda request: pytest.fail("Must fail before inference")).val(cache_dir=tmp_path, verbose=False)
+        Describe(lambda request: pytest.fail("Must fail before inference")).val(dataset=[], cache_dir=tmp_path, verbose=False)
 
 
 def test_final_tokenizer_runtime_error_is_not_a_model_failure(tmp_path, java, artifacts, monkeypatch):

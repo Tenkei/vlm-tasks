@@ -1,6 +1,6 @@
 """Prepare supported benchmark datasets as local inputs for validation.
 
-Only registered sources are fetched. Loaders themselves remain local readers.
+Only registered sources are fetched. Loaders turn prepared files into HF datasets.
 Archives are read member-by-member; their paths and download scripts are never
 executed or extracted. Cached preparations include provenance and file hashes.
 """
@@ -22,67 +22,17 @@ from zipfile import ZipFile
 import cv2
 import numpy as np
 
-
-@dataclass(frozen=True)
-class DatasetInfo:
-    task: str
-    splits: tuple[str, ...]
-    names: tuple[str, ...] = ()
+from . import dataset_constants as constants
+from .data import _limit
 
 
 @dataclass(frozen=True)
-class PreparedDataset:
-    dataset: str
-    split: str
+class PreparedFiles:
+    """Local source paths and preparation provenance for a dataset loader."""
+
     data: Path
     images: Path | None
-    names: tuple[str, ...]
     metadata: dict
-    attributes: dict[str, dict[str, str]] | None = None
-
-
-_CIFAR_NAMES = (
-    "airplane", "automobile", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck",
-)
-_COCO_NAMES = (
-    "person", "bicycle", "car", "motorcycle", "airplane", "bus", "train", "truck", "boat",
-    "traffic light", "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat", "dog",
-    "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella",
-    "handbag", "tie", "suitcase", "frisbee", "skis", "snowboard", "sports ball", "kite",
-    "baseball bat", "baseball glove", "skateboard", "surfboard", "tennis racket", "bottle",
-    "wine glass", "cup", "fork", "knife", "spoon", "bowl", "banana", "apple", "sandwich",
-    "orange", "broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair", "couch",
-    "potted plant", "bed", "dining table", "toilet", "tv", "laptop", "mouse", "remote",
-    "keyboard", "cell phone", "microwave", "oven", "toaster", "sink", "refrigerator", "book",
-    "clock", "vase", "scissors", "teddy bear", "hair drier", "toothbrush",
-)
-DATASETS = {
-    "cifar10": DatasetInfo("classify", ("train", "val", "test"), _CIFAR_NAMES),
-    "coco128": DatasetInfo("detect", ("train", "val"), _COCO_NAMES),
-    "refcocog": DatasetInfo("ground", ("train", "val", "test")),
-    "ovad": DatasetInfo("attributes", ("test", "val")),
-    "vqav2": DatasetInfo("answer", ("train", "val")),
-    "coco_captions2017": DatasetInfo("describe", ("train", "val")),
-}
-DEFAULT_DATASETS = {
-    "classify": "cifar10", "detect": "coco128", "ground": "refcocog",
-    "attributes": "ovad", "answer": "vqav2", "describe": "coco_captions2017",
-}
-
-_CIFAR_URL = "https://www.cs.toronto.edu/~kriz/cifar-10-binary.tar.gz"
-_CIFAR_CHECKSUM = "md5:c32a1d4ab5d03f1284b67883e8d87530"
-_COCO_URL = "https://github.com/ultralytics/assets/releases/download/v0.0.0/coco128.zip"
-_COCO_CHECKSUM = "sha256:61e5e3028863d8ffc3b81d6a514603954889f0edd5e4b44c4ce60b2da99aeb8e"
-_MDETR_URL = "https://zenodo.org/records/4729015/files/mdetr_annotations.tar.gz?download=1"
-_COCO_IMAGE_URL = "https://s3.amazonaws.com/images.cocodataset.org/train2014/"
-_OVAD_URL = "https://lmb.informatik.uni-freiburg.de/resources/datasets/ovad.zip"
-_OVAD_CHECKSUM = "sha256:1716fc5216dd040c3803ca7d91444140d02bc6a98f40a60b85f16c97174dc1ec"
-_OVAD_IMAGE_URL = "https://s3.amazonaws.com/images.cocodataset.org/val2017/"
-_VQA_URL = "https://cvmlp.s3.amazonaws.com/vqa/mscoco/vqa/v2_{kind}_{split}_mscoco.zip"
-_VQA_IMAGE_URL = "https://s3.amazonaws.com/images.cocodataset.org/{split}2014/"
-_CAPTIONS_URL = "https://s3.amazonaws.com/images.cocodataset.org/annotations/annotations_trainval2017.zip"
-_CAPTIONS_IMAGE_URL = "https://s3.amazonaws.com/images.cocodataset.org/{split}2017/"
-_FORMAT_VERSION = 1
 
 
 def _cache_root(cache_dir=None) -> Path:
@@ -152,12 +102,24 @@ def _download(url: str, path: Path, *, checksum: str | None = None, force: bool 
     raise AssertionError("Unreachable download state")
 
 
-def _cached(path: Path, cache: Path) -> tuple[PreparedDataset | None, set[Path]]:
+def _download_image(url: str, path: Path, *, size=None, force=False) -> Path:
+    """Check decoded pixels and retry a corrupt or incorrectly sized download."""
+    for attempt in range(2):
+        _download(url, path, force=force or attempt > 0)
+        decoded = cv2.imread(str(path))
+        if decoded is not None and (size is None or (decoded.shape[1], decoded.shape[0]) == size):
+            return path
+    if decoded is None:
+        raise ValueError(f"Could not decode downloaded image: {path.name}")
+    raise ValueError(f"Downloaded image dimensions differ from annotation: {path.name}")
+
+
+def _cached(path: Path, cache: Path) -> tuple[PreparedFiles | None, set[Path]]:
     if not path.is_file():
         return None, set()
     try:
         record = json.loads(path.read_text())
-        if record["format_version"] != _FORMAT_VERSION:
+        if record["format_version"] != constants.PREPARATION_VERSION:
             return None, set()
         files = {cache / name: checksum for name, checksum in record["files"].items()}
         if not files or any(not item.resolve().is_relative_to(cache) for item in files):
@@ -171,21 +133,57 @@ def _cached(path: Path, cache: Path) -> tuple[PreparedDataset | None, set[Path]]
             images is not None and not images.resolve().is_relative_to(cache)
         ):
             return None, set()
-        if record["dataset"] == "cifar10" and any(
-            not (data / record["split"] / name).is_dir() for name in _CIFAR_NAMES
-        ):
-            return None, set()
-        return PreparedDataset(
-            record["dataset"], record["split"], data, images,
-            tuple(record["names"]), record["metadata"],
-            record.get("attributes"),
-        ), set()
+        return PreparedFiles(data, images, record["metadata"]), set()
     except (OSError, ValueError, KeyError, TypeError):
         return None, set()
 
 
-def _prepare_cifar(root: Path, output: Path, split: str, limit, classes, bad):
-    archive = _download(_CIFAR_URL, root / "sources" / "cifar10-binary.tar.gz", checksum=_CIFAR_CHECKSUM)
+def _preparation_cache(dataset, split, max_samples, cache_dir, *, selection=None):
+    """Validate a split and locate its cached preparation and damaged files."""
+    info = constants.DATASETS[dataset]
+    if split not in info.splits:
+        raise ValueError(f"Unsupported split {split!r} for {dataset}; expected {info.splits}")
+    _limit(max_samples)
+    cache = _cache_root(cache_dir)
+    selection_key = "all" if selection is None else hashlib.sha256(json.dumps(selection).encode()).hexdigest()[:16]
+    root = cache / dataset
+    output = root / "prepared" / split / ("all" if max_samples is None else str(max_samples)) / selection_key
+    cached, bad = _cached(output / "prepared.json", cache)
+    return root, output, cached, bad
+
+
+def _save_preparation(root, output, split, *, data, images=None, metadata, files) -> PreparedFiles:
+    """Record prepared files and provenance after successful preparation."""
+    if not files:
+        raise ValueError(f"No samples available in {root.name} split {split!r}")
+    cache = root.parent
+    metadata = {
+        "dataset": root.name, "split": split,
+        "preparation_version": constants.PREPARATION_VERSION, **metadata,
+    }
+    _write_json(output / "prepared.json", {
+        "format_version": constants.PREPARATION_VERSION,
+        "data": str(data.relative_to(cache)),
+        "images": None if images is None else str(images.relative_to(cache)),
+        "metadata": metadata,
+        "files": {str(path.relative_to(cache)): _hash(path) for path in files},
+    })
+    return PreparedFiles(data, images, metadata)
+
+
+def prepare_cifar10(
+    *, split: str = "test", max_samples: int | None = None,
+    classes=None, cache_dir: str | Path | None = None,
+) -> PreparedFiles:
+    """Cache CIFAR-10 images, selecting classes before the sample limit."""
+    if classes is not None:
+        if not classes or any(name not in constants.CIFAR_NAMES for name in classes):
+            raise ValueError("classes must contain supported CIFAR-10 class names")
+        classes = tuple(sorted(set(classes)))
+    root, output, cached, _ = _preparation_cache("cifar10", split, max_samples, cache_dir, selection=classes)
+    if cached is not None and all((cached.data / split / name).is_dir() for name in constants.CIFAR_NAMES):
+        return cached
+    archive = _download(constants.CIFAR_URL, root / "sources" / "cifar10-binary.tar.gz", checksum=constants.CIFAR_CHECKSUM)
     source_split = "test" if split == "val" else split
     batches = ["test_batch.bin"] if source_split == "test" else [f"data_batch_{i}.bin" for i in range(1, 6)]
     samples = []
@@ -202,17 +200,17 @@ def _prepare_cifar(root: Path, output: Path, split: str, limit, classes, bad):
             if not content or len(content) % 3073:
                 raise ValueError(f"Invalid CIFAR-10 binary batch: {name}")
             records = np.frombuffer(content, dtype=np.uint8).reshape(-1, 3073)
-            if (records[:, 0] >= len(_CIFAR_NAMES)).any():
+            if (records[:, 0] >= len(constants.CIFAR_NAMES)).any():
                 raise ValueError(f"Invalid CIFAR-10 label in {name}")
             total += len(records)
             for index, record in enumerate(records):
-                label = _CIFAR_NAMES[int(record[0])]
+                label = constants.CIFAR_NAMES[int(record[0])]
                 if classes is None or label in classes:
                     samples.append((label, f"{batch_index}_{index:05d}.png", record[1:]))
     samples.sort(key=lambda sample: (sample[0], sample[1]))
-    selected = samples if limit is None else samples[:limit]
+    selected = samples if max_samples is None else samples[:max_samples]
     data = output / "data"
-    for label in _CIFAR_NAMES:
+    for label in constants.CIFAR_NAMES:
         (data / split / label).mkdir(parents=True, exist_ok=True)
     files = []
     for label, filename, pixels in selected:
@@ -223,23 +221,32 @@ def _prepare_cifar(root: Path, output: Path, split: str, limit, classes, bad):
         path = data / split / label / filename
         _atomic_write(path, encoded.tobytes())
         files.append(path)
-    return data, None, _CIFAR_NAMES, files, {
-        "source_url": _CIFAR_URL, "archive_checksum": _CIFAR_CHECKSUM,
+    return _save_preparation(root, output, split, data=data, files=files, metadata={
+        "max_samples": max_samples,
+        "classes": None if classes is None else list(classes),
+        "source_url": constants.CIFAR_URL, "archive_checksum": constants.CIFAR_CHECKSUM,
         "source_split": source_split, "source_samples": total,
         "selected_samples": len(selected), "selection": "Class name and source record order",
         "split_note": "val is an explicit alias for the official CIFAR-10 test split",
-    }
+    })
 
 
-def _prepare_coco(root: Path, output: Path, split: str, limit, classes, bad):
-    archive = _download(_COCO_URL, root / "sources" / "coco128.zip", checksum=_COCO_CHECKSUM)
+def prepare_coco128(
+    *, split: str = "val", max_samples: int | None = None,
+    cache_dir: str | Path | None = None,
+) -> PreparedFiles:
+    """Cache a deterministic image subset from the COCO128 archive."""
+    root, output, cached, _ = _preparation_cache("coco128", split, max_samples, cache_dir)
+    if cached is not None:
+        return cached
+    archive = _download(constants.COCO_URL, root / "sources" / "coco128.zip", checksum=constants.COCO_CHECKSUM)
     files = []
     with ZipFile(archive) as source:
         names = source.namelist()
         images = sorted(name for name in names if re.fullmatch(r"coco128/images/train2017/[0-9]+\.jpg", name))
         if not images or len(images) != len(set(images)):
             raise ValueError("COCO128 archive has missing or duplicate images")
-        selected = images if limit is None else images[:limit]
+        selected = images if max_samples is None else images[:max_samples]
         for name in selected:
             label = name.replace("/images/", "/labels/").removesuffix(".jpg") + ".txt"
             for member in (name, label):
@@ -252,21 +259,22 @@ def _prepare_coco(root: Path, output: Path, split: str, limit, classes, bad):
                 files.append(path)
     data = output / "data.yaml"
     # JSON is valid YAML and avoids a YAML dependency in the downloader.
-    _write_json(data, {"path": ".", split: "images/train2017", "names": list(_COCO_NAMES)})
+    _write_json(data, {"path": ".", split: "images/train2017", "names": list(constants.COCO_NAMES)})
     files.append(data)
-    return data, None, _COCO_NAMES, files, {
-        "source_url": _COCO_URL, "archive_checksum": _COCO_CHECKSUM,
+    return _save_preparation(root, output, split, data=data, files=files, metadata={
+        "max_samples": max_samples,
+        "source_url": constants.COCO_URL, "archive_checksum": constants.COCO_CHECKSUM,
         "source_split": "train2017", "source_samples": len(images),
         "selected_samples": len(selected), "selection": "Image filename order",
         "split_note": "COCO128 train and val reuse the same 128 COCO training images",
-    }
+    })
 
 
 def _ground_annotation(path: Path) -> dict:
     if not path.is_file():
         for attempt in range(3):
             try:
-                with _open_url(_MDETR_URL) as response, tarfile.open(fileobj=response, mode="r|gz") as source:
+                with _open_url(constants.MDETR_URL) as response, tarfile.open(fileobj=response, mode="r|gz") as source:
                     for member in source:
                         if Path(member.name).name == path.name:
                             if not member.isfile():
@@ -282,7 +290,7 @@ def _ground_annotation(path: Path) -> dict:
                 break
             except (URLError, OSError) as exc:
                 if isinstance(exc, FileNotFoundError) or attempt == 2:
-                    raise RuntimeError(f"Could not prepare {path.name} from {_MDETR_URL}: {exc}") from exc
+                    raise RuntimeError(f"Could not prepare {path.name} from {constants.MDETR_URL}: {exc}") from exc
                 time.sleep(0.5 * (attempt + 1))
     content = json.loads(path.read_text())
     if not isinstance(content, dict) or any(not isinstance(content.get(key), list) for key in ("images", "annotations", "categories")):
@@ -290,15 +298,25 @@ def _ground_annotation(path: Path) -> dict:
     return content
 
 
-def _prepare_ground(root: Path, output: Path, split: str, limit, classes, bad):
+def prepare_refcocog(
+    *, split: str = "val", max_samples: int | None = None,
+    cache_dir: str | Path | None = None,
+) -> PreparedFiles:
+    """Cache RefCOCOg annotations and images referenced by selected expressions."""
+    root, output, cached, bad = _preparation_cache("refcocog", split, max_samples, cache_dir)
+    if cached is not None:
+        return cached
+    from .default_datasets import _refcoco_selection
+
     source_path = root / "sources" / f"finetune_refcocog_{split}.json"
     original = _ground_annotation(source_path)
-    queries = original["images"] if limit is None else original["images"][:limit]
+    queries = original["images"] if max_samples is None else original["images"][:max_samples]
     ids = [query.get("id") for query in queries]
     if any(type(value) is not int for value in ids) or len(ids) != len(set(ids)):
         raise ValueError("Invalid or duplicate grounding query IDs")
     selected_ids = set(ids)
     subset = {**original, "images": queries, "annotations": [item for item in original["annotations"] if item.get("image_id") in selected_ids]}
+    _refcoco_selection(subset)
     images = root / "images" / "train2014"
     files = []
     dimensions = {}
@@ -314,43 +332,44 @@ def _prepare_ground(root: Path, output: Path, split: str, limit, classes, bad):
         dimensions[filename] = size
     for filename, size in dimensions.items():
         path = images / filename
-        _download(_COCO_IMAGE_URL + filename, path, force=path in bad)
-        decoded = cv2.imread(str(path))
-        if decoded is None or (decoded.shape[1], decoded.shape[0]) != size:
-            _download(_COCO_IMAGE_URL + filename, path, force=True)
-            decoded = cv2.imread(str(path))
-            if decoded is None or (decoded.shape[1], decoded.shape[0]) != size:
-                raise ValueError(f"Downloaded image dimensions differ from annotation: {filename}")
-        files.append(path)
+        files.append(_download_image(constants.COCO_IMAGE_URL + filename, path, size=size, force=path in bad))
     data = output / "annotations"
     annotation = data / source_path.name
     _write_json(annotation, subset)
-    # Reuse the local loader's annotation contract before publishing a cache hit.
-    from .data import RefCOCODataset
-
-    RefCOCODataset(data, images, split=split)
     files.append(annotation)
-    return data, images, tuple(item["name"] for item in original["categories"]), files, {
-        "source_url": _MDETR_URL, "source_version": "MDETR v1.0.1",
+    return _save_preparation(root, output, split, data=data, images=images, files=files, metadata={
+        "max_samples": max_samples,
+        "source_url": constants.MDETR_URL, "source_version": "MDETR v1.0.1",
         "source_annotation_sha256": _hash(source_path), "expected_split_by": "umd",
-        "image_url_prefix": _COCO_IMAGE_URL,
+        "image_url_prefix": constants.COCO_IMAGE_URL,
         "source_expressions": len(original["images"]),
         "source_unique_images": len({query["file_name"] for query in original["images"]}),
         "selected_expressions": len(queries), "selected_unique_images": len(dimensions),
         "selection": "Source JSON expression order", "query_ids": ids,
-    }
+    })
 
 
-def _prepare_ovad(root: Path, output: Path, split: str, limit, groups, bad):
-    from .data import OVADDataset, OVAD_PROTOCOL, _ovad_selection
+def prepare_ovad(
+    *, split: str = "val", max_samples: int | None = None,
+    groups=None, cache_dir: str | Path | None = None,
+) -> PreparedFiles:
+    """Cache OVAD annotations and images after categorical object filtering."""
+    from .default_datasets import _ovad_groups
 
-    archive = _download(_OVAD_URL, root / "sources" / "ovad.zip", checksum=_OVAD_CHECKSUM)
+    groups = _ovad_groups(groups)
+    selection = None if groups == constants.OVAD_GROUPS else groups
+    root, output, cached, bad = _preparation_cache("ovad", split, max_samples, cache_dir, selection=selection)
+    if cached is not None:
+        return cached
+    from .default_datasets import _ovad_selection
+
+    archive = _download(constants.OVAD_URL, root / "sources" / "ovad.zip", checksum=constants.OVAD_CHECKSUM)
     with ZipFile(archive) as source:
         if source.namelist().count("ovad2000.json") != 1:
             raise ValueError("OVAD archive must contain exactly one ovad2000.json")
         content = source.read("ovad2000.json")
     original = json.loads(content)
-    attributes, samples, counts = _ovad_selection(original, groups, limit)
+    attributes, samples, counts = _ovad_selection(original, groups, max_samples)
     if not samples:
         raise ValueError("No eligible OVAD objects for the selected groups")
     selected_ids = {sample["sample_id"] for sample in samples}
@@ -373,31 +392,31 @@ def _prepare_ovad(root: Path, output: Path, split: str, limit, groups, bad):
     files = []
     for filename, size in dimensions.items():
         path = images / filename
-        _download(_OVAD_IMAGE_URL + filename, path, force=path in bad)
-        decoded = cv2.imread(str(path))
-        if decoded is None or (decoded.shape[1], decoded.shape[0]) != size:
-            _download(_OVAD_IMAGE_URL + filename, path, force=True)
-            decoded = cv2.imread(str(path))
-            if decoded is None or (decoded.shape[1], decoded.shape[0]) != size:
-                raise ValueError(f"Downloaded image dimensions differ from OVAD annotation: {filename}")
-        files.append(path)
+        files.append(_download_image(constants.OVAD_IMAGE_URL + filename, path, size=size, force=path in bad))
     data = output / "ovad2000.json"
     _write_json(data, subset)
-    OVADDataset(data, images, split=split, groups=groups)
     files.append(data)
-    return data, images, (), files, {
-        "source_url": _OVAD_URL, "archive_checksum": _OVAD_CHECKSUM,
+    return _save_preparation(root, output, split, data=data, images=images, files=files, metadata={
+        "max_samples": max_samples,
+        "source_url": constants.OVAD_URL, "archive_checksum": constants.OVAD_CHECKSUM,
         "source_annotation_sha256": hashlib.sha256(content).hexdigest(),
-        "image_url_prefix": _OVAD_IMAGE_URL, "source_split": "test",
+        "image_url_prefix": constants.OVAD_IMAGE_URL, "source_split": "test",
         "split_note": "val is an alias for the published OVAD test benchmark",
-        "protocol": OVAD_PROTOCOL, "selected_groups": list(attributes),
+        "protocol": constants.OVAD_PROTOCOL, "selected_groups": list(attributes),
         "selection": "Source JSON object annotation order, after area and categorical target filtering",
         "sample_ids": [sample["sample_id"] for sample in samples], "counts": counts,
-    }, attributes
+    })
 
 
-def _prepare_vqav2(root: Path, output: Path, split: str, limit, classes, bad):
-    from .data import VQAv2Dataset, _vqav2_selection
+def prepare_vqav2(
+    *, split: str = "val", max_samples: int | None = None,
+    cache_dir: str | Path | None = None,
+) -> PreparedFiles:
+    """Cache VQA v2 annotations and images referenced by selected questions."""
+    root, output, cached, bad = _preparation_cache("vqav2", split, max_samples, cache_dir)
+    if cached is not None:
+        return cached
+    from .default_datasets import _vqav2_selection
 
     filenames = {
         "Questions": f"v2_OpenEnded_mscoco_{split}2014_questions.json",
@@ -405,7 +424,7 @@ def _prepare_vqav2(root: Path, output: Path, split: str, limit, classes, bad):
     }
     originals, files, urls, hashes = {}, [], {}, {}
     for kind, filename in filenames.items():
-        url = _VQA_URL.format(kind=kind, split=split.title())
+        url = constants.VQA_URL.format(kind=kind, split=split.title())
         archive = root / "sources" / url.rsplit("/", 1)[-1]
         _download(url, archive, force=archive in bad)
         with ZipFile(archive) as source:
@@ -415,7 +434,7 @@ def _prepare_vqav2(root: Path, output: Path, split: str, limit, classes, bad):
         files.append(archive)
         urls[kind] = url
         hashes[kind] = _hash(archive)
-    selected, counts = _vqav2_selection(originals["Questions"], originals["Annotations"], limit)
+    selected, counts = _vqav2_selection(originals["Questions"], originals["Annotations"], max_samples)
     ids = {sample["sample_id"] for sample in selected}
     data = output / "annotations"
     for kind, filename in filenames.items():
@@ -428,37 +447,39 @@ def _prepare_vqav2(root: Path, output: Path, split: str, limit, classes, bad):
         _write_json(path, subset)
         files.append(path)
     images = root / "images" / f"{split}2014"
-    image_url = _VQA_IMAGE_URL.format(split=split)
+    image_url = constants.VQA_IMAGE_URL.format(split=split)
     for image_id in dict.fromkeys(sample["image_id"] for sample in selected):
         filename = f"COCO_{split}2014_{image_id:012d}.jpg"
         path = images / filename
-        _download(image_url + filename, path, force=path in bad)
-        if cv2.imread(str(path)) is None:
-            _download(image_url + filename, path, force=True)
-            if cv2.imread(str(path)) is None:
-                raise ValueError(f"Could not decode downloaded VQA v2 image: {filename}")
-        files.append(path)
-    VQAv2Dataset(data, images, split=split)
-    return data, images, (), files, {
+        files.append(_download_image(image_url + filename, path, force=path in bad))
+    return _save_preparation(root, output, split, data=data, images=images, files=files, metadata={
+        "max_samples": max_samples,
         "source_urls": urls, "source_archive_sha256": hashes, "source_version": "VQA v2",
         "image_url_prefix": image_url, "source_split": f"{split}2014",
         "selection": "Source JSON question order", **counts,
         "question_ids": [sample["sample_id"] for sample in selected],
-    }
+    })
 
 
-def _prepare_captions(root: Path, output: Path, split: str, limit, classes, bad):
-    from .data import COCOCaptionsDataset, _coco_captions_selection
+def prepare_coco_captions2017(
+    *, split: str = "val", max_samples: int | None = None,
+    cache_dir: str | Path | None = None,
+) -> PreparedFiles:
+    """Cache COCO captions and selected images, retaining all references."""
+    root, output, cached, bad = _preparation_cache("coco_captions2017", split, max_samples, cache_dir)
+    if cached is not None:
+        return cached
+    from .default_datasets import _coco_captions_selection
 
     archive = root / "sources" / "annotations_trainval2017.zip"
-    _download(_CAPTIONS_URL, archive, force=archive in bad)
+    _download(constants.CAPTIONS_URL, archive, force=archive in bad)
     member = f"annotations/captions_{split}2017.json"
     with ZipFile(archive) as source:
         if source.namelist().count(member) != 1:
             raise ValueError(f"COCO archive must contain exactly one {member}")
         content = source.read(member)
     original = json.loads(content)
-    selected, counts = _coco_captions_selection(original, limit)
+    selected, counts = _coco_captions_selection(original, max_samples)
     ids = {sample["image_id"] for sample in selected}
     subset = {
         **original,
@@ -467,102 +488,22 @@ def _prepare_captions(root: Path, output: Path, split: str, limit, classes, bad)
     }
     images = root / "images" / f"{split}2017"
     files = [archive]
-    image_url = _CAPTIONS_IMAGE_URL.format(split=split)
+    image_url = constants.CAPTIONS_IMAGE_URL.format(split=split)
     for sample in selected:
         filename = sample["file_name"]
         if not re.fullmatch(r"[0-9]{12}\.jpg", filename):
             raise ValueError(f"Invalid COCO {split}2017 filename: {filename!r}")
         path = images / filename
-        _download(image_url + filename, path, force=path in bad)
-        decoded = cv2.imread(str(path))
-        if decoded is None or (decoded.shape[1], decoded.shape[0]) != sample["image_size"]:
-            _download(image_url + filename, path, force=True)
-            decoded = cv2.imread(str(path))
-            if decoded is None or (decoded.shape[1], decoded.shape[0]) != sample["image_size"]:
-                raise ValueError(f"Downloaded image dimensions differ from COCO caption annotation: {filename}")
-        files.append(path)
+        files.append(_download_image(image_url + filename, path, size=sample["image_size"], force=path in bad))
     data = output / f"captions_{split}2017.json"
     _write_json(data, subset)
-    COCOCaptionsDataset(data, images, split=split)
     files.append(data)
-    return data, images, (), files, {
-        "source_url": _CAPTIONS_URL, "source_version": "COCO Captions 2017",
+    return _save_preparation(root, output, split, data=data, images=images, files=files, metadata={
+        "max_samples": max_samples,
+        "source_url": constants.CAPTIONS_URL, "source_version": "COCO Captions 2017",
         "source_archive_sha256": _hash(archive),
         "source_annotation_sha256": hashlib.sha256(content).hexdigest(),
         "image_url_prefix": image_url, "source_split": f"{split}2017",
         "selection": "Source JSON image order; all reference captions retained",
         "image_ids": [sample["image_id"] for sample in selected], **counts,
-    }
-
-
-def prepare_dataset(
-    dataset: str, *, split: str = "val", max_samples: int | None = None,
-    cache_dir: str | Path | None = None, classes: tuple[str, ...] | None = None,
-    groups: tuple[str, ...] | None = None,
-) -> PreparedDataset:
-    """Download/cache a supported split and return paths for existing loaders.
-
-    ``max_samples`` selects the same deterministic prefix as validation.
-    ``classes`` selects CIFAR-10 classes before the limit, matching class-filtered
-    validation. CIFAR-10/COCO128 require their shared source archives; RefCOCOg
-    streams a shared annotation archive and fetches only referenced images.
-    OVAD ``groups`` selects categorical groups (all 22 by default) before
-    filtering/limiting objects and fetching distinct COCO val2017 images.
-    VQA v2 limits source-order questions, retaining all ten answers and fetching
-    only distinct referenced COCO 2014 images.
-    COCO captions limits images in source JSON image order, retaining every
-    reference caption and downloading only selected COCO 2017 images.
-    """
-    if not isinstance(dataset, str) or dataset not in DATASETS:
-        raise ValueError(f"Supported downloadable datasets: {', '.join(DATASETS)}")
-    info = DATASETS[dataset]
-    if split not in info.splits:
-        raise ValueError(f"Unsupported split {split!r} for {dataset}; expected {info.splits}")
-    if max_samples is not None and (type(max_samples) is not int or max_samples < 1):
-        raise ValueError("max_samples must be a positive integer or None")
-    if classes is not None:
-        if dataset != "cifar10" or not classes or any(name not in info.names for name in classes):
-            raise ValueError("classes must contain supported CIFAR-10 class names")
-        classes = tuple(sorted(set(classes)))
-    if groups is not None:
-        from .data import _ovad_groups
-
-        if dataset != "ovad":
-            raise ValueError("groups applies only to OVAD preparation")
-        groups = _ovad_groups(groups)
-    cache = _cache_root(cache_dir)
-    class_key = "all" if classes is None else hashlib.sha256(json.dumps(classes).encode()).hexdigest()[:16]
-    if groups is not None:
-        from .data import OVAD_GROUPS
-
-        class_key = "all" if groups == OVAD_GROUPS else hashlib.sha256(json.dumps(groups).encode()).hexdigest()[:16]
-    root = cache / dataset
-    output = root / "prepared" / split / ("all" if max_samples is None else str(max_samples)) / class_key
-    manifest = output / "prepared.json"
-    cached, bad = _cached(manifest, cache)
-    if cached is not None:
-        return cached
-    attributes = None
-    if dataset == "ovad":
-        data, images, names, files, metadata, attributes = _prepare_ovad(root, output, split, max_samples, groups, bad)
-    else:
-        preparer = {
-            "cifar10": _prepare_cifar, "coco128": _prepare_coco,
-            "refcocog": _prepare_ground, "vqav2": _prepare_vqav2,
-            "coco_captions2017": _prepare_captions,
-        }[dataset]
-        data, images, names, files, metadata = preparer(root, output, split, max_samples, classes, bad)
-    if not files:
-        raise ValueError(f"No samples available in {dataset} split {split!r}")
-    metadata = {
-        "dataset": dataset, "split": split, "max_samples": max_samples,
-        "classes": None if classes is None else list(classes), "preparation_version": _FORMAT_VERSION, **metadata,
-    }
-    _write_json(manifest, {
-        "format_version": _FORMAT_VERSION, "dataset": dataset, "split": split,
-        "data": str(data.relative_to(cache)),
-        "images": None if images is None else str(images.relative_to(cache)),
-        "names": names, "metadata": metadata, "attributes": attributes,
-        "files": {str(path.relative_to(cache)): _hash(path) for path in files},
     })
-    return PreparedDataset(dataset, split, data, images, names, metadata, attributes)

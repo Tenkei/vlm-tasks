@@ -325,35 +325,24 @@ class AttributesMetrics(_RunMetrics):
 class ClassificationMetrics(_RunMetrics):
     """Top-1 and per-class metrics, including failed task executions.
 
-    Confusion matrix rows follow ``names`` (evaluated ground-truth labels).
-    Columns follow ``prediction_names`` (all task labels), then one additional
-    column for failed executions. Out-of-subset predictions remain incorrect.
+    Confusion matrix rows and columns follow the complete dataset vocabulary
+    in ``names``, with one additional column for failed executions.
     """
 
-    def __init__(self, names: Sequence[str], prediction_names: Sequence[str] | None = None) -> None:
+    def __init__(self, names: Sequence[str]) -> None:
         super().__init__(names)
-        self.prediction_names = tuple(names if prediction_names is None else prediction_names)
-        if (
-            len(set(self.prediction_names)) != len(self.prediction_names)
-            or not set(self.names).issubset(self.prediction_names)
-        ):
-            raise ValueError("Prediction names must be unique and include all evaluated names")
-        self._target_ids = {name: i for i, name in enumerate(self.names)}
-        self._prediction_ids = {name: i for i, name in enumerate(self.prediction_names)}
-        self.confusion_matrix = np.zeros((len(self.names), len(self.prediction_names) + 1), dtype=np.int64)
+        self._ids = {name: i for i, name in enumerate(self.names)}
+        self.confusion_matrix = np.zeros((len(self.names), len(self.names) + 1), dtype=np.int64)
 
     def update(self, target: str, prediction: str | None) -> None:
-        row = self._target_ids[target]
-        column = len(self.prediction_names) if prediction is None else self._prediction_ids[prediction]
+        row = self._ids[target]
+        column = len(self.names) if prediction is None else self._ids[prediction]
         self.confusion_matrix[row, column] += 1
         self.seen += 1
 
     @property
     def top1(self) -> float:
-        correct = sum(
-            int(self.confusion_matrix[i, self._prediction_ids[name]])
-            for i, name in enumerate(self.names)
-        )
+        correct = int(np.trace(self.confusion_matrix))
         return correct / self.seen if self.seen else 0.0
 
     @property
@@ -363,10 +352,9 @@ class ClassificationMetrics(_RunMetrics):
     def summary(self) -> list[dict[str, str | int | float]]:
         result = []
         for i, name in enumerate(self.names):
-            column = self._prediction_ids[name]
-            tp = int(self.confusion_matrix[i, column])
+            tp = int(self.confusion_matrix[i, i])
             support = int(self.confusion_matrix[i].sum())
-            fp = int(self.confusion_matrix[:, column].sum()) - tp
+            fp = int(self.confusion_matrix[:, i].sum()) - tp
             result.append({"class": name, "support": support, **_ratios(tp, fp, support - tp)})
         return result
 

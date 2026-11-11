@@ -14,8 +14,9 @@ import numpy as np
 import pytest
 
 from ml_pipes.vlm import Classify, Detect, Ground, ModelResponse
-from ml_pipes.vlm.validation import ClassificationDataset, RefCOCODataset, YOLODataset, prepare_dataset
-from ml_pipes.vlm.validation import prepare as preparation
+from ml_pipes.vlm.validation import ClassificationValidator, load_classification, load_refcoco, load_yolo
+from ml_pipes.vlm.validation import dataset_constants as constants
+from ml_pipes.vlm.validation import prepare_data as preparation
 
 
 def tar_bytes(members):
@@ -67,8 +68,8 @@ def cifar_source(http, monkeypatch):
     members.update({f"cifar-10-batches-bin/data_batch_{i}.bin": batch([0, 3]) for i in range(1, 6)})
     members["../../outside"] = b"must never be extracted"
     content = tar_bytes(members)
-    sources[preparation._CIFAR_URL] = content
-    monkeypatch.setattr(preparation, "_CIFAR_CHECKSUM", "sha256:" + hashlib.sha256(content).hexdigest())
+    sources[constants.CIFAR_URL] = content
+    monkeypatch.setattr(constants, "CIFAR_CHECKSUM", "sha256:" + hashlib.sha256(content).hexdigest())
 
 
 def coco_source(http, monkeypatch):
@@ -81,8 +82,8 @@ def coco_source(http, monkeypatch):
         archive.writestr("../../outside", "must never be extracted")
         archive.writestr("coco128/data.yaml", "download: arbitrary command must never run")
     content = stream.getvalue()
-    sources[preparation._COCO_URL] = content
-    monkeypatch.setattr(preparation, "_COCO_CHECKSUM", "sha256:" + hashlib.sha256(content).hexdigest())
+    sources[constants.COCO_URL] = content
+    monkeypatch.setattr(constants, "COCO_CHECKSUM", "sha256:" + hashlib.sha256(content).hexdigest())
 
 
 def ground_source(http):
@@ -101,18 +102,18 @@ def ground_source(http):
     }
     members = {f"OpenSource/finetune_refcocog_{split}.json": json.dumps(data).encode() for split in ("train", "val", "test")}
     members["../../outside"] = b"must never be extracted"
-    sources[preparation._MDETR_URL] = tar_bytes(members)
+    sources[constants.MDETR_URL] = tar_bytes(members)
     for filename in set(filenames):
-        sources[preparation._COCO_IMAGE_URL + filename] = jpeg()
+        sources[constants.COCO_IMAGE_URL + filename] = jpeg()
     return data
 
 
 def test_cifar_selects_only_requested_split_classes_and_deterministic_prefix(tmp_path, http, monkeypatch):
     cifar_source(http, monkeypatch)
-    prepared = prepare_dataset("cifar10", split="val", max_samples=1, classes=("cat",), cache_dir=tmp_path)
-    dataset = ClassificationDataset(prepared.data)
-    assert len(dataset) == 1 and set(dataset.names.values()) == set(preparation._CIFAR_NAMES)
-    assert dataset.names[int(dataset[0]["cls"][0])] == "cat"
+    prepared = preparation.prepare_cifar10(split="val", max_samples=1, classes=("cat",), cache_dir=tmp_path)
+    dataset = load_classification(prepared.data)
+    assert len(dataset) == 1 and set(dataset.features["label"].names) == set(constants.CIFAR_NAMES)
+    assert dataset.features["label"].names[dataset[0]["label"]] == "cat"
     pixels = cv2.imread(dataset[0]["im_file"])
     assert tuple(pixels[0, 0]) == (30, 90, 180)
     assert prepared.metadata["source_split"] == "test"
@@ -120,14 +121,14 @@ def test_cifar_selects_only_requested_split_classes_and_deterministic_prefix(tmp
     assert not (prepared.data / "train").exists()
     assert not (tmp_path / "outside").exists()
     count = len(http[1])
-    assert prepare_dataset("cifar10", max_samples=1, classes=("cat",), cache_dir=tmp_path) == prepared
+    assert preparation.prepare_cifar10(split="val", max_samples=1, classes=("cat",), cache_dir=tmp_path) == prepared
     assert len(http[1]) == count
 
 
 def test_cifar_train_and_test_are_distinct_preparations_reusing_archive(tmp_path, http, monkeypatch):
     cifar_source(http, monkeypatch)
-    train = prepare_dataset("cifar10", split="train", max_samples=2, cache_dir=tmp_path)
-    test = prepare_dataset("cifar10", split="test", max_samples=2, cache_dir=tmp_path)
+    train = preparation.prepare_cifar10(split="train", max_samples=2, cache_dir=tmp_path)
+    test = preparation.prepare_cifar10(split="test", max_samples=2, cache_dir=tmp_path)
     assert train.metadata["source_samples"] == 10
     assert test.metadata["source_samples"] == 4
     assert train.data != test.data
@@ -137,79 +138,80 @@ def test_cifar_train_and_test_are_distinct_preparations_reusing_archive(tmp_path
 
 def test_missing_class_directory_is_repaired_without_redownload(tmp_path, http, monkeypatch):
     cifar_source(http, monkeypatch)
-    first = prepare_dataset("cifar10", max_samples=1, cache_dir=tmp_path)
-    (first.data / "val" / "airplane").rmdir()
-    again = prepare_dataset("cifar10", max_samples=1, cache_dir=tmp_path)
-    assert (again.data / "val" / "airplane").is_dir()
+    first = preparation.prepare_cifar10(max_samples=1, cache_dir=tmp_path)
+    (first.data / "test" / "airplane").rmdir()
+    again = preparation.prepare_cifar10(max_samples=1, cache_dir=tmp_path)
+    assert (again.data / "test" / "airplane").is_dir()
     assert len(http[1]) == 1
 
 
 def test_coco_whitelists_members_and_generates_local_yaml(tmp_path, http, monkeypatch):
     coco_source(http, monkeypatch)
-    prepared = prepare_dataset("coco128", max_samples=2, cache_dir=tmp_path)
-    dataset = YOLODataset(prepared.data)
+    prepared = preparation.prepare_coco128(max_samples=2, cache_dir=tmp_path)
+    dataset = load_yolo(prepared.data)
     assert len(dataset) == 2
     assert dataset[0]["im_file"].endswith("000000000001.jpg")
-    assert dataset.names[0] == "person" and dataset.names[79] == "toothbrush"
-    assert dataset[0]["bboxes"].tolist() == [[30, 15, 90, 45]]
+    assert dataset.features["objects"]["category"].feature.names[0] == "person"
+    assert dataset.features["objects"]["category"].feature.names[79] == "toothbrush"
+    assert dataset[0]["objects"]["bbox"] == [[30, 15, 90, 45]]
     assert "download" not in json.loads(prepared.data.read_text())
     assert not (tmp_path / "outside").exists()
     assert prepared.metadata["source_samples"] == 3
     assert len(http[1]) == 1
-    assert prepare_dataset("coco128", max_samples=2, cache_dir=tmp_path) == prepared
+    assert preparation.prepare_coco128(max_samples=2, cache_dir=tmp_path) == prepared
     assert len(http[1]) == 1
 
 
 @pytest.mark.parametrize("split", ["train", "val", "test"])
 def test_grounding_downloads_requested_annotation_and_distinct_selected_images(tmp_path, http, split):
     ground_source(http)
-    prepared = prepare_dataset("refcocog", split=split, max_samples=2, cache_dir=tmp_path)
-    dataset = RefCOCODataset(prepared.data, prepared.images, split=split)
-    assert [sample["sample_id"] for sample in dataset.samples] == [91, 7]
+    prepared = preparation.prepare_refcocog(split=split, max_samples=2, cache_dir=tmp_path)
+    dataset = load_refcoco(prepared.data, prepared.images, split=split)
+    assert [sample["sample_id"] for sample in dataset] == [91, 7]
     assert dataset.counts == {"expressions": 2, "unique_images": 1}
     assert prepared.metadata["source_expressions"] == 3
     assert prepared.metadata["source_unique_images"] == 2
     assert prepared.metadata["expected_split_by"] == "umd"
     assert len(list((tmp_path / "refcocog" / "sources").glob("*.json"))) == 1
     assert len(http[1]) == 2
-    assert prepare_dataset("refcocog", split=split, max_samples=2, cache_dir=tmp_path) == prepared
+    assert preparation.prepare_refcocog(split=split, max_samples=2, cache_dir=tmp_path) == prepared
     assert len(http[1]) == 2
 
 
 def test_larger_grounding_request_reuses_annotations_and_images(tmp_path, http):
     ground_source(http)
-    first = prepare_dataset("refcocog", max_samples=1, cache_dir=tmp_path)
-    second = prepare_dataset("refcocog", max_samples=3, cache_dir=tmp_path)
+    first = preparation.prepare_refcocog(max_samples=1, cache_dir=tmp_path)
+    second = preparation.prepare_refcocog(max_samples=3, cache_dir=tmp_path)
     assert first.data != second.data and first.images == second.images
-    assert http[1].count(preparation._MDETR_URL) == 1
+    assert http[1].count(constants.MDETR_URL) == 1
     assert len(http[1]) == 3
     assert second.metadata["selected_unique_images"] == 2
 
 
 def test_corrupt_cached_image_is_downloaded_again(tmp_path, http):
     ground_source(http)
-    first = prepare_dataset("refcocog", max_samples=2, cache_dir=tmp_path)
+    first = preparation.prepare_refcocog(max_samples=2, cache_dir=tmp_path)
     path = next(first.images.glob("*.jpg"))
     path.write_bytes(b"corrupt")
-    second = prepare_dataset("refcocog", max_samples=2, cache_dir=tmp_path)
+    second = preparation.prepare_refcocog(max_samples=2, cache_dir=tmp_path)
     assert len(http[1]) == 3
     assert cv2.imread(str(path)) is not None
     assert second == first
 
 
 def test_checksum_mismatch_never_publishes_download_or_preparation(tmp_path, http):
-    http[0][preparation._COCO_URL] = b"wrong archive"
+    http[0][constants.COCO_URL] = b"wrong archive"
     with pytest.raises(ValueError, match="checksum mismatch"):
-        prepare_dataset("coco128", cache_dir=tmp_path)
+        preparation.prepare_coco128(cache_dir=tmp_path)
     assert not list(tmp_path.rglob("prepared.json"))
     assert not list(tmp_path.rglob("coco128.zip"))
     assert not [path for path in tmp_path.rglob("*") if path.is_file()]
 
 
 def test_failed_and_interrupted_downloads_do_not_create_cache_entries(tmp_path, http):
-    http[0][preparation._COCO_URL] = URLError("offline")
+    http[0][constants.COCO_URL] = URLError("offline")
     with pytest.raises(RuntimeError, match="offline"):
-        prepare_dataset("coco128", cache_dir=tmp_path)
+        preparation.prepare_coco128(cache_dir=tmp_path)
     assert len(http[1]) == 3
     assert not list(tmp_path.rglob("prepared.json"))
     assert not [path for path in tmp_path.rglob("*") if path.is_file()]
@@ -242,26 +244,31 @@ def test_local_directory_named_like_builtin_never_downloads(tmp_path, http, monk
     path.parent.mkdir(parents=True)
     assert cv2.imwrite(str(path), np.zeros((10, 20, 3), np.uint8))
     task = Classify(lambda request: ModelResponse({"labels": ["cat"]}), ["cat"])
-    assert task.val(data=Path("cifar10"), verbose=False).top1 == 1
+    from ml_pipes.vlm.validation import load_classification
+    assert task.val(dataset=load_classification(Path("cifar10")), verbose=False).top1 == 1
     assert not http[1]
 
 
-@pytest.mark.parametrize("name, settings", [
-    ("unknown", {}), ("refcoco", {}), ("coco128", {"split": "test"}),
-    ("refcocog", {"split": "../val"}), ("cifar10", {"max_samples": 0}),
-    ("cifar10", {"max_samples": True}), ("cifar10", {"classes": ("unknown",)}),
-    ("refcocog", {"classes": ("cat",)}),
+@pytest.mark.parametrize("prepare, settings", [
+    (preparation.prepare_coco128, {"split": "test"}),
+    (preparation.prepare_refcocog, {"split": "../val"}),
+    (preparation.prepare_cifar10, {"max_samples": 0}),
+    (preparation.prepare_cifar10, {"max_samples": True}),
+    (preparation.prepare_cifar10, {"classes": ("unknown",)}),
+    (preparation.prepare_refcocog, {"classes": ("cat",)}),
+    (preparation.prepare_vqav2, {"split": "test"}),
+    (preparation.prepare_coco_captions2017, {"groups": ("material",)}),
 ])
-def test_invalid_requests_fail_before_network(tmp_path, http, name, settings):
-    with pytest.raises(ValueError):
-        prepare_dataset(name, cache_dir=tmp_path, **settings)
+def test_invalid_requests_fail_before_network(tmp_path, http, prepare, settings):
+    with pytest.raises((ValueError, TypeError)):
+        prepare(cache_dir=tmp_path, **settings)
     assert not http[1]
 
 
 def test_environment_cache_location(tmp_path, http, monkeypatch):
     coco_source(http, monkeypatch)
     monkeypatch.setenv("VLM_TASKS_DATASETS_DIR", str(tmp_path))
-    prepared = prepare_dataset("coco128", max_samples=1)
+    prepared = preparation.prepare_coco128(max_samples=1)
     assert prepared.data.is_relative_to(tmp_path)
 
 
@@ -285,8 +292,47 @@ def test_classification_default_download_uses_full_dataset_vocabulary(tmp_path, 
     metrics = task.val(max_samples=2, cache_dir=tmp_path, verbose=False)
     assert metrics.seen == 2 and metrics.top1 == 1
     assert metrics.dataset_metadata["preparation"]["classes"] is None
-    assert metrics.names == tuple(sorted(preparation._CIFAR_NAMES))
+    assert metrics.names == tuple(sorted(constants.CIFAR_NAMES))
     assert task.labels == {"feline": ""}
+
+
+def test_task_val_loads_dataset_before_constructing_validator(tmp_path, http, monkeypatch):
+    from ml_pipes.vlm import validation
+    cifar_source(http, monkeypatch)
+    events = []
+    load = validation.load_cifar10
+    def record_loading(**kwargs):
+        events.append("load")
+        return load(**kwargs)
+    class RecordingValidator(ClassificationValidator):
+        def __init__(self, task, dataset, **kwargs):
+            events.append("construct")
+            assert dataset.features["label"].names
+            super().__init__(task, dataset, **kwargs)
+        def setup(self):
+            events.append("setup")
+    monkeypatch.setattr(validation, "load_cifar10", record_loading)
+    task = Classify(lambda request: ModelResponse({"labels": ["cat"]}))
+    metrics = task.val(validator=RecordingValidator, max_samples=1, cache_dir=tmp_path, verbose=False)
+    assert events == ["load", "construct", "setup"]
+    assert metrics.top1 == 1 and metrics.dataset_metadata["preparation"]["selected_samples"] == 1
+
+
+def test_supplied_dataset_skips_default_loading_even_when_setup_fails(tmp_path, http):
+    class UnavailableValidator(ClassificationValidator):
+        def setup(self):
+            raise RuntimeError("metric unavailable")
+    task = Classify(lambda request: pytest.fail("Must not run inference"))
+    with pytest.raises(RuntimeError, match="metric unavailable"):
+        task.val(dataset=[], validator=UnavailableValidator, cache_dir=tmp_path)
+    assert not http[1]
+
+
+def test_direct_validators_require_loaded_inputs(tmp_path, http):
+    task = Classify(lambda request: pytest.fail("Must not run inference"))
+    with pytest.raises(TypeError, match="loaded dataset"):
+        ClassificationValidator(task, "cifar10", cache_dir=tmp_path, verbose=False)
+    assert not http[1]
 
 
 def test_detection_default_download_and_task_dataset_mismatch(tmp_path, http, monkeypatch):
@@ -295,8 +341,8 @@ def test_detection_default_download_and_task_dataset_mismatch(tmp_path, http, mo
     metrics = task.val(max_samples=2, cache_dir=tmp_path, verbose=False)
     assert metrics.seen == 2 and metrics.results_dict["fn"] == 2
     count = len(http[1])
-    with pytest.raises(ValueError, match="does not support"):
-        task.val(data="cifar10", cache_dir=tmp_path, verbose=False)
+    with pytest.raises(TypeError, match="loaded dataset"):
+        task.val(dataset="cifar10", cache_dir=tmp_path, verbose=False)
     assert len(http[1]) == count
 
 
@@ -338,6 +384,6 @@ def test_runner_classification_default_uses_dataset_labels(tmp_path, http, monke
     report = json.loads(capsys.readouterr().out)
     assert report["metrics"]["samples"] == 2 and report["metrics"]["accuracy_top1"] == 1
     assert report["task_config"] == {}
-    assert [row["class"] for row in report["per_class"]] == sorted(preparation._CIFAR_NAMES)
+    assert [row["class"] for row in report["per_class"]] == sorted(constants.CIFAR_NAMES)
     assert report["dataset_metadata"]["preparation"]["dataset"] == "cifar10"
     assert len(http[1]) == 1

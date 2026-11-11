@@ -6,7 +6,7 @@ import shutil
 import subprocess
 from types import MappingProxyType
 
-from .prepare import _cache_root, _download
+from .prepare_data import _cache_root, _download
 
 
 @dataclass(frozen=True)

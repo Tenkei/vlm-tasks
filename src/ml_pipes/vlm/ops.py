@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Mapping, Sequence
+from time import perf_counter
 from typing import Any, Literal, TypeAlias, overload
 
 from ml_pipes.core import Operator
@@ -103,35 +104,49 @@ class _Task:
     _instruction: str | None
     _spec: ResponseSpec | None
 
-    def val(self, validator=None, **kwargs):
-        """Evaluate this task and return its validator's metrics.
+    def val(self, dataset=None, *, validator=None, **kwargs):
+        """Evaluate a loaded dataset, or load this task's default evaluation dataset.
 
-        ``validator`` accepts a custom validator class, constructed with this
-        task and the other keyword arguments, then called without arguments.
-        See ``ml_pipes.vlm.validation``.
+        ``dataset`` follows the HF-style dataset contract. Select splits and adapt
+        columns when loading the dataset. ``validator`` accepts a custom evaluator
+        class constructed with ``task``, ``dataset``, and validation options.
         """
-        if validator is None:
-            from . import validation
+        from . import validation
 
-            validators = {
-                Classify: validation.ClassificationValidator,
-                Detect: validation.DetectionValidator,
-                Ground: validation.GroundingValidator,
-                Attributes: validation.AttributesValidator,
-                Answer: validation.AnswerValidator,
-                Describe: validation.DescribeValidator,
-            }
-            validator = next(
-                (candidate for task_type, candidate in validators.items() if isinstance(self, task_type)),
-                None,
-            )
-            if validator is None:
+        defaults = {
+            Classify: (validation.load_cifar10, validation.ClassificationValidator),
+            Detect: (validation.load_coco128, validation.DetectionValidator),
+            Ground: (validation.load_refcocog, validation.GroundingValidator),
+            Attributes: (validation.load_ovad, validation.AttributesValidator),
+            Answer: (validation.load_vqav2, validation.AnswerValidator),
+            Describe: (validation.load_coco_captions2017, validation.DescribeValidator),
+        }
+        default = next((value for kind, value in defaults.items() if isinstance(self, kind)), None)
+        if validator is None:
+            if default is None:
                 raise NotImplementedError(
                     f"{type(self).__name__} has no default validator; supply validator= explicitly"
                 )
-        runner = validator(task=self, **kwargs)
+            validator = default[1]
+        loading_options = kwargs.keys() & {"split", "images", "dataloader", "data"}
+        if loading_options:
+            raise TypeError(
+                f"val() does not accept {', '.join(sorted(loading_options))}; "
+                "load and select the dataset first, then pass dataset=..."
+            )
+        started = perf_counter()
+        if dataset is None:
+            if default is None:
+                raise ValueError("Supply dataset=... with a loaded dataset for this task")
+            options = {key: kwargs[key] for key in ("max_samples", "cache_dir") if key in kwargs}
+            if isinstance(self, Attributes) and self.attributes is not None:
+                options["groups"] = tuple(self.attributes)
+            dataset = default[0](**options)
+        runner = validator(task=self, dataset=dataset, **kwargs)
         runner()
         self.metrics = runner.metrics
+        if isinstance(runner, validation.BaseValidator):
+            self.metrics.elapsed_seconds = perf_counter() - started
         return self.metrics
 
     def _configure(self, model: ModelBackend, context: str | None) -> None:

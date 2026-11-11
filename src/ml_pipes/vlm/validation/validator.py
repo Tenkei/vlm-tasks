@@ -1,80 +1,89 @@
-"""Validation orchestration and task-specific evaluation."""
+"""Evaluate loaded datasets using task-specific sample schemas."""
 from __future__ import annotations
 
-import json
-import sys
 from collections.abc import Mapping
 from itertools import islice
+import json
+from pathlib import Path
+import sys
 from time import perf_counter
 
 import numpy as np
 
 from ..errors import InvalidModelResponseError, ModelExecutionError
 from ..types import AttributePredictionResult, ClassificationResult, DetectionResult, GroundingResult
-from ._vqa import SCORER_METADATA, validate_targets
+from ._vqa import validate_targets
 from ._caption_tokenizer import DEFAULT_TOKENIZER_VERSION
-from .data import (
-    COCOCaptionsDataset, ClassificationDataset, DataLoader, OVADDataset, RefCOCODataset, VQAv2Dataset, YOLODataset,
-)
+from .data import ValidationDataset, _limit
 from .metrics import AnswerMetrics, AttributesMetrics, ClassificationMetrics, DescribeMetrics, DetectionMetrics, GroundingMetrics
-from .prepare import DATASETS, prepare_dataset
+
+
+def _names(feature, column):
+    names = getattr(feature, "names", None)
+    if (not isinstance(names, (list, tuple)) or not names
+            or any(not isinstance(name, str) or not name.strip() for name in names)
+            or len(set(names)) != len(names)):
+        raise ValueError(f"{column} requires a ClassLabel feature with a complete, unique vocabulary")
+    return tuple(names)
+
+
+def _check_label(value, names):
+    if isinstance(value, (bool, np.bool_)) or not isinstance(value, (int, np.integer)) or not 0 <= value < len(names):
+        raise ValueError(f"Unknown or noninteger dataset label ID: {value!r}")
+
+
+def _check_boxes(boxes):
+    if not isinstance(boxes, list):
+        raise ValueError("Boxes must be a list of pixel xyxy boxes")
+    for box in boxes:
+        if (not isinstance(box, list) or len(box) != 4
+                or any(type(value) not in (int, float) for value in box)
+                or not np.isfinite(box).all() or box[2] <= box[0] or box[3] <= box[1]):
+            raise ValueError("Boxes must contain four finite pixel xyxy coordinates with positive area")
 
 
 class BaseValidator:
-    """Bind a task, set up its dataset, and accumulate validation metrics.
+    """Consume a loaded dataset, run predictions, and accumulate fresh metrics.
 
-    Override dataset construction and metric methods for another task or data
-    source. A supplied dataloader must expose its dataset through ``.dataset``;
-    the dataset's ``names`` maps class IDs to names (or ``attributes`` defines
-    categorical choices). Answer and Describe datasets need neither class metadata nor a
-    vocabulary. Loaders yield the sample dictionaries documented by the concrete
-    dataset classes.
+    Datasets yield sample mappings and expose HF-style ``features``. Validators
+    perform no downloading, path discovery, split selection, or construction.
+    Override schema checks, prediction, and metric hooks for another task.
     """
 
-    default_dataset: str | None = None
+    required_columns = ("image",)
 
-    def __init__(
-        self, task, data=None, *, dataloader=None, split: str = "val",
-        max_samples: int | None = None, verbose: bool = True, cache_dir=None,
-    ) -> None:
-        if data is None and dataloader is None:
-            data = self.default_dataset
-        if (data is None) == (dataloader is None):
-            raise ValueError("Supply exactly one of data or dataloader")
-        if max_samples is not None and (type(max_samples) is not int or max_samples < 1):
-            raise ValueError("max_samples must be a positive integer or None")
+    def __init__(self, task, dataset: ValidationDataset, *, max_samples=None, verbose=True, cache_dir=None):
+        _limit(max_samples)
+        if isinstance(dataset, (str, bytes, Path, Mapping)) or not hasattr(dataset, "__iter__"):
+            raise TypeError("dataset must be a loaded dataset yielding sample mappings")
         self.task = task
-        self.data = data
-        self.split = split
+        self.dataset = dataset
         self.max_samples = max_samples
         self.verbose = verbose
         self.cache_dir = cache_dir
-        self._provided_dataloader = dataloader
+        self.sample_index = 0
+        self.features = getattr(dataset, "features", None)
+        if self.features is not None:
+            if not isinstance(self.features, Mapping):
+                raise TypeError("dataset.features must be a feature mapping or None")
+            missing = set(self.required_columns) - self.features.keys()
+            if missing:
+                raise ValueError(f"Dataset is missing required columns: {sorted(missing)}")
 
     def __call__(self):
         started = perf_counter()
         self.setup()
-        self.prepared_dataset = None
-        self.dataset = (
-            self.build_dataset() if self._provided_dataloader is None
-            else self._provided_dataloader.dataset
-        )
-        self.dataloader = (
-            self.get_dataloader(self.dataset) if self._provided_dataloader is None
-            else self._provided_dataloader
-        )
         self.init_metrics()
         self.metrics.dataset_counts = dict(getattr(self.dataset, "counts", {}))
-        if self.prepared_dataset is not None:
-            self.metrics.dataset_metadata = {
-                **getattr(self.metrics, "dataset_metadata", {}),
-                "data": str(self.prepared_dataset.data),
-                "preparation": self.prepared_dataset.metadata,
-            }
+        self.metrics.dataset_metadata = {
+            **getattr(self.dataset, "metadata", {}), **getattr(self.metrics, "dataset_metadata", {}),
+        }
         self._timings = {"load": 0.0, "inference": 0.0, "metrics": 0.0}
         self._started = started
         last = perf_counter()
-        for sample in islice(self.dataloader, self.max_samples):
+        for index, sample in enumerate(islice(self.dataset, self.max_samples)):
+            self.sample_index = index
+            self.validate_sample(sample)
             self._timings["load"] += perf_counter() - last
             inference_started = perf_counter()
             try:
@@ -82,16 +91,15 @@ class BaseValidator:
             except (ModelExecutionError, InvalidModelResponseError) as exc:
                 prediction = None
                 self.metrics.failures.append({
-                    "im_file": str(sample["im_file"]),
-                    "type": type(exc).__name__, "message": str(exc),
-                    **{key: sample[key] for key in ("sample_id", "target") if key in sample},
+                    "im_file": self.sample_path(sample), "type": type(exc).__name__, "message": str(exc),
+                    **self.failure_context(sample),
                 })
             self._timings["inference"] += perf_counter() - inference_started
             metric_started = perf_counter()
             self.update_metrics(prediction, sample)
             self._timings["metrics"] += perf_counter() - metric_started
             if self.verbose:
-                print(f"\rValidated {self.metrics.seen} samples", end="", file=sys.stderr, flush=True)
+                print(f'\rValidated {self.metrics.seen} samples', end="", file=sys.stderr, flush=True)
             last = perf_counter()
         if not self.metrics.seen:
             raise ValueError("No samples to evaluate")
@@ -100,336 +108,259 @@ class BaseValidator:
             print("\n" + json.dumps(self.metrics.results_dict, indent=2), file=sys.stderr)
         return self.metrics
 
-    def setup(self) -> None:
+    def setup(self):
         """Preflight task-specific runtime requirements before inference."""
 
-    def build_dataset(self):
+    def validate_sample(self, sample):
+        """Require the documented schema; source adaptation belongs in datasets."""
+        if not isinstance(sample, Mapping):
+            raise TypeError("Dataset samples must be mappings")
+        missing = set(self.required_columns) - sample.keys()
+        if missing:
+            raise ValueError(f"Dataset sample is missing required columns: {sorted(missing)}")
+        image = sample["image"]
+        if (not isinstance(image, np.ndarray) or image.dtype != np.uint8
+                or image.ndim != 3 or image.shape[2] != 3 or not image.shape[0] or not image.shape[1]):
+            raise ValueError("Dataset image must be a nonempty HWC uint8 RGB array; format it in the dataset")
+
+    def sample_path(self, sample):
+        """Return the explicit image path or a stable reporting identifier."""
+        identifier = sample.get("image_id", sample.get("sample_id", self.sample_index))
+        return str(sample.get("im_file") or f"sample:{identifier}")
+
+    def failure_context(self, sample):
+        identifier = sample.get("sample_id", sample.get("image_id", self.sample_index))
+        return {"sample_id": identifier}
+
+    def init_metrics(self):
         raise NotImplementedError
 
-    def prepare_named_dataset(self, task: str):
-        if not isinstance(self.data, str) or self.data not in DATASETS:
-            return None
-        if DATASETS[self.data].task != task:
-            raise ValueError(f"Dataset {self.data!r} does not support {task} validation")
-        self.prepared_dataset = prepare_dataset(
-            self.data, split=self.split, max_samples=self.max_samples,
-            cache_dir=self.cache_dir,
-            **({"groups": tuple(self.task.attributes)} if task == "attributes" and self.task.attributes is not None else {}),
-        )
-        return self.prepared_dataset
+    def predict_sample(self, sample):
+        return self.task(sample["image"])
 
-    def get_dataloader(self, dataset):
-        return DataLoader(dataset)
-
-    def init_metrics(self) -> None:
+    def update_metrics(self, prediction, sample):
         raise NotImplementedError
 
-    def predict_sample(self, sample: dict):
-        return self.task(sample["img"])
-
-    def update_metrics(self, prediction, sample: dict) -> None:
-        raise NotImplementedError
-
-    def finalize_metrics(self) -> None:
-        self.metrics.speed = {
-            name: elapsed * 1000 / self.metrics.seen for name, elapsed in self._timings.items()
-        }
+    def finalize_metrics(self):
+        self.metrics.speed = {name: elapsed * 1000 / self.metrics.seen for name, elapsed in self._timings.items()}
         self.metrics.elapsed_seconds = perf_counter() - self._started
 
 
 class DescribeValidator(BaseValidator):
-    """Evaluate one Describe result per image against COCO reference captions."""
+    """Score image/captions rows, preserving all reference captions."""
 
-    default_dataset = "coco_captions2017"
+    required_columns = ("image", "captions")
 
-    def __init__(self, *args, images=None, tokenizer_version=DEFAULT_TOKENIZER_VERSION, **kwargs):
+    def __init__(self, *args, tokenizer_version=DEFAULT_TOKENIZER_VERSION, **kwargs):
         super().__init__(*args, **kwargs)
-        if self.split not in ("train", "val"):
-            raise ValueError("COCO captions supports labeled train and val splits only")
-        automatic = isinstance(self.data, str) and self.data in DATASETS
-        if automatic and images is not None:
-            raise ValueError("Automatic COCO preparation supplies images; use local data with images")
-        if self._provided_dataloader is None and images is None and not automatic:
-            raise ValueError("Describe validation requires images or a supplied dataloader")
-        self.images = images
         self.tokenizer_version = tokenizer_version
-        # Reject unsupported versions at construction, before I/O.
-        DescribeMetrics(tokenizer_version=tokenizer_version, cache_dir=self.cache_dir)
-
-    def setup(self):
-        self.metrics = DescribeMetrics(tokenizer_version=self.tokenizer_version, cache_dir=self.cache_dir).prepare()
-
-    def build_dataset(self):
-        prepared = self.prepare_named_dataset("describe")
-        return COCOCaptionsDataset(
-            self.data if prepared is None else prepared.data,
-            self.images if prepared is None else prepared.images,
-            split=self.split, max_samples=self.max_samples,
-        )
 
     def init_metrics(self):
-        self.metrics.dataset_metadata = {**getattr(self.dataset, "metadata", {}), **self.metrics.dataset_metadata}
+        self.metrics = DescribeMetrics(tokenizer_version=self.tokenizer_version, cache_dir=self.cache_dir).prepare()
 
-    def predict_sample(self, sample):
+    def validate_sample(self, sample):
+        super().validate_sample(sample)
         self.metrics._validate_sample(
-            sample["captions"], sample.get("image_id", sample.get("sample_id")), sample["im_file"],
+            sample["captions"], sample.get("image_id", self.sample_index), self.sample_path(sample),
         )
-        return self.task(sample["img"])
 
     def update_metrics(self, prediction, sample):
         self.metrics.update(
             sample["captions"], prediction,
-            image_id=sample.get("image_id", sample.get("sample_id")), im_file=sample["im_file"],
+            image_id=sample.get("image_id", self.sample_index), im_file=self.sample_path(sample),
         )
 
     def finalize_metrics(self):
         started = perf_counter()
         self.metrics.finalize()
         self._timings["metrics"] += perf_counter() - started
-        if self.prepared_dataset is not None:
-            self.metrics.dataset_counts.update({
-                key: self.prepared_dataset.metadata[key]
-                for key in ("source_images", "source_captions", "selected_images", "selected_captions")
-            })
-        self.metrics.dataset_counts.update(
-            evaluated_samples=self.metrics.seen, evaluated_images=self.metrics.unique_images,
-            evaluated_captions=self.metrics.reference_captions,
-        )
+        self.metrics.dataset_counts.update(evaluated_samples=self.metrics.seen, evaluated_images=self.metrics.unique_images,
+                                           evaluated_captions=self.metrics.reference_captions)
         super().finalize_metrics()
 
 
 class AnswerValidator(BaseValidator):
-    """Evaluate one Answer result per question using VQA v2 consensus."""
+    """Score image/question/answers rows using VQA v2 consensus."""
 
-    default_dataset = "vqav2"
+    required_columns = ("image", "question", "answers", "answer_type", "question_type")
 
-    def __init__(self, *args, images=None, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        if self.split not in ("train", "val"):
-            raise ValueError("VQA v2 supports labeled train and val splits only")
-        automatic = isinstance(self.data, str) and self.data in DATASETS
-        if automatic and images is not None:
-            raise ValueError("Automatic VQA v2 preparation supplies images; use local data with images")
-        if self._provided_dataloader is None and images is None and not automatic:
-            raise ValueError("Answer validation requires images or a supplied dataloader")
-        self.images = images
-
-    def build_dataset(self):
-        prepared = self.prepare_named_dataset("answer")
-        return VQAv2Dataset(
-            self.data if prepared is None else prepared.data,
-            self.images if prepared is None else prepared.images,
-            split=self.split, max_samples=self.max_samples,
-        )
-
-    def init_metrics(self) -> None:
+    def init_metrics(self):
         self.metrics = AnswerMetrics()
-        self.metrics.dataset_metadata = {
-            **getattr(self.dataset, "metadata", {}), **SCORER_METADATA,
-        }
 
-    def predict_sample(self, sample: dict):
-        # Validate custom-loader targets before making a model call, too.
+    def validate_sample(self, sample):
+        super().validate_sample(sample)
+        if not isinstance(sample["question"], str) or not sample["question"].strip():
+            raise ValueError("Dataset question must be a nonempty string")
+        if not isinstance(sample["answers"], list):
+            raise ValueError("Dataset answers must be a list of ten strings")
         validate_targets(sample["answers"], sample["answer_type"], sample["question_type"])
-        return self.task((sample["img"], sample["question"]))
 
-    def update_metrics(self, prediction, sample: dict) -> None:
+    def predict_sample(self, sample):
+        return self.task((sample["image"], sample["question"]))
+
+    def update_metrics(self, prediction, sample):
         self.metrics.update(
             sample["answers"], prediction, answer_type=sample["answer_type"],
-            question_type=sample["question_type"], im_file=sample["im_file"],
+            question_type=sample["question_type"], im_file=self.sample_path(sample),
         )
 
-    def finalize_metrics(self) -> None:
+    def finalize_metrics(self):
+        self.metrics.dataset_counts.update(evaluated_questions=self.metrics.seen, evaluated_images=self.metrics.unique_images)
         super().finalize_metrics()
-        if self.prepared_dataset is not None:
-            self.metrics.dataset_counts.update({
-                key: self.prepared_dataset.metadata[key]
-                for key in ("source_questions", "source_images", "selected_questions", "selected_images")
-            })
-        self.metrics.dataset_counts.update(
-            evaluated_questions=self.metrics.seen,
-            evaluated_images=self.metrics.unique_images,
-        )
 
 
 class AttributesValidator(BaseValidator):
-    """Evaluate a fixed Attributes schema against categorical object targets.
+    """Score cropped image/attributes rows with per-group ClassLabel features."""
 
-    Built-in OVAD data owns filtering/cropping. Custom loaders must expose
-    ``dataset.attributes`` and yield already selected crops with known targets.
-    """
+    required_columns = ("image", "attributes")
 
-    default_dataset = "ovad"
-
-    def __init__(self, *args, images=None, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        automatic = isinstance(self.data, str) and self.data in DATASETS
-        if automatic and images is not None:
-            raise ValueError("Automatic OVAD preparation supplies images; use local data with images")
-        if self._provided_dataloader is None and images is None and not automatic:
-            raise ValueError("Attributes validation requires images or a supplied dataloader")
-        self.images = images
-
-    def build_dataset(self):
-        prepared = self.prepare_named_dataset("attributes")
-        return OVADDataset(
-            self.data if prepared is None else prepared.data,
-            self.images if prepared is None else prepared.images,
-            split=self.split,
-            groups=None if self.task.attributes is None else tuple(self.task.attributes),
-            max_samples=self.max_samples,
-        )
-
-    def init_metrics(self) -> None:
-        from ..ops import _attribute_choices, _choices
-
-        schema = getattr(self.dataset, "attributes", None)
-        if not isinstance(schema, Mapping) or not schema:
-            raise ValueError("Attributes datasets must expose a nonempty attributes schema")
+    def init_metrics(self):
+        from ..ops import _attribute_choices
+        feature = (self.features or {}).get("attributes")
+        if not isinstance(feature, Mapping) or not feature:
+            raise ValueError("Attributes datasets require per-group ClassLabel features")
+        self.vocabularies = {group: _names(value, f'attributes.{group}') for group, value in feature.items()}
+        descriptions = getattr(self.dataset, "metadata", {}).get("attribute_descriptions", {})
+        schema = {group: {name: descriptions.get(group, {}).get(name, name) for name in names}
+                  for group, names in self.vocabularies.items()}
         self.attributes = _attribute_choices(schema if self.task.attributes is None else self.task.attributes)
         missing = self.attributes.keys() - schema.keys()
         if missing:
-            raise ValueError(f"Unsupported dataset attribute groups: {sorted(missing)}")
+            raise ValueError(f'Unsupported dataset attribute groups: {sorted(missing)}')
         for group, choices in self.attributes.items():
-            vocabulary = _choices(schema[group])
-            if set(choices) != set(vocabulary):
-                raise ValueError(f"Attribute choices for {group} must match the complete dataset vocabulary")
-
+            if set(choices) != set(schema[group]):
+                raise ValueError(f'Attribute choices for {group} must match the complete dataset vocabulary')
         self.metrics = AttributesMetrics(self.attributes)
-        self.metrics.dataset_metadata = dict(getattr(self.dataset, "metadata", {}))
 
-    def predict_sample(self, sample: dict):
-        return self.task((sample["img"], self.attributes))
+    def validate_sample(self, sample):
+        super().validate_sample(sample)
+        values = sample["attributes"]
+        if not isinstance(values, Mapping) or values.keys() - self.vocabularies.keys():
+            raise ValueError("Dataset attributes must map known groups to label IDs or null")
+        known = False
+        for group, value in values.items():
+            if value is not None:
+                _check_label(value, self.vocabularies[group])
+                known |= group in self.attributes
+        if not known:
+            raise ValueError("Attribute samples require at least one known target in the selected groups")
 
-    def update_metrics(self, prediction, sample: dict) -> None:
+    def predict_sample(self, sample):
+        return self.task((sample["image"], self.attributes))
+
+    def update_metrics(self, prediction, sample):
         if prediction is not None and not isinstance(prediction, AttributePredictionResult):
             raise TypeError("AttributesValidator requires AttributePredictionResult outputs")
+        targets = {
+            group: self.vocabularies[group][value]
+            for group, value in sample["attributes"].items()
+            if value is not None and group in self.attributes
+        }
         self.metrics.update(
-            sample["attributes"], None if prediction is None else prediction.attributes,
-            sample.get("image_id", str(sample["im_file"])),
+            targets, None if prediction is None else prediction.attributes,
+            sample.get("image_id", self.sample_path(sample)),
         )
 
-    def finalize_metrics(self) -> None:
+    def finalize_metrics(self):
+        self.metrics.dataset_counts.update(evaluated_objects=self.metrics.seen,
+            evaluated_attribute_decisions=self.metrics.attribute_decisions, evaluated_images=self.metrics.unique_images)
         super().finalize_metrics()
-        if self.prepared_dataset is not None:
-            self.metrics.dataset_counts = dict(self.prepared_dataset.metadata["counts"])
-        self.metrics.dataset_counts.update(
-            evaluated_objects=self.metrics.seen,
-            evaluated_attribute_decisions=self.metrics.attribute_decisions,
-            evaluated_images=self.metrics.unique_images,
-        )
 
 
 class ClassificationValidator(BaseValidator):
-    """Validate single-label classification using the dataset's vocabulary."""
+    """Score image/label rows using the label feature's complete vocabulary."""
 
-    default_dataset = "cifar10"
+    required_columns = ("image", "label")
 
-    def build_dataset(self):
-        prepared = self.prepare_named_dataset("classify")
-        return ClassificationDataset(self.data if prepared is None else prepared.data, split=self.split)
-
-    def init_metrics(self) -> None:
-        self.names = tuple(self.dataset.names.values())
+    def init_metrics(self):
+        self.names = _names((self.features or {}).get("label"), "label")
         self.metrics = ClassificationMetrics(self.names)
 
-    def predict_sample(self, sample: dict):
-        return self.task((sample["img"], self.names))
+    def validate_sample(self, sample):
+        super().validate_sample(sample)
+        _check_label(sample["label"], self.names)
 
-    def update_metrics(self, prediction, sample: dict) -> None:
-        if prediction is not None and (
-            not isinstance(prediction, ClassificationResult) or len(prediction.labels) != 1
-        ):
+    def predict_sample(self, sample):
+        return self.task((sample["image"], self.names))
+
+    def update_metrics(self, prediction, sample):
+        if prediction is not None and (not isinstance(prediction, ClassificationResult) or len(prediction.labels) != 1):
             raise TypeError("ClassificationValidator requires one-label ClassificationResult outputs")
-        self.metrics.update(
-            self.dataset.names[int(sample["cls"][0])],
-            None if prediction is None else prediction.labels[0],
-        )
+        self.metrics.update(self.names[sample["label"]], None if prediction is None else prediction.labels[0])
 
 
 class DetectionValidator(BaseValidator):
-    """Validate detection using the YOLO dataset's complete vocabulary."""
+    """Score image/objects rows with pixel xyxy boxes and category ClassLabels."""
 
-    default_dataset = "coco128"
+    required_columns = ("image", "objects")
 
-    def __init__(self, *args, match_iou: float = 0.5, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        # Validate before dataset setup or any task execution.
-        if (
-            isinstance(match_iou, bool) or not isinstance(match_iou, (int, float))
-            or not np.isfinite(match_iou) or not 0 < match_iou <= 1
-        ):
+    def __init__(self, *args, match_iou=0.5, **kwargs):
+        if (isinstance(match_iou, bool) or not isinstance(match_iou, (int, float))
+                or not np.isfinite(match_iou) or not 0 < match_iou <= 1):
             raise ValueError("match_iou must be finite and in (0, 1]")
+        super().__init__(*args, **kwargs)
         self.match_iou = float(match_iou)
 
-    def build_dataset(self):
-        prepared = self.prepare_named_dataset("detect")
-        return YOLODataset(self.data if prepared is None else prepared.data, split=self.split)
-
-    def init_metrics(self) -> None:
-        self.names = tuple(self.dataset.names.values())
+    def init_metrics(self):
+        feature = (self.features or {}).get("objects")
+        category = feature.get("category") if isinstance(feature, Mapping) else None
+        self.names = _names(getattr(category, "feature", None), "objects.category")
         self.metrics = DetectionMetrics(self.names, match_iou=self.match_iou)
 
-    def predict_sample(self, sample: dict):
-        return self.task((sample["img"], self.names))
+    def validate_sample(self, sample):
+        super().validate_sample(sample)
+        objects = sample["objects"]
+        if not isinstance(objects, Mapping) or not {"bbox", "category"} <= objects.keys():
+            raise ValueError("Dataset objects must be a mapping with bbox and category lists")
+        if not isinstance(objects["category"], list):
+            raise ValueError("Dataset objects.category must be a list of label IDs")
+        _check_boxes(objects["bbox"])
+        if len(objects["category"]) != len(objects["bbox"]):
+            raise ValueError("Dataset objects must have matching box and category counts")
+        for category in objects["category"]:
+            _check_label(category, self.names)
 
-    def update_metrics(self, prediction, sample: dict) -> None:
+    def predict_sample(self, sample):
+        return self.task((sample["image"], self.names))
+
+    def update_metrics(self, prediction, sample):
         if prediction is not None and not isinstance(prediction, DetectionResult):
             raise TypeError("DetectionValidator requires DetectionResult outputs")
-        target_labels = [self.dataset.names[int(class_id)] for class_id in sample["cls"]]
+        target_labels = [self.names[category] for category in sample["objects"]["category"]]
         detections = [] if prediction is None else prediction.detections
-        boxes = np.array([
-            [item.box.x1, item.box.y1, item.box.x2, item.box.y2] for item in detections
-        ]).reshape(-1, 4)
-        self.metrics.update(
-            target_labels, sample["bboxes"],
-            [item.label for item in detections], boxes,
-        )
+        boxes = [[item.box.x1, item.box.y1, item.box.x2, item.box.y2] for item in detections]
+        self.metrics.update(target_labels, sample["objects"]["bbox"], [item.label for item in detections], boxes)
 
 
 class GroundingValidator(BaseValidator):
-    """Evaluate one Ground prediction per RefCOCO referring expression."""
+    """Score image/text/bbox/label rows, one referring expression per sample."""
 
-    default_dataset = "refcocog"
+    required_columns = ("image", "text", "bbox", "label")
 
-    def __init__(self, *args, images=None, dataset: str = "refcocog", **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        automatic = isinstance(self.data, str) and self.data in DATASETS
-        if automatic and (images is not None or dataset != "refcocog"):
-            raise ValueError("Automatic grounding preparation supports refcocog; use local data and images for other sources")
-        if self._provided_dataloader is None and images is None and not automatic:
-            raise ValueError("Grounding validation requires images or a supplied dataloader")
-        self.images = images
-        self.dataset_name = dataset
-
-    def build_dataset(self):
-        prepared = self.prepare_named_dataset("ground")
-        return RefCOCODataset(
-            self.data if prepared is None else prepared.data,
-            self.images if prepared is None else prepared.images,
-            dataset=self.dataset_name, split=self.split,
-        )
-
-    def init_metrics(self) -> None:
-        # Ground has no task vocabulary: categories are reporting groups only.
-        self.names = tuple(self.dataset.names.values())
+    def init_metrics(self):
+        self.names = _names((self.features or {}).get("label"), "label")
         self.metrics = GroundingMetrics(self.names, geometry=self.task.geometry)
-        self.metrics.dataset_metadata = dict(getattr(self.dataset, "metadata", {}))
 
-    def predict_sample(self, sample: dict):
-        if np.asarray(sample["cls"]).shape != (1,) or np.asarray(sample["bboxes"]).shape != (1, 4):
-            raise ValueError("Grounding validation requires exactly one category and target box")
-        if sample["cls"][0] not in self.dataset.names:
-            raise ValueError("Unknown grounding category ID")
-        return self.task((sample["img"], sample["target"]))
+    def validate_sample(self, sample):
+        super().validate_sample(sample)
+        if not isinstance(sample["text"], str) or not sample["text"].strip():
+            raise ValueError("Dataset referring text must be a nonempty string")
+        _check_label(sample["label"], self.names)
+        _check_boxes([sample["bbox"]])
 
-    def update_metrics(self, prediction, sample: dict) -> None:
-        if prediction is not None:
-            if not isinstance(prediction, GroundingResult):
-                raise TypeError("GroundingValidator requires GroundingResult outputs")
-            if prediction.image_size != sample["img"].size:
-                raise ValueError("Grounding prediction dimensions differ from the input image")
+    def failure_context(self, sample):
+        return {**super().failure_context(sample), "target": sample["text"]}
+
+    def predict_sample(self, sample):
+        prediction = self.task((sample["image"], sample["text"]))
+        if isinstance(prediction, GroundingResult) and prediction.image_size != (sample["image"].shape[1], sample["image"].shape[0]):
+            raise ValueError("Grounding prediction dimensions differ from the input image")
+        return prediction
+
+    def update_metrics(self, prediction, sample):
+        if prediction is not None and not isinstance(prediction, GroundingResult):
+            raise TypeError("GroundingValidator requires GroundingResult outputs")
         self.metrics.update(
-            self.dataset.names[int(sample["cls"][0])], sample["bboxes"][0],
-            prediction, str(sample["im_file"]),
+            self.names[sample["label"]], sample["bbox"],
+            prediction, self.sample_path(sample),
         )

@@ -1,6 +1,8 @@
 """Offline VQA v2 adaptation, consensus scoring, preparation, and execution."""
 from __future__ import annotations
 
+from ml_pipes.vlm.validation import load_vqav2
+
 from copy import deepcopy
 from io import BytesIO
 import json
@@ -11,10 +13,9 @@ import numpy as np
 import pytest
 
 from ml_pipes.vlm import Answer, AnswerResult, ModelExecutionError, ModelResponse
-from ml_pipes.vlm.validation import (
-    AnswerMetrics, AnswerValidator, DataLoader, DEFAULT_DATASETS, VQAv2Dataset, prepare_dataset,
-)
-from ml_pipes.vlm.validation import prepare as preparation
+from ml_pipes.vlm.validation import AnswerMetrics, AnswerValidator
+from ml_pipes.vlm.validation import dataset_constants as constants
+from ml_pipes.vlm.validation import prepare_data as preparation
 from ml_pipes.vlm.validation._vqa import normalize_answer, score_answer
 
 
@@ -136,18 +137,18 @@ def test_metrics_reject_invalid_results_without_changing_counts(prediction):
 def test_local_dataset_joins_by_id_and_limits_questions_before_image_io(tmp_path, split):
     annotations, images = write_local(tmp_path, split=split)
     (images / f"COCO_{split}2014_{24:012d}.jpg").unlink()
-    dataset = VQAv2Dataset(annotations, images, split=split, max_samples=2)
-    assert [sample["sample_id"] for sample in dataset.samples] == [91, 7]
+    dataset = load_vqav2(annotations, images, split=split, max_samples=2)
+    assert [sample["sample_id"] for sample in dataset] == [91, 7]
     assert dataset.counts == {"source_questions": 3, "source_images": 2, "selected_questions": 2, "selected_images": 1}
-    assert dataset[0]["answers"] == ("2",) * 10
-    assert dataset[1]["answers"] == ("no",) * 10
-    assert dataset[0]["img"].size == (20, 12)
+    assert dataset[0]["answers"] == ["2"] * 10
+    assert dataset[1]["answers"] == ["no"] * 10
+    assert dataset[0]["image"].shape == (12, 20, 3)
     assert "multiple_choice_answer" not in dataset[0]
     assert dataset.metadata["split"] == split
     with pytest.raises(FileNotFoundError, match="image not found"):
-        VQAv2Dataset(annotations, images, split=split)
+        load_vqav2(annotations, images, split=split)
     (images / f"COCO_{split}2014_{13:012d}.jpg").write_bytes(b"not an image")
-    with pytest.raises(ValueError, match="Could not read image"):
+    with pytest.raises(OSError, match="cannot identify image"):
         dataset[0]
 
 
@@ -174,7 +175,7 @@ def test_invalid_dataset_stops_before_inference_even_outside_limit(tmp_path, cha
     annotations, images = write_local(tmp_path, data=(questions, targets))
     backend = Backend()
     with pytest.raises(ValueError, match=match):
-        Answer(backend).val(data=annotations, images=images, max_samples=1, verbose=False)
+        Answer(backend).val(dataset=load_vqav2(annotations, images), max_samples=1, verbose=False)
     assert not backend.calls
 
 
@@ -188,7 +189,7 @@ def test_validator_preserves_questions_context_schema_and_gold_isolation(tmp_pat
     backend = Backend()
     task = Answer(backend, "DEFAULT_QUESTION", context="Assess visible evidence.")
     original_spec = task._spec
-    metrics = task.val(data=annotations, images=images, verbose=False)
+    metrics = task.val(dataset=load_vqav2(annotations, images), verbose=False)
     assert isinstance(metrics, AnswerMetrics) and task.metrics is metrics
     assert task.question == "DEFAULT_QUESTION" and task.context == "Assess visible evidence."
     assert task._spec is original_spec
@@ -212,7 +213,7 @@ def test_failures_and_abstentions_keep_denominators_and_statuses(tmp_path):
         ModelExecutionError("offline"),
         {"status": "answered", "answer": " "},
     )
-    metrics = Answer(backend).val(data=annotations, images=images, verbose=False)
+    metrics = Answer(backend).val(dataset=load_vqav2(annotations, images), verbose=False)
     assert metrics.vqa_accuracy == 0 and metrics.seen == 3
     assert metrics.failure_rate == pytest.approx(2 / 3)
     assert metrics.status_counts == {"answered": 0, "unanswerable": 1}
@@ -228,10 +229,10 @@ def test_negative_answers_zero_and_repeated_runs(tmp_path):
     annotations, images = write_local(tmp_path, data=(questions, targets))
     backend = Backend({"status": "answered", "answer": "zero"}, {"status": "answered", "answer": "no"})
     task = Answer(backend)
-    first = task.val(data=annotations, images=images, max_samples=2, verbose=False)
+    first = task.val(dataset=load_vqav2(annotations, images), max_samples=2, verbose=False)
     assert first.vqa_accuracy == 1 and first.status_counts == {"answered": 2, "unanswerable": 0}
     backend.responses = (ModelExecutionError("offline"),)
-    validator = AnswerValidator(task, data=annotations, images=images, max_samples=2, verbose=False)
+    validator = AnswerValidator(task, dataset=load_vqav2(annotations, images), max_samples=2, verbose=False)
     for metrics in (validator(), validator()):
         assert metrics is not first and metrics.seen == 2 and metrics.unique_images == 1
         assert metrics.vqa_accuracy == 0 and metrics.failure_rate == 1
@@ -240,29 +241,20 @@ def test_negative_answers_zero_and_repeated_runs(tmp_path):
 
 def test_custom_loader_without_class_metadata_and_dataset_hook(tmp_path):
     annotations, images = write_local(tmp_path)
-    dataset = VQAv2Dataset(annotations, images)
-    loader = DataLoader(dataset, indices=[1, 0])
+    dataset = load_vqav2(annotations, images).select([1, 0])
     backend = Backend({"status": "answered", "answer": "no"}, {"status": "answered", "answer": "two"})
     task = Answer(backend)
-    metrics = task.val(dataloader=loader, verbose=False)
+    metrics = task.val(dataset=dataset, verbose=False)
     assert metrics.vqa_accuracy == 1
-    assert metrics.dataset_counts == {
-        "source_questions": 3, "source_images": 2,
-        "selected_questions": 3, "selected_images": 2,
-        "evaluated_questions": 2, "evaluated_images": 1,
-    }
+    assert metrics.dataset_counts["evaluated_questions"] == 2
+    assert metrics.dataset_counts["evaluated_images"] == 1
     assert 'Question: "Is it raining?"' in backend.calls[0].instruction
-
-    class CustomValidator(AnswerValidator):
-        def build_dataset(self):
-            return dataset
-
-    assert task.val(validator=CustomValidator, data="unused", images=images, verbose=False).seen == 3
+    assert AnswerValidator(task, dataset, verbose=False)().seen == 2
 
 
 def test_custom_loader_bad_targets_and_programming_errors_propagate(tmp_path):
     annotations, images = write_local(tmp_path)
-    sample = VQAv2Dataset(annotations, images)[0]
+    sample = load_vqav2(annotations, images)[0]
 
     class Loader:
         dataset = object()
@@ -273,21 +265,21 @@ def test_custom_loader_bad_targets_and_programming_errors_propagate(tmp_path):
     backend = Backend()
     task = Answer(backend)
     with pytest.raises(ValueError, match="ten string"):
-        task.val(dataloader=Loader(), verbose=False)
+        task.val(dataset=Loader(), verbose=False)
     assert not backend.calls
     with pytest.raises(RuntimeError, match="bug"):
-        Answer(Backend(RuntimeError("bug"))).val(data=annotations, images=images, verbose=False)
+        Answer(Backend(RuntimeError("bug"))).val(dataset=load_vqav2(annotations, images), verbose=False)
 
 
 @pytest.mark.parametrize("settings,match", [
-    ({"data": "local"}, "requires images"),
-    ({"data": "vqav2", "images": "images"}, "supplies images"),
-    ({"split": "test"}, "labeled train and val"),
+    ({"dataset": "local"}, "loaded dataset"),
+    ({"dataset": "vqav2", "images": "images"}, "images"),
+    ({"split": "test"}, "split"),
     ({"max_samples": 0}, "max_samples"),
 ])
 def test_invalid_validator_settings_fail_before_inference(settings, match):
     backend = Backend()
-    with pytest.raises(ValueError, match=match):
+    with pytest.raises((ValueError, TypeError), match=match):
         Answer(backend).val(**settings)
     assert not backend.calls
 
@@ -314,26 +306,26 @@ def add_sources(http, split="val", data=None):
         with ZipFile(archive, "w") as source:
             source.writestr(filename, json.dumps(content))
             source.writestr("../../unwanted.txt", "never extract")
-        http[0][preparation._VQA_URL.format(kind=kind, split=split.title())] = archive.getvalue()
+        http[0][constants.VQA_URL.format(kind=kind, split=split.title())] = archive.getvalue()
     ok, image = cv2.imencode(".jpg", np.zeros((12, 20, 3), np.uint8))
     assert ok
     for image_id in (13, 24):
-        http[0][preparation._VQA_IMAGE_URL.format(split=split) + f"COCO_{split}2014_{image_id:012d}.jpg"] = image.tobytes()
+        http[0][constants.VQA_IMAGE_URL.format(split=split) + f"COCO_{split}2014_{image_id:012d}.jpg"] = image.tobytes()
 
 
 @pytest.mark.parametrize("split", ["train", "val"])
 def test_preparation_downloads_distinct_selected_images_and_reuses_cache(tmp_path, http, split):
     add_sources(http, split)
-    first = prepare_dataset("vqav2", split=split, max_samples=2, cache_dir=tmp_path)
-    assert DEFAULT_DATASETS["answer"] == "vqav2" and first.names == ()
-    dataset = VQAv2Dataset(first.data, first.images, split=split)
-    assert [sample["sample_id"] for sample in dataset.samples] == [91, 7]
-    assert dataset.samples[0]["answers"] == ("2",) * 10
+    first = preparation.prepare_vqav2(split=split, max_samples=2, cache_dir=tmp_path)
+    assert constants.DEFAULT_DATASETS["answer"] == "vqav2"
+    dataset = load_vqav2(first.data, first.images, split=split)
+    assert [sample["sample_id"] for sample in dataset] == [91, 7]
+    assert dataset[0]["answers"] == ["2"] * 10
     assert first.metadata["source_questions"] == 3 and first.metadata["selected_images"] == 1
     assert len(http[1]) == 3  # two archives, one shared image
-    assert prepare_dataset("vqav2", split=split, max_samples=2, cache_dir=tmp_path) == first
+    assert preparation.prepare_vqav2(split=split, max_samples=2, cache_dir=tmp_path) == first
     assert len(http[1]) == 3
-    larger = prepare_dataset("vqav2", split=split, max_samples=3, cache_dir=tmp_path)
+    larger = preparation.prepare_vqav2(split=split, max_samples=3, cache_dir=tmp_path)
     assert larger.images == first.images and larger.data != first.data
     assert len(http[1]) == 4
     assert larger.metadata["selected_questions"] == 3
@@ -343,7 +335,7 @@ def test_preparation_downloads_distinct_selected_images_and_reuses_cache(tmp_pat
 @pytest.mark.parametrize("corrupt", ["image", "questions", "archive", "missing_annotations"])
 def test_cache_repairs_selected_images_annotations_and_source_archives(tmp_path, http, corrupt):
     add_sources(http)
-    first = prepare_dataset("vqav2", max_samples=2, cache_dir=tmp_path)
+    first = preparation.prepare_vqav2(max_samples=2, cache_dir=tmp_path)
     if corrupt == "image":
         path = next(first.images.glob("*.jpg"))
     elif corrupt == "archive":
@@ -356,8 +348,8 @@ def test_cache_repairs_selected_images_annotations_and_source_archives(tmp_path,
         path.unlink()
     else:
         path.write_bytes(b"corrupt")
-    assert prepare_dataset("vqav2", max_samples=2, cache_dir=tmp_path) == first
-    assert VQAv2Dataset(first.data, first.images)[0]["answers"] == ("2",) * 10
+    assert preparation.prepare_vqav2(max_samples=2, cache_dir=tmp_path) == first
+    assert load_vqav2(first.data, first.images)[0]["answers"] == ["2"] * 10
     assert len(http[1]) == (4 if corrupt in {"image", "archive"} else 3)
 
 
@@ -379,7 +371,7 @@ def test_invalid_source_joins_fail_before_any_image_download(tmp_path, http):
     annotations["annotations"].pop()
     add_sources(http, data=(questions, annotations))
     with pytest.raises(ValueError, match="matching question IDs"):
-        prepare_dataset("vqav2", max_samples=1, cache_dir=tmp_path)
+        preparation.prepare_vqav2(max_samples=1, cache_dir=tmp_path)
     assert len(http[1]) == 2 and not list(tmp_path.rglob("prepared.json"))
 
 

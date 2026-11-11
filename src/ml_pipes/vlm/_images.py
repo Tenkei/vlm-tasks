@@ -8,7 +8,7 @@ import numpy as np
 
 from ml_pipes.vision import Decode, ImagePayload, LoadFile
 
-ImageInput: TypeAlias = ImagePayload | str | Path
+ImageInput: TypeAlias = ImagePayload | str | Path | np.ndarray[tuple[int, int, int], np.dtype[np.uint8]]
 
 
 def load_image(image: ImageInput) -> ImagePayload:
@@ -18,6 +18,8 @@ def load_image(image: ImageInput) -> ImagePayload:
             image = Decode()(data)
         except (ValueError, cv2.error) as exc:
             raise ValueError(f"Could not decode image: {image}") from exc
+    if isinstance(image, np.ndarray):
+        image = ImagePayload(np.ascontiguousarray(image), color_space="RGB", layout="HWC")
     validate_image(image)
     return image
 

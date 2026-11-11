@@ -1,6 +1,8 @@
 """Grounding evaluation against tiny local MDETR annotations."""
 from __future__ import annotations
 
+from ml_pipes.vlm.validation import load_refcoco
+
 import json
 import subprocess
 import sys
@@ -16,9 +18,7 @@ from ml_pipes.vlm import (
     BoundingBox, Ground, GroundingResult, InvalidModelResponseError,
     ModelExecutionError, ModelResponse, Point,
 )
-from ml_pipes.vlm.validation import (
-    DataLoader, GroundingMetrics, GroundingValidator, RefCOCODataset,
-)
+from ml_pipes.vlm.validation import GroundingMetrics, GroundingValidator
 
 
 def grounding_data(root, *, dataset="refcocog", split="val", count=4):
@@ -149,7 +149,7 @@ def test_point_validation_counts_all_statuses_failures_and_repeated_images(tmp_p
         {"status": "found", "point": {"x": 0, "y": 0}},
     )
     task = Ground(backend, geometry="point")
-    metrics = task.val(data=annotations, images=images, verbose=False)
+    metrics = task.val(dataset=load_refcoco(annotations, images), verbose=False)
     assert metrics.results_dict == {
         "samples": 5, "failures": 1, "failure_rate": .2,
         "unique_images": 2, "point_in_box_accuracy": .2,
@@ -158,7 +158,7 @@ def test_point_validation_counts_all_statuses_failures_and_repeated_images(tmp_p
     assert metrics.summary()[0] == {"class": "cat", "support": 3, "point_in_box_accuracy": 1 / 3}
     assert metrics.failures[0]["target"] == "the animal numbered 3"
     task.model = Backend(ModelExecutionError("offline"))
-    again = task.val(data=annotations, images=images, max_samples=2, verbose=False)
+    again = task.val(dataset=load_refcoco(annotations, images), max_samples=2, verbose=False)
     assert again is not metrics and again.results_dict["point_in_box_accuracy"] == 0
     assert again.results_dict["failure_rate"] == 1 and again.unique_images == 1
 
@@ -182,18 +182,18 @@ def test_point_validation_example_selects_metrics_from_task_config(tmp_path, mon
 
 def test_loader_preserves_expression_order_sparse_ids_and_original_pixels(tmp_path):
     annotations, images, _, _ = grounding_data(tmp_path)
-    dataset = RefCOCODataset(annotations, images)
-    assert dataset.names == {3: "cat", 17: "dog"}
-    assert [sample["sample_id"] for sample in dataset.samples] == [91, 7, 440, 42]
+    dataset = load_refcoco(annotations, images)
+    assert dataset.features["label"].names == ["cat", "dog"]
+    assert [sample["sample_id"] for sample in dataset] == [91, 7, 440, 42]
     assert dataset.counts == {"expressions": 4, "unique_images": 2}
     assert dataset.metadata["expected_split_by"] == "umd"
     sample = dataset[1]
-    assert sample["img"].size == (120, 60)
-    assert sample["target"] == "the animal numbered 1"
-    np.testing.assert_array_equal(sample["cls"], [17])
-    np.testing.assert_array_equal(sample["bboxes"], [[30, 15, 90, 45]])
-    sample["bboxes"][:] = 0
-    np.testing.assert_array_equal(dataset[1]["bboxes"], [[30, 15, 90, 45]])
+    assert sample["image"].shape == (60, 120, 3)
+    assert sample["text"] == "the animal numbered 1"
+    assert sample["label"] == 1
+    np.testing.assert_array_equal(sample["bbox"], [30, 15, 90, 45])
+    sample["bbox"][:] = [0] * 4
+    np.testing.assert_array_equal(dataset[1]["bbox"], [30, 15, 90, 45])
 
 
 def test_expression_scoring_statuses_and_failures_keep_all_denominators(tmp_path):
@@ -203,7 +203,7 @@ def test_expression_scoring_statuses_and_failures_keep_all_denominators(tmp_path
         ModelExecutionError("unavailable"), InvalidModelResponseError("bad JSON"),
     )
     task = Ground(backend, "unused default", context="Resolve the whole animal.")
-    metrics = task.val(data=annotations, images=images, verbose=False)
+    metrics = task.val(dataset=load_refcoco(annotations, images), verbose=False)
     assert isinstance(metrics, GroundingMetrics)
     assert task.metrics is metrics
     assert metrics.results_dict == {
@@ -248,7 +248,7 @@ def test_limit_counts_evaluated_images_and_repeated_runs_reset(tmp_path):
     annotations, images, _, _ = grounding_data(tmp_path)
     backend = Backend(ModelExecutionError("unavailable"))
     task = Ground(backend)
-    validator = GroundingValidator(task, data=annotations, images=images, max_samples=2, verbose=False)
+    validator = GroundingValidator(task, dataset=load_refcoco(annotations, images), max_samples=2, verbose=False)
     assert validator.task is task
     first, second = validator(), validator()
     assert first is not second
@@ -267,10 +267,10 @@ def test_limit_counts_evaluated_images_and_repeated_runs_reset(tmp_path):
 ])
 def test_dataset_variants_and_exact_splits(tmp_path, dataset, split):
     annotations, images, _, _ = grounding_data(tmp_path, dataset=dataset, split=split)
-    loaded = RefCOCODataset(annotations, images, dataset=dataset, split=split)
+    loaded = load_refcoco(annotations, images, dataset=dataset, split=split)
     assert loaded.metadata["expected_split_by"] == ("umd" if dataset == "refcocog" else "unc")
     with pytest.raises(FileNotFoundError):
-        RefCOCODataset(annotations, images, dataset=dataset, split="val")
+        load_refcoco(annotations, images, dataset=dataset, split="val")
 
 
 @pytest.mark.parametrize("change,match", [
@@ -299,7 +299,7 @@ def test_invalid_annotations_fail_before_inference(tmp_path, change, match):
     path.write_text(json.dumps(data))
     backend = Backend(FOUND)
     with pytest.raises((ValueError, FileNotFoundError), match=match):
-        Ground(backend).val(data=annotations, images=images, verbose=False)
+        Ground(backend).val(dataset=load_refcoco(annotations, images), verbose=False)
     assert not backend.calls
 
 
@@ -307,7 +307,7 @@ def test_original_annotation_coordinates_are_not_clipped(tmp_path):
     annotations, images, path, data = grounding_data(tmp_path)
     data["annotations"][0]["bbox"] = [-1.5, 0, 130, 60]
     path.write_text(json.dumps(data))
-    np.testing.assert_array_equal(RefCOCODataset(annotations, images)[0]["bboxes"], [[-1.5, 0, 128.5, 60]])
+    np.testing.assert_array_equal(load_refcoco(annotations, images)[0]["bbox"], [-1.5, 0, 128.5, 60])
 
 
 def test_image_dimensions_corruption_and_invalid_options(tmp_path):
@@ -316,32 +316,27 @@ def test_image_dimensions_corruption_and_invalid_options(tmp_path):
     path.write_text(json.dumps(data))
     backend = Backend(FOUND)
     with pytest.raises(ValueError, match="dimensions differ"):
-        Ground(backend).val(data=annotations, images=images, verbose=False)
+        Ground(backend).val(dataset=load_refcoco(annotations, images), verbose=False)
     (images / "a.png").write_bytes(b"not an image")
-    with pytest.raises(ValueError, match="Could not read image"):
-        RefCOCODataset(annotations, images)[0]
+    with pytest.raises(OSError, match="cannot identify image"):
+        load_refcoco(annotations, images)[0]
     for dataset, split in [("unknown", "val"), ("refcocog", "testA"), ("refcoco", "test"), ("refcocog", "../val")]:
         with pytest.raises(ValueError):
-            RefCOCODataset(annotations, images, dataset=dataset, split=split)
-    with pytest.raises(ValueError, match="requires images"):
-        Ground(backend).val(data=annotations)
+            load_refcoco(annotations, images, dataset=dataset, split=split)
+    with pytest.raises(TypeError, match="loaded dataset"):
+        Ground(backend).val(dataset=annotations)
     with pytest.raises(TypeError, match="class_map"):
-        Ground(backend).val(data=annotations, images=images, class_map={"cat": "cat"})
+        Ground(backend).val(dataset=load_refcoco(annotations, images),  class_map={"cat": "cat"})
     assert not backend.calls
 
 
 def test_custom_loader_and_dataset_hook(tmp_path):
     annotations, images, _, _ = grounding_data(tmp_path)
-    loader = DataLoader(RefCOCODataset(annotations, images), indices=[1, 0])
+    dataset = load_refcoco(annotations, images).select([1, 0])
     task = Ground(Backend(FOUND))
-    metrics = task.val(dataloader=loader, verbose=False)
+    metrics = task.val(dataset=dataset, verbose=False)
     assert metrics.seen == 2 and metrics.unique_images == 1 and metrics.mean_iou == 1
-
-    class CustomValidator(GroundingValidator):
-        def build_dataset(self):
-            return loader.dataset
-
-    assert task.val(validator=CustomValidator, data="unused", images=images, verbose=False).seen == 4
+    assert GroundingValidator(task, dataset, verbose=False)().seen == 2
 
 
 @pytest.mark.parametrize("payload", [(), (42, "cat"), (None, "cat"), (1, 2, 3)])
@@ -448,7 +443,19 @@ class BlockOptional(importlib.abc.MetaPathFinder):
 sys.meta_path.insert(0, BlockOptional())
 from ml_pipes.vlm import Ground, ModelResponse
 task = Ground(lambda request: ModelResponse({'status': 'not_found', 'box': None}))
-metrics = task.val(data=sys.argv[1], images=sys.argv[2], verbose=False)
+import cv2
+from types import SimpleNamespace
+from ml_pipes.vlm.validation.default_datasets import _refcoco_selection
+import json
+from pathlib import Path
+rows, names = _refcoco_selection(json.loads((Path(sys.argv[1]) / 'finetune_refcocog_val.json').read_text()))
+class Dataset:
+    features = {'image': object(), 'text': object(), 'bbox': object(),
+                'label': SimpleNamespace(names=names)}
+    def __iter__(self):
+        for row in rows:
+            yield {**row, 'image': cv2.imread(str(Path(sys.argv[2]) / row['file_name']))[:, :, ::-1]}
+metrics = task.val(dataset=Dataset(), verbose=False)
 assert metrics.seen == 4 and metrics.mean_iou == 0
 """
     subprocess.run([sys.executable, "-c", script, str(annotations), str(images)], check=True, capture_output=True, text=True)

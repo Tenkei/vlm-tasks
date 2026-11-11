@@ -26,12 +26,12 @@ logic for every data source.
 | Calculate caption metrics locally with a pinned PTB tokenizer | Unmaintained COCO Python packages; TorchMetrics as a future replacement | Avoids a metric framework dependency while preserving COCO scoring; requires Java, and tokenizer changes affect scores |
 | Target Imagenette for the classification default             | Keep CIFAR-10 as the long-term default                                | Higher-resolution natural images; larger downloads and an unresolved resolution choice                                                 |
 
-A validator coordinates three responsibilities:
+Dataset loading and validation have separate responsibilities:
 
 | Responsibility        | Purpose                                                              |
 |-----------------------|----------------------------------------------------------------------|
-| Data loading          | Supply the selected images or crops and their annotations            |
-| Annotation adaptation | Align source labels and geometry with the task's evaluation contract |
+| Dataset loader        | Prepare images or crops and annotations as HF-style sample dictionaries |
+| Dataset schema        | Define target columns, geometry, and complete categorical vocabularies |
 | Evaluation            | Compare public task results with targets and accumulate metrics      |
 
 ## Implementation notes
@@ -109,7 +109,7 @@ Install validation dependencies from the repository root:
 python -m pip install -e '.[validation]'
 ```
 
-This includes PyYAML for detection dataset configuration. `Describe.val()` also
+This includes Hugging Face Datasets, Pillow, and PyYAML for the built-in loaders. `Describe.val()` also
 requires Java on `PATH`; its tokenizer is downloaded on first use and cached
 for later runs. Dataset preparation alone does not require Java.
 
@@ -126,7 +126,7 @@ Call `.val()` on a configured task:
 from ml_pipes.vlm import Ground
 
 task = Ground(backend)
-metrics = task.val(split="val", max_samples=100)
+metrics = task.val(max_samples=100)
 
 print(metrics.results_dict)
 print(metrics.summary())
@@ -137,8 +137,7 @@ Each call returns fresh metrics and stores them as `task.metrics`.
 
 | Common setting | Purpose |
 |---|---|
-| `data` | Registered name or local path; omitted for the task default |
-| `split` | Dataset split; defaults to `"val"` |
+| `dataset` | Loaded dataset; omitted to load the task default evaluation data |
 | `max_samples` | Positive limit in dataset order, or `None` (default) for the full selection |
 | `cache_dir` | Override the cache directory |
 | `verbose=False` | Disable progress and aggregate output on stderr |
@@ -153,7 +152,6 @@ from ml_pipes.vlm import Classify
 
 task = Classify(backend)
 metrics = task.val(
-    data="cifar10",
     max_samples=100,
 )
 ```
@@ -171,7 +169,7 @@ validation.
 from ml_pipes.vlm import Detect
 
 task = Detect(backend)
-metrics = task.val(data="coco128", match_iou=0.75, max_samples=100)
+metrics = task.val(match_iou=0.75, max_samples=100)
 print(metrics.precision, metrics.recall, metrics.f1)
 ```
 
@@ -182,16 +180,11 @@ Detection does not report AP/mAP because predictions have no confidence ranking.
 
 ### Ground: RefCOCOg
 
-| Validation setting | Purpose |
-|---|---|
-| `images` | Image directory for local grounding annotations |
-| `dataset` | Local annotation format: `"refcocog"` (default), `"refcoco"`, or `"refcoco+"` |
-
 The task's geometry selects point-in-box or box-IoU scoring:
 
 ```python
 task = Ground(backend, geometry="point", context="Locate the described object.")
-metrics = task.val(data="refcocog", split="val", max_samples=100)
+metrics = task.val(max_samples=100)
 print(metrics.results_dict["point_in_box_accuracy"])
 ```
 
@@ -200,17 +193,13 @@ the reported scores.
 
 ### Attributes: OVAD
 
-| Validation setting | Purpose |
-|---|---|
-| `images` | Image directory for local OVAD annotations |
-
 Omit constructor attributes to use the dataset's complete categorical schema:
 
 ```python
 from ml_pipes.vlm import Attributes
 
 task = Attributes(backend)
-metrics = task.val(data="ovad", max_samples=100)
+metrics = task.val(max_samples=100)
 
 print(metrics.confusion_matrices["material"])
 ```
@@ -218,18 +207,13 @@ print(metrics.confusion_matrices["material"])
 Each sample is an object crop. All crops use the same selected attribute choices,
 including groups whose target is unknown for that object.
 
-To evaluate fewer groups, prepare their choices and configure the task:
+To evaluate fewer groups, select them while loading the dataset:
 
 ```python
-from ml_pipes.vlm.validation import prepare_dataset
+from ml_pipes.vlm.validation import load_ovad
 
-prepared = prepare_dataset("ovad", groups=("material",), max_samples=100)
-task = Attributes(backend, attributes=prepared.attributes)
-metrics = task.val(
-    data=prepared.data,
-    images=prepared.images,
-    max_samples=100,
-)
+dataset = load_ovad(groups=("material",), max_samples=100)
+metrics = Attributes(backend).val(dataset=dataset)
 ```
 
 Each selected group requires its complete dataset vocabulary. The categorical
@@ -238,10 +222,6 @@ below 50 pixels², and objects without a known target in the selected groups.
 Group selection can therefore change sample eligibility before the sample limit.
 
 ### Answer: VQA v2
-
-| Validation setting | Purpose |
-|---|---|
-| `images` | Image directory for local VQA v2 annotations |
 
 Each question is a sample, including questions that share an image:
 
@@ -282,7 +262,6 @@ not measure answerability quality.
 
 | Validation setting | Purpose |
 |---|---|
-| `images` | Image directory for local COCO caption annotations |
 | `tokenizer_version` | Pinned PTB tokenizer: `"3.4.1"` (default), or `"4.6.0"` |
 
 ```python
@@ -316,23 +295,23 @@ CIDEr's length penalty.
 
 ### Default datasets and downloads
 
-To prepare data before model execution:
+Load a dataset before model execution to inspect or select its samples:
 
 ```python
-from ml_pipes.vlm.validation import prepare_dataset
+from ml_pipes.vlm.validation import load_refcocog
 
-prepared = prepare_dataset(
-    "refcocog",
-    split="val",
-    max_samples=100,
-    cache_dir="/datasets/vlm-cache",
-)
-print(prepared.data, prepared.images)
-print(prepared.metadata)
+dataset = load_refcocog(max_samples=100, cache_dir="/datasets/vlm-cache")
+print(dataset.features)
+metrics = Ground(backend).val(dataset=dataset)
 ```
 
-Pass the returned paths as `data` and, where required, `images` to use prepared
-data without automatic downloading.
+Built-in loaders return Hugging Face `Dataset` objects. CIFAR-10 defaults to
+`test`; the other loaders default to their evaluation `val` data. Choose another
+split in the loader. `task.val()` and validators accept already selected data.
+
+Use a loader's `max_samples` to limit preparation and image downloads where
+supported. `task.val(dataset=dataset, max_samples=...)` limits evaluation of the
+loaded dataset.
 
 Cache precedence is `cache_dir`, then `VLM_TASKS_DATASETS_DIR`, then
 `~/.cache/vlm-tasks/datasets`. Download requirements, including full archives
@@ -352,53 +331,105 @@ needed for small selections, are listed in [available validations](#available-va
 
 ## Using your own dataset
 
-Follow the corresponding default dataset's format to reuse its reader and
-metrics. Local dataset paths skip dataset downloads.
+Pass one loaded split with the task's sample schema. Use Hugging Face's column
+and formatting methods to adapt the dataset before validation:
 
-| Task | Format to follow | Local configuration |
+```python
+from datasets import load_dataset
+from ml_pipes.vlm import Classify
+
+dataset = load_dataset("uoft-cs/cifar10", split="test")
+dataset = dataset.rename_column("img", "image")
+dataset = dataset.with_format("numpy", columns=["image"], output_all_columns=True)
+metrics = Classify(backend).val(dataset=dataset.select(range(100)))
+```
+
+Use `cast_column()` and `map()` for feature metadata and annotation conversions.
+Format only `image` as NumPy to preserve annotation lists and scalar IDs.
+For grayscale or alpha images, convert to RGB with a dataset transform first.
+Streaming `IterableDataset` objects work too when their rows follow the same
+schema. `DatasetDict` contains splits; pass one of its datasets.
+
+### Sample schemas
+
+| Task | Required columns | Sample unit |
 |---|---|---|
-| Classification | Class directories, organized as `<root>/<split>/<class>/image.jpg` | `data="/datasets/animals"`, `split="val"` |
-| Detection | COCO128-style YOLO detection YAML, images, and normalized box labels | `data="/datasets/objects/data.yaml"` |
-| Grounding | MDETR RefCOCO annotations named `finetune_{dataset}_{split}.json`, plus images | `data="/datasets/annotations"`, `images="/datasets/images"`, `dataset="refcocog"` |
-| Attributes | OVAD annotation JSON and its referenced images | `data="/datasets/ovad2000.json"`, `images="/datasets/val2017"` |
-| Answer | Official VQA v2 questions and annotations JSON files in one directory, plus COCO 2014 images | `data="/datasets/vqa/annotations"`, `images="/datasets/val2014"`, `split="val"` |
-| Describe | Official COCO captions JSON **file**, with `images` and `annotations` arrays, plus image directory | `data="/datasets/annotations/captions_val2017.json"`, `images="/datasets/val2017"` |
+| Classify | `image`, integer `label` | One image |
+| Detect | `image`, `objects={"bbox": list[list[float]], "category": list[int]}` | One image, including images with no objects |
+| Ground | `image`, `text`, `bbox`, integer `label` | One referring expression and target box |
+| Attributes | `image`, `attributes` mapping groups to integer label IDs or `None` | One subject crop with at least one known target in the selected groups |
+| Answer | `image`, string `question`, `answers: list[str]`, `answer_type`, `question_type` | One question with all ten reference answers |
+| Describe | `image`, `captions: list[str]` | One image with all reference captions |
 
-For local VQA v2 validation, the annotation directory must contain
-`v2_OpenEnded_mscoco_val2014_questions.json` and
-`v2_mscoco_val2014_annotations.json`; use `train2014` in both names for training
-data. Images retain names such as `COCO_val2014_000000000013.jpg`.
+`image` is a nonempty HWC uint8 RGB NumPy array. Boxes are lists of
+`[x1, y1, x2, y2]` coordinates in pixels of that image, with finite values and
+positive area. Detection's box and category lists have equal lengths; both
+may be empty. Attributes images contain the selected subject crop.
 
-COCO caption records join `annotations[].image_id` to `images[].id`; each image
-declares `file_name`, `width`, and `height`, and each annotation has a unique
-`id` and nonempty `caption`.
+VQA `answers` contains exactly ten strings, preserving duplicate votes;
+`answer_type` is `yes/no`, `number`, or `other`, and `question_type` is a
+string. `captions` contains one or more nonempty reference strings.
 
-Local grounding also accepts `dataset="refcoco"` or `"refcoco+"` with the
-corresponding split files; see the
-[MDETR preparation guide](https://github.com/ashkamath/mdetr/blob/main/.github/refexp.md).
-Use `Path("cifar10")` or `"./cifar10"` when a local directory's name matches a
-registered key.
+Convert source annotations with `map()` before calling `.val()`. For example,
+extract VQA answer records without discarding votes:
+
+```python
+dataset = dataset.map(
+    lambda row: {"answers": [vote["answer"] for vote in row["answers"]]}
+)
+```
+
+`image_id` can group repeated images in Ground, Attributes, and Answer, and
+identify images for Describe. The sample types declare it on those tasks.
+Additional reporting columns are optional: `sample_id` identifies a row and
+`im_file` supplies its source path. Without them, reports use generated
+identifiers. Rename source IDs such as VQA's `question_id` to `sample_id` when
+adapting the dataset.
+
+Categorical columns require HF-style `ClassLabel` features with the complete
+vocabulary: `features["label"]` for classification/grounding,
+`features["objects"]["category"] = List(ClassLabel(...))` for detection, and one
+`ClassLabel` per group in `features["attributes"]` for attributes. IDs are
+zero-based indices into those vocabularies. Sample selection retains these choices.
+Dataset labels replace constructor labels during classification and detection
+validation; stored task configuration and context are preserved.
+
+### Local benchmark formats
+
+These loaders adapt existing local annotations into the same sample schemas:
+
+| Loader | Local data |
+|---|---|
+| `load_classification(root, split="val")` | `<root>/<split>/<class>/image.jpg` directories |
+| `load_yolo(data, split="val")` | YOLO detection YAML and TXT annotations |
+| `load_refcoco(annotations, images, dataset="refcocog", split="val")` | MDETR `finetune_{dataset}_{split}.json`; also supports `refcoco` and `refcoco+` |
+| `load_ovad(annotations, images)` | OVAD JSON and source images; selects and crops objects |
+| `load_vqav2(annotations, images, split="val")` | Official question/annotation JSON directory and COCO 2014 images |
+| `load_coco_captions2017(annotations, images)` | Official COCO captions JSON file and source images |
 
 ## Custom loaders and validators
 
-Extend a concrete validator when the task and scoring rules match; use
-`BaseValidator` for a different evaluation contract. For example, given a
-prepared classification dataset `my_dataset`:
+Custom datasets implement the public `ValidationDataset` protocol: iterate over
+sample mappings and expose a `features` mapping. `features=None` is sufficient
+for Answer and Describe. Inheritance is optional; validators use duck typing.
+
+Direct validators consume the same loaded datasets:
 
 ```python
-from ml_pipes.vlm import Classify
 from ml_pipes.vlm.validation import ClassificationValidator
 
-class CustomValidator(ClassificationValidator):
-    def build_dataset(self):
-        return my_dataset
-
-task = Classify(backend)
-metrics = task.val(validator=CustomValidator, data="my-source")
+metrics = ClassificationValidator(task, dataset, verbose=False)()
 ```
 
-See the [API reference](reference.md#task-validation) for loader and validator
-arguments.
+Validators pass the dataset's sample mappings directly to their hooks. They
+check the schema, call the task, and score its results. Incompatible rows stop
+the run before inference for that row. Column renaming, image formatting,
+cropping, and annotation conversion belong in loaders or HF transforms.
+
+Extend a concrete validator to change prediction or scoring rules, or use
+`BaseValidator` for another evaluation contract. Custom validator classes receive
+`task`, `dataset`, and the validation options through
+`task.val(dataset=dataset, validator=MyValidator)`.
 
 ## Next read
 

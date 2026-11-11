@@ -20,6 +20,7 @@ print(result.labels)
 `pathlib.Path` works too. Paths are loaded and decoded to BGR images;
 missing files raise `FileNotFoundError`, and undecodable files raise `ValueError`.
 An existing `ml_pipes.vision.ImagePayload` is used without reloading.
+You can also pass a NumPy array containing a nonempty HWC uint8 RGB image.
 
 Payloads must contain nonempty uint8 arrays: HWC RGB/BGR with three channels,
 or HW GRAY. Convert normalized floats, CHW arrays, or alpha images before

@@ -8,16 +8,18 @@ import sys
 from time import perf_counter
 
 from examples.run_bedrock import TASKS, create_backend
-from ml_pipes.vlm.validation import DATASETS, DEFAULT_DATASETS, DescribeMetrics, OVADDataset, prepare_dataset
+from ml_pipes.vlm import validation
+from ml_pipes.vlm.validation import DescribeMetrics
+from ml_pipes.vlm.validation import dataset_constants as constants
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--backend", choices=["bedrock", "transformers"], default="bedrock")
-    parser.add_argument("--task", choices=list(DEFAULT_DATASETS), required=True)
-    parser.add_argument("--data", help="Registered dataset name or local path; defaults: " + ", ".join(DEFAULT_DATASETS.values()))
+    parser.add_argument("--task", choices=list(constants.DEFAULT_DATASETS), required=True)
+    parser.add_argument("--data", help="Registered dataset name or local path; defaults: " + ", ".join(constants.DEFAULT_DATASETS.values()))
     parser.add_argument("--images", type=Path, help="Local grounding, OVAD, VQA v2, or COCO captions image directory")
-    parser.add_argument("--dataset", choices=["refcocog", "refcoco", "refcoco+"], help="Grounding dataset; default refcocog")
+    parser.add_argument("--dataset", choices=list(constants.REFCOCO_SPLITS), help="Grounding dataset; default refcocog")
     parser.add_argument("--split", default="val")
     parser.add_argument("--config", type=Path, help="Optional task settings JSON; validation supplies classify/detect labels and discovers attributes from the dataset")
     parser.add_argument("--max-samples", type=int, help="Limit evaluated samples (expressions for grounding; object crops for attributes; questions for answer; images for describe)")
@@ -48,9 +50,9 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("--match-iou applies only to detection")
     if args.task != "describe" and args.tokenizer_version is not None:
         parser.error("--tokenizer-version applies only to describe")
-    args.data = args.data or DEFAULT_DATASETS[args.task]
-    automatic = args.data in DATASETS
-    if automatic and DATASETS[args.data].task != args.task:
+    args.data = args.data or constants.DEFAULT_DATASETS[args.task]
+    automatic = args.data in constants.DATASETS
+    if automatic and constants.DATASETS[args.data].task != args.task:
         parser.error(f"Dataset {args.data!r} does not support {args.task}")
     if args.task == "ground":
         if args.images is None and not automatic:
@@ -66,9 +68,9 @@ def main(argv: list[str] | None = None) -> int:
             parser.error("--dataset applies only to grounding")
     elif args.images is not None or args.dataset is not None:
         parser.error("--images applies only to grounding/attributes/answer/describe; --dataset applies only to grounding")
-    if args.task == "answer" and args.split not in DATASETS["vqav2"].splits:
+    if args.task == "answer" and args.split not in constants.DATASETS["vqav2"].splits:
         parser.error("VQA v2 supports labeled train and val splits only")
-    if args.task == "describe" and args.split not in DATASETS["coco_captions2017"].splits:
+    if args.task == "describe" and args.split not in constants.DATASETS["coco_captions2017"].splits:
         parser.error("COCO captions supports labeled train and val splits only")
 
     try:
@@ -82,21 +84,33 @@ def main(argv: list[str] | None = None) -> int:
             # Preflight before downloading data or loading expensive model weights.
             args.tokenizer_version = "3.4.1" if args.tokenizer_version is None else args.tokenizer_version
             DescribeMetrics(tokenizer_version=args.tokenizer_version).prepare()
-        preparation_seconds = 0.0
+        started = perf_counter()
+        loaders = {
+            "classify": validation.load_cifar10, "detect": validation.load_coco128,
+            "ground": validation.load_refcocog, "attributes": validation.load_ovad,
+            "answer": validation.load_vqav2, "describe": validation.load_coco_captions2017,
+        }
+        options = {"split": args.split, "max_samples": args.max_samples}
+        if args.task == "attributes" and task_settings.get("attributes") is not None:
+            options["groups"] = tuple(task_settings["attributes"])
         if automatic:
-            started = perf_counter()
-            print(f"Preparing {args.data} split {args.split}...", file=sys.stderr, flush=True)
-            prepared = prepare_dataset(
-                args.data, split=args.split, max_samples=args.max_samples,
-                **({"groups": tuple(task_settings["attributes"])} if args.task == "attributes" and task_settings.get("attributes") is not None else {}),
-            )
-            preparation_seconds = perf_counter() - started
-            if args.task == "attributes" and task_settings.get("attributes") is None:
-                task_settings["attributes"] = prepared.attributes
-        elif args.task == "attributes" and task_settings.get("attributes") is None:
-            task_settings["attributes"] = OVADDataset(
-                args.data, args.images, split=args.split, max_samples=args.max_samples,
-            ).attributes
+            print(f"Loading {args.data} split {args.split}...", file=sys.stderr, flush=True)
+            dataset = loaders[args.task](**options)
+        elif args.task == "classify":
+            dataset = validation.load_classification(args.data, **options)
+        elif args.task == "detect":
+            dataset = validation.load_yolo(args.data, **options)
+        elif args.task == "ground":
+            dataset = validation.load_refcoco(args.data, args.images, dataset=args.dataset or "refcocog", **options)
+        else:
+            dataset = loaders[args.task](args.data, args.images, **options)
+        preparation_seconds = perf_counter() - started
+        if args.task == "attributes" and task_settings.get("attributes") is None:
+            task_settings["attributes"] = {
+                group: {name: getattr(dataset, "metadata", {}).get("attribute_descriptions", {}).get(group, {}).get(name, name)
+                        for name in feature.names}
+                for group, feature in dataset.features["attributes"].items()
+            }
         started = perf_counter()
         if args.backend == "transformers":
             from examples.run_transformers import create_backend as create_transformers_backend
@@ -107,15 +121,11 @@ def main(argv: list[str] | None = None) -> int:
         load_seconds = perf_counter() - started
         task = TASKS[args.task](backend, **task_settings)
         settings = {
-            "data": args.data, "split": args.split,
+            "dataset": dataset,
             "max_samples": args.max_samples,
         }
         if args.match_iou is not None:
             settings["match_iou"] = args.match_iou
-        if args.task == "ground":
-            settings.update(images=args.images, dataset=args.dataset or "refcocog")
-        elif args.task in {"attributes", "answer", "describe"}:
-            settings["images"] = args.images
         if args.task == "describe":
             settings["tokenizer_version"] = args.tokenizer_version
         metrics = task.val(**settings)

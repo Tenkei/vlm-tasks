@@ -17,6 +17,7 @@ types; they are not exports from `ml_pipes.vlm`.
 | Type | Contract |
 |---|---|
 | `str` or `pathlib.Path` | Path to a local image file |
+| `numpy.ndarray` | Nonempty HWC uint8 RGB array with three channels |
 | `ml_pipes.vision.ImagePayload` | Nonempty uint8 array: HWC RGB/BGR with three channels, or HW GRAY |
 
 See [image loading](tasks.md#images) for usage.
@@ -129,7 +130,7 @@ selection, dependencies, and supported model conventions.
 ## Task validation
 
 ```text
-task.val(validator=None, **kwargs)
+task.val(dataset=None, *, validator=None, **kwargs)
 ```
 
 Returns metrics and assigns `task.metrics`. Built-in task validations use these
@@ -149,43 +150,40 @@ Validation arguments:
 
 | Argument | Default | Contract |
 |---|---|---|
-| `data` | Task default when no loader is supplied | Registered dataset name or local dataset path; mutually exclusive with `dataloader` |
-| `dataloader` | `None` | Loader exposing `.dataset`; yields task sample dictionaries |
-| `split` | `"val"` | Requested dataset split |
+| `dataset` | `None` | Loaded `ValidationDataset`; omitted to load the task default |
 | `max_samples` | `None` | Positive integer or unlimited; images, grounding expressions, attribute objects, or questions |
-| `images` | `None` | Required image directory for local grounding/OVAD/VQA v2/COCO captions data without a custom loader |
-| `dataset` | `"refcocog"` | Grounding only: `"refcocog"`, `"refcoco"`, `"refcoco+"` |
 | `match_iou` | `0.5` | Detection only; finite value in `(0, 1]` |
 | `tokenizer_version` | `"3.4.1"` | Describe only: Stanford PTB `"3.4.1"` or `"4.6.0"`; requires Java |
 | `verbose` | `True` | Progress and aggregate metrics on stderr |
 | `cache_dir` | `None` | Dataset/tokenizer cache; falls back to `VLM_TASKS_DATASETS_DIR`, then `~/.cache/vlm-tasks/datasets` |
 
-`validator` is a class instantiated with `task=self` and the forwarded keywords,
-then called without arguments.
+`validator` is a class instantiated with `task=self`, `dataset=dataset`, and
+forwarded keywords, then called without arguments.
 
 See the [validation guide](validation.md) for dataset formats, sample selection,
 scoring, failure handling, and examples.
 
-### Dataset preparation
+### Dataset loaders
 
-Import from `ml_pipes.vlm.validation`.
+Import from `ml_pipes.vlm.validation`. Return type: Hugging Face `Dataset`.
 
 ```text
-prepare_dataset(dataset, *, split="val", max_samples=None, cache_dir=None,
-                classes=None, groups=None) -> PreparedDataset
+load_cifar10(*, split="test", classes=None, max_samples=None, cache_dir=None)
+load_coco128(*, split="val", max_samples=None, cache_dir=None)
+load_refcocog(*, split="val", max_samples=None, cache_dir=None)
+load_ovad(annotations=None, images=None, *, split="val", groups=None,
+          max_samples=None, cache_dir=None)
+load_vqav2(annotations=None, images=None, *, split="val",
+           max_samples=None, cache_dir=None)
+load_coco_captions2017(annotations=None, images=None, *, split="val",
+                       max_samples=None, cache_dir=None)
+load_classification(root, *, split="val", class_ids=None, max_samples=None)
+load_yolo(data, *, split="val", max_samples=None)
+load_refcoco(annotations, images, *, dataset="refcocog", split="val", max_samples=None)
 ```
 
-`dataset`: registered name. `classes`: optional tuple of CIFAR-10 class names.
-`groups`: optional tuple of OVAD group names. Selection precedes `max_samples`.
-
-| API | Fields or contents |
-|---|---|
-| `PreparedDataset` | `dataset: str`; `split: str`; `data: Path`; `images: Path` or `None`; `names: tuple[str, ...]`; `metadata: dict`; `attributes: dict[str, dict[str, str]]` or `None` (default) |
-| `DatasetInfo` | `task: str`; `splits: tuple[str, ...]`; `names: tuple[str, ...] = ()` |
-| `DATASETS` | Registered name to `DatasetInfo`: `cifar10`, `coco128`, `refcocog`, `ovad`, `vqav2`, `coco_captions2017` |
-| `DEFAULT_DATASETS` | Task name to default registered dataset name |
-
-See [downloads and caching](validation.md#default-datasets-and-downloads).
+See [dataset loading](validation.md#default-datasets-and-downloads) and
+[local benchmark formats](validation.md#local-benchmark-formats).
 
 ### Metrics
 
@@ -193,7 +191,7 @@ Import from `ml_pipes.vlm.validation`.
 
 | Constructor | Task-specific members |
 |---|---|
-| `ClassificationMetrics(names, prediction_names=None)` | `top1`, `confusion_matrix`, `prediction_names`; result key `accuracy_top1` |
+| `ClassificationMetrics(names)` | `top1`, `confusion_matrix`; result key `accuracy_top1` |
 | `DetectionMetrics(names, match_iou=0.5)` | `precision`, `recall`, `f1`, `tp`, `fp`, `fn`, `match_iou` |
 | `GroundingMetrics(names, *, geometry="box")` | `unique_images`, `status_counts`, `support`; box result keys `accuracy_iou_0.5`, `accuracy_iou_0.75`, `accuracy_iou_0.9`, `mean_iou`; point result key `point_in_box_accuracy` |
 | `AttributesMetrics(attributes)` | `accuracy`, `mean_attribute_accuracy`, `macro_f1`, `attribute_decisions`, `unique_images`, `attributes`, `confusion_matrices` |
@@ -220,35 +218,35 @@ See [metric definitions](validation.md#metric-definitions-and-failures) and
 Import from `ml_pipes.vlm.validation`.
 
 ```text
-BaseValidator(task, data=None, *, dataloader=None, split="val",
-              max_samples=None, verbose=True, cache_dir=None)
+BaseValidator(task, dataset, *, max_samples=None, verbose=True, cache_dir=None)
 ```
 
-Concrete validators accept the same base arguments. `DetectionValidator` adds
-`match_iou=0.5`; `GroundingValidator` adds `images=None, dataset="refcocog"`;
-`AttributesValidator` and `AnswerValidator` add `images=None`;
-`DescribeValidator` adds `images=None, tokenizer_version="3.4.1"`.
+`DetectionValidator` adds `match_iou=0.5`;
+`DescribeValidator` adds `tokenizer_version="3.4.1"`.
 `validator()` returns fresh metrics and stores them as `validator.metrics`.
 
-See [custom validation](validation.md#custom-loaders-and-validators) for a
-subclassing example.
-
-### Datasets and loaders
-
-Public imports from `ml_pipes.vlm.validation`:
-
-| Dataset or loader | Contract |
+| Extension hook | Contract |
 |---|---|
-| `ClassificationDataset(root, split="val", class_ids=None)` | Indexed class-directory dataset; optional nonempty iterable of class IDs; preserves original IDs and the full `.names` mapping |
-| `YOLODataset(data, split="val")` | Indexed detection dataset from a local YAML |
-| `RefCOCODataset(annotations, images, *, dataset="refcocog", split="val")` | Indexed MDETR-format grounding expressions |
-| `OVADDataset(annotations, images, *, split="val", groups=None, max_samples=None)` | Indexed OVAD object crops; `.attributes` exposes choices |
-| `VQAv2Dataset(annotations, images, *, split="val", max_samples=None)` | Official VQA v2 questions/annotations directory and COCO 2014 images; labeled `train`/`val` only; limits count questions |
-| `COCOCaptionsDataset(annotations, images, *, split="val", max_samples=None)` | Official captions JSON file and image directory; labeled `train`/`val`; one sample per image with all references; limits follow source image order |
-| `DataLoader(dataset, indices=None)` | Iterator over all or selected dataset indices |
+| `validate_sample(sample)` | Check required columns and target values; returns `None` |
+| `predict_sample(sample)` | Return a task result from the dataset row |
+| `update_metrics(prediction, sample)` | Score the prediction; `None` represents a failed model call |
 
-See [custom loaders and validators](validation.md#custom-loaders-and-validators)
-for an extension example.
+### Dataset protocol
+
+Import `ValidationDataset` and the sample TypedDicts from `ml_pipes.vlm.validation`:
+`ClassificationSample`, `DetectionSample` (with `DetectionObjects`),
+`GroundingSample`, `AttributesSample`, `AnswerSample`, and `DescribeSample`.
+
+```python
+class ValidationDataset(Protocol):
+    @property
+    def features(self) -> Mapping[str, Any] | None: ...
+
+    def __iter__(self) -> Iterator[Mapping[str, Any]]: ...
+```
+
+See [sample schemas](validation.md#sample-schemas) and
+[custom validation](validation.md#custom-loaders-and-validators).
 
 ## Errors
 
