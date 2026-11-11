@@ -189,3 +189,24 @@ requires `(image, target)`; attributes without default choices requires
 `(image, attributes)`. Answer without a default question requires
 `(image, question)`. With defaults, these tasks also accept an image alone.
 Describe accepts an image alone.
+
+## Implementing a task
+
+`_Task` in `ml_pipes.vlm.ops` is the internal shared base; its extension
+interface may change. Subclasses follow this convention:
+
+| Member | Subclass responsibility |
+|---|---|
+| `__init__` | Call `_configure(model, context)`, then set `_instruction` and `_spec` (`ResponseSpec`) defaults |
+| `__call__` | Validate task inputs, load an `ImagePayload`, call `_predict()`, and convert its validated mapping into a result |
+| `resolve_contract` | Declare input types when they depend on instance configuration |
+
+An instruction or response specification may default to `None` when supplied
+per call. Resolve it before calling `_predict(image, instruction=...,
+response_spec=...)`. Keep overrides local to the call. `_predict()` appends
+context and validates the model response against the selected specification.
+
+Decorate concrete tasks with `@Operator` and annotate their input and result
+types for pipeline integration. New task types use
+`.val(validator=MyValidator, ...)` for evaluation; see
+[custom validation](validation.md#custom-loaders-and-validators).

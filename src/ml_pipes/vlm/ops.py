@@ -81,6 +81,28 @@ def _classification_instruction(labels: Mapping[str, str]) -> str:
 
 
 class _Task:
+    """Internal shared implementation for concrete task operators.
+
+    Subclass constructors call ``_configure(model, context)`` and set
+    ``_instruction`` and ``_spec`` to their request defaults. A default may be
+    ``None`` when the corresponding value must be supplied per call.
+
+    Subclasses implement a typed ``__call__`` that validates task inputs, loads
+    an ``ImagePayload``, resolves concrete instructions and a ``ResponseSpec``,
+    calls ``_predict``, and converts the validated mapping into a task result.
+    Per-call values are passed as arguments to ``_predict`` without changing
+    the stored defaults. Missing required inputs fail before model execution.
+
+    Concrete operators use ``@Operator``. Tasks with configuration-dependent
+    input types also implement ``resolve_contract``. New task types supply
+    their evaluator through ``val(validator=...)``.
+    """
+
+    model: ModelBackend
+    context: str | None
+    _instruction: str | None
+    _spec: ResponseSpec | None
+
     def val(self, validator=None, **kwargs):
         """Evaluate this task and return its validator's metrics.
 
@@ -113,6 +135,7 @@ class _Task:
         return self.metrics
 
     def _configure(self, model: ModelBackend, context: str | None) -> None:
+        """Validate and store the backend and context before setting defaults."""
         if not callable(model):
             raise TypeError("model must be a ModelBackend, such as PydanticAIBackend")
         if context is not None:
@@ -124,6 +147,14 @@ class _Task:
         self, image: ImagePayload, *, instruction: str | None = None,
         response_spec: ResponseSpec | None = None,
     ) -> Mapping[str, object]:
+        """Execute a request and return its validated response mapping.
+
+        ``image`` must already be an ``ImagePayload``. Omitted instructions
+        and response specifications use ``_instruction`` and ``_spec``;
+        subclasses must resolve any ``None`` defaults before calling here.
+        Context is appended to the request without changing stored defaults.
+        Input loading and task-result conversion belong in ``__call__``.
+        """
         validate_image(image)
         if instruction is None:
             instruction = self._instruction
