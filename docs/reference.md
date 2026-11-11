@@ -34,6 +34,7 @@ types; they are not exports from `ml_pipes.vlm`.
 | Type | Contract |
 |---|---|
 | `str` or `pathlib.Path` | Path to a local image file |
+| `PIL.Image.Image` | Nonempty image; converted to RGB |
 | `numpy.ndarray` | Nonempty HWC uint8 RGB array with three channels |
 | `ml_pipes.vision.ImagePayload` | Nonempty uint8 array: HWC RGB/BGR with three channels, or HW GRAY |
 

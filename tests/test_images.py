@@ -4,6 +4,7 @@ from pathlib import Path
 
 import cv2
 import numpy as np
+from PIL import Image
 import pytest
 
 
@@ -38,6 +39,17 @@ def test_loading_an_rgb_array_preserves_pixels_and_dimensions():
     np.testing.assert_array_equal(image.array, pixels)
     decoded = cv2.imdecode(np.frombuffer(encode_image(image), dtype=np.uint8), cv2.IMREAD_COLOR)
     np.testing.assert_array_equal(decoded, pixels[..., ::-1])
+
+
+@pytest.mark.parametrize("mode", ["RGB", "RGBA", "L", "P"])
+def test_loading_a_pil_image_converts_to_rgb_without_changing_the_source(mode):
+    source = Image.new("RGB", (5, 3), (200, 30, 10)).convert(mode)
+    original = source.tobytes()
+    image = load_image(source)
+    assert image.size == (5, 3) and image.color_space == "RGB" and image.layout == "HWC"
+    assert image.array.dtype == np.uint8 and image.array.flags.c_contiguous
+    np.testing.assert_array_equal(image.array, np.asarray(source.convert("RGB")))
+    assert source.mode == mode and source.tobytes() == original
 
 
 @pytest.mark.parametrize("pixels", [

@@ -100,7 +100,7 @@ def test_cifar_uses_pinned_hub_revision_and_filters_before_limit(tmp_path, cifar
     assert len(dataset) == 1
     assert dataset.features['label'].names == list(constants.CIFAR_NAMES)
     assert dataset[0]['label'] == 3
-    np.testing.assert_array_equal(dataset[0]['image'][0, 0], [180, 90, 30])
+    np.testing.assert_array_equal(dataset[0]['image'].getpixel((0, 0)), [180, 90, 30])
     assert cifar == [{'revision': constants.CIFAR_REVISION, 'split': 'test', 'cache_dir': tmp_path}]
 
 

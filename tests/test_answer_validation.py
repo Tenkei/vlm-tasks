@@ -140,7 +140,7 @@ def test_local_dataset_joins_by_id_and_limits_questions_before_image_io(tmp_path
     assert [sample["sample_id"] for sample in dataset] == [91, 7]
     assert dataset[0]["answers"] == ["2"] * 10
     assert dataset[1]["answers"] == ["no"] * 10
-    assert dataset[0]["image"].shape == (12, 20, 3)
+    assert dataset[0]["image"].size == (20, 12)
     assert "multiple_choice_answer" not in dataset[0]
     assert str(dataset.split) == split
     with pytest.raises(FileNotFoundError, match="image not found"):

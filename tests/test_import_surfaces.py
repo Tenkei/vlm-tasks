@@ -20,7 +20,7 @@ def test_vlm_import_does_not_load_transformers_runtime() -> None:
         [
             sys.executable, "-c",
             "import sys; from ml_pipes.vlm import TransformersModel; "
-            "assert all(name not in sys.modules for name in ('torch', 'transformers', 'PIL'))",
+            "assert all(name not in sys.modules for name in ('torch', 'transformers'))",
         ],
         check=True,
         capture_output=True,

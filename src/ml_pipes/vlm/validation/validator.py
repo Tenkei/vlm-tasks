@@ -10,6 +10,7 @@ from time import perf_counter
 
 import numpy as np
 
+from .._images import is_pil_image
 from ..errors import InvalidModelResponseError, ModelExecutionError
 from ..types import AttributePredictionResult, ClassificationResult, DetectionResult, GroundingResult
 from ._vqa import validate_targets
@@ -127,9 +128,13 @@ class BaseValidator:
         if missing:
             raise ValueError(f"Dataset sample is missing required columns: {sorted(missing)}")
         image = sample["image"]
-        if (not isinstance(image, np.ndarray) or image.dtype != np.uint8
-                or image.ndim != 3 or image.shape[2] != 3 or not image.shape[0] or not image.shape[1]):
-            raise ValueError("Dataset image must be a nonempty HWC uint8 RGB array; format it in the dataset")
+        if is_pil_image(image):
+            valid = image.width > 0 and image.height > 0
+        else:
+            valid = (isinstance(image, np.ndarray) and image.dtype == np.uint8
+                     and image.ndim == 3 and image.shape[2] == 3 and image.shape[0] > 0 and image.shape[1] > 0)
+        if not valid:
+            raise ValueError("Dataset image must be a nonempty PIL image or HWC uint8 RGB array")
 
     def sample_path(self, sample):
         """Return the explicit image path or a stable reporting identifier."""
@@ -360,7 +365,9 @@ class GroundingValidator(BaseValidator):
 
     def predict_sample(self, sample):
         prediction = self.task((sample["image"], sample["text"]))
-        if isinstance(prediction, GroundingResult) and prediction.image_size != (sample["image"].shape[1], sample["image"].shape[0]):
+        image = sample["image"]
+        size = image.size if is_pil_image(image) else (image.shape[1], image.shape[0])
+        if isinstance(prediction, GroundingResult) and prediction.image_size != size:
             raise ValueError("Grounding prediction dimensions differ from the input image")
         return prediction
 

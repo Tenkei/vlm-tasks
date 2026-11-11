@@ -186,7 +186,7 @@ def test_loader_preserves_expression_order_sparse_ids_and_original_pixels(tmp_pa
     assert dataset.features["label"].names == ["cat", "dog"]
     assert [sample["sample_id"] for sample in dataset] == [91, 7, 440, 42]
     sample = dataset[1]
-    assert sample["image"].shape == (60, 120, 3)
+    assert sample["image"].size == (120, 60)
     assert sample["text"] == "the animal numbered 1"
     assert sample["label"] == 1
     np.testing.assert_array_equal(sample["bbox"], [30, 15, 90, 45])

@@ -96,7 +96,7 @@ def load_cifar10(*, split: str = "test", classes=None, max_samples: int | None =
         dataset = dataset.filter(lambda label: label in ids, input_columns=["label"])
     if max_samples is not None:
         dataset = dataset.select(range(min(max_samples, len(dataset))))
-    return utils._format(dataset)
+    return dataset
 
 
 def load_classification(root: str | Path, *, split: str = "val", class_ids=None,
@@ -137,7 +137,7 @@ def load_classification(root: str | Path, *, split: str = "val", class_ids=None,
         raise ValueError("No samples belong to the selected classification classes")
     if max_samples is not None:
         dataset = dataset.select(range(min(max_samples, len(dataset))))
-    return utils._format(dataset)
+    return dataset.cast_column("image", hf.Image())
 
 
 def _image_paths(batch):

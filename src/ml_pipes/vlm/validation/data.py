@@ -9,10 +9,12 @@ from typing import Any, Literal, NotRequired, Protocol, TypedDict
 
 import numpy as np
 
+from .._images import PILImage
+
 
 class _Sample(TypedDict):
-    # A nonempty HWC uint8 RGB image, produced by dataset formatting/transforms.
-    image: np.ndarray[tuple[int, int, int], np.dtype[np.uint8]]
+    # A nonempty PIL image or HWC uint8 RGB array.
+    image: PILImage | np.ndarray[tuple[int, int, int], np.dtype[np.uint8]]
 
 
 class ClassificationSample(_Sample):

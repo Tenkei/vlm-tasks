@@ -307,7 +307,7 @@ metrics = Ground(backend).val(dataset=dataset)
 
 Built-in loaders return ordinary Hugging Face `Dataset` objects. CIFAR-10 loads
 from a pinned Hub revision; the other benchmarks use HF builders for their
-original sources. Images are formatted as RGB NumPy arrays, and categorical
+original sources. Images use HF's default PIL decoding, and categorical
 features retain the complete vocabulary after selection.
 
 CIFAR-10 defaults to `test`; the other loaders default to their evaluation `val`
@@ -343,7 +343,7 @@ reload a selected dataset, including its images and feature vocabulary.
 ## Using your own dataset
 
 Pass one loaded split with the task's sample schema. Use Hugging Face's column
-and formatting methods to adapt the dataset before validation:
+methods to adapt the dataset before validation:
 
 ```python
 from datasets import load_dataset
@@ -351,13 +351,12 @@ from ml_pipes.vlm import Classify
 
 dataset = load_dataset("uoft-cs/cifar10", split="test")
 dataset = dataset.rename_column("img", "image")
-dataset = dataset.with_format("numpy", columns=["image"], output_all_columns=True)
 metrics = Classify(backend).val(dataset=dataset.select(range(100)))
 ```
 
 Use `cast_column()` and `map()` for feature metadata and annotation conversions.
-Format only `image` as NumPy to preserve annotation lists and scalar IDs.
-For grayscale or alpha images, convert to RGB with a dataset transform first.
+HF's default PIL images work directly, including grayscale and alpha images;
+tasks convert them to RGB when loading the image.
 Streaming `IterableDataset` objects work too when their rows follow the same
 schema. `DatasetDict` contains splits; pass one of its datasets.
 
@@ -372,7 +371,7 @@ schema. `DatasetDict` contains splits; pass one of its datasets.
 | Answer | `image`, string `question`, `answers: list[str]`, `answer_type`, `question_type` | One question with all ten reference answers |
 | Describe | `image`, `captions: list[str]` | One image with all reference captions |
 
-`image` is a nonempty HWC uint8 RGB NumPy array. Boxes are lists of
+`image` is a nonempty PIL image or HWC uint8 RGB NumPy array. Boxes are lists of
 `[x1, y1, x2, y2]` coordinates in pixels of that image, with finite values and
 positive area. Detection's box and category lists have equal lengths; both
 may be empty. Attributes images contain the selected subject crop.

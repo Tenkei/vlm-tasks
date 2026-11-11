@@ -97,7 +97,7 @@ def test_group_schema_synonyms_selection_and_crop(tmp_path):
     sample = dataset[0]
     assert sample["attributes"] == {"cleanliness": 0, "material": None}
     assert sample["image_id"] == 13
-    assert sample["image"].shape == (21, 31, 3)
+    assert sample["image"].size == (31, 21)
     np.testing.assert_array_equal(sample["image"], cv2.imread(sample["im_file"])[2:23, 0:31, ::-1])
     sample["attributes"].clear()
     assert dataset[0]["attributes"] == {"cleanliness": 0, "material": None}
@@ -305,14 +305,14 @@ def http(monkeypatch, hf_downloads):
 def test_named_preparation_filters_before_limit_and_reuses_cache(tmp_path, http):
     dataset = load_ovad(max_samples=2, cache_dir=tmp_path)
     assert [s['sample_id'] for s in dataset] == [70, 3]
-    assert dataset[0]['image'].shape == (21, 31, 3)
+    assert dataset[0]['image'].size == (31, 21)
     assert len(http[1]) == 2
     assert not (tmp_path / 'outside').exists()
     again = load_ovad(max_samples=2, cache_dir=tmp_path)
     assert again._fingerprint == dataset._fingerprint and len(http[1]) == 2
     # Crops live in Arrow, so cached runs do not need the original image.
     Path(dataset[0]['im_file']).unlink()
-    assert load_ovad(max_samples=2, cache_dir=tmp_path)[0]['image'].shape == (21, 31, 3)
+    assert load_ovad(max_samples=2, cache_dir=tmp_path)[0]['image'].size == (31, 21)
     full = load_ovad(split='test', cache_dir=tmp_path)
     assert len(full) == 3 and len(http[1]) == 4
     assert not any('000000000035.jpg' in url for url in http[1])

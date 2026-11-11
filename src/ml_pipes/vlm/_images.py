@@ -1,14 +1,23 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TypeAlias
+from typing import Never, TypeAlias, TypeGuard
 
 import cv2
 import numpy as np
 
 from ml_pipes.vision import Decode, ImagePayload, LoadFile
 
-ImageInput: TypeAlias = ImagePayload | str | Path | np.ndarray[tuple[int, int, int], np.dtype[np.uint8]]
+try:
+    from PIL.Image import Image as PILImage
+except ImportError:
+    PILImage = Never
+
+ImageInput: TypeAlias = ImagePayload | str | Path | PILImage | np.ndarray[tuple[int, int, int], np.dtype[np.uint8]]
+
+
+def is_pil_image(image: object) -> TypeGuard[PILImage]:
+    return PILImage is not Never and isinstance(image, PILImage)
 
 
 def load_image(image: ImageInput) -> ImagePayload:
@@ -18,6 +27,8 @@ def load_image(image: ImageInput) -> ImagePayload:
             image = Decode()(data)
         except (ValueError, cv2.error) as exc:
             raise ValueError(f"Could not decode image: {image}") from exc
+    if is_pil_image(image):
+        image = np.asarray(image.convert("RGB"))
     if isinstance(image, np.ndarray):
         image = ImagePayload(np.ascontiguousarray(image), color_space="RGB", layout="HWC")
     validate_image(image)

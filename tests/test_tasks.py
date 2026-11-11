@@ -6,6 +6,7 @@ from pathlib import Path
 
 import cv2
 import numpy as np
+from PIL import Image
 import pytest
 
 
@@ -60,7 +61,7 @@ def backend_for(*responses, retries=0, output_mode="prompted"):
     return PydanticAIBackend(model, retries=retries, output_mode=output_mode), calls
 
 
-@pytest.mark.parametrize("input_kind", ["str", "path", "array"])
+@pytest.mark.parametrize("input_kind", ["str", "path", "array", "pil"])
 @pytest.mark.parametrize(("make_task", "payload"), [
     (lambda b: Classify(b, ["clean"]), {"labels": ["clean"]}),
     (lambda b: ClassifyMultiLabel(b, ["clean"]), {"labels": ["clean"]}),
@@ -77,7 +78,7 @@ def backend_for(*responses, retries=0, output_mode="prompted"):
     (lambda b: Describe(b), {"description": "A red chair."}),
     (lambda b: Answer(b, "What color is the chair?"), {"status": "answered", "answer": "red"}),
 ])
-def test_tasks_accept_image_paths_and_rgb_arrays(tmp_path, image, input_kind, make_task, payload):
+def test_tasks_accept_image_paths_arrays_and_pil(tmp_path, image, input_kind, make_task, payload):
     path = tmp_path / "image.png"
     assert cv2.imwrite(str(path), image.array)
     backend, _ = backend_for(payload)
@@ -87,6 +88,7 @@ def test_tasks_accept_image_paths_and_rgb_arrays(tmp_path, image, input_kind, ma
     value, input_type = {
         "str": (str(path), str), "path": (path, Path),
         "array": (image.array[..., ::-1], np.ndarray[tuple[int, int, int], np.dtype[np.uint8]]),
+        "pil": (Image.fromarray(image.array[..., ::-1]), Image.Image),
     }[input_kind]
     assert task(value) == expected
     pipeline = Pipeline([task])

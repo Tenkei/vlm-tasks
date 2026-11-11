@@ -116,7 +116,7 @@ def test_original_detection_coordinates_and_metadata_are_preserved(tmp_path):
     data = detection_data(tmp_path, ["0 0.5 0.5 0.5 0.5\n"])
     dataset = load_yolo(data)
     sample = dataset[0]
-    assert sample["image"].shape == (60, 120, 3)
+    assert sample["image"].size == (120, 60)
     np.testing.assert_array_equal(sample["objects"]["bbox"], [[30, 15, 90, 45]])
     np.testing.assert_array_equal(dataset[0]["objects"]["bbox"], sample["objects"]["bbox"])
     sample["objects"]["bbox"][0][0] = 999
@@ -191,7 +191,7 @@ def test_classification_dataset_filters_classes_and_preserves_ids(tmp_path, clas
     assert dataset.features['label'].names == ['cat', 'dog', 'fox']
     assert len(dataset) == 4
     assert [sample['label'] for sample in dataset] == [0, 0, 2, 2]
-    assert all(sample['image'].shape == (60, 120, 3) for sample in dataset)
+    assert all(sample['image'].size == (120, 60) for sample in dataset)
 
 
 @pytest.mark.parametrize("class_ids", [[], [-1], [2], [1.0], [0, True], [np.bool_(False)], 1, "1", b"\x01"])

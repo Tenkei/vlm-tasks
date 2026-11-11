@@ -33,7 +33,7 @@ class _RowsBuilder(hf.GeneratorBasedBuilder):
         if not rows:
             raise ValueError("No samples available for the selected dataset options")
         self.info.features = hf.Features({
-            "image": hf.Image(mode="RGB"), "im_file": hf.Value("string"), **features,
+            "image": hf.Image(), "im_file": hf.Value("string"), **features,
         })
         return [hf.SplitGenerator(name=self.config.source_split, gen_kwargs={"rows": rows})]
 
@@ -61,13 +61,7 @@ def _build(builder_type, *, name, split, max_samples, cache_dir, files=None, ima
     # source cache; remote benchmark configurations reuse the completed dataset.
     mode = hf.DownloadMode.REUSE_CACHE_IF_EXISTS if files else hf.DownloadMode.REUSE_DATASET_IF_EXISTS
     builder.download_and_prepare(download_mode=mode)
-    return _format(builder.as_dataset(split=split))
-
-
-def _format(dataset):
-    return dataset.cast_column("image", hf.Image(mode="RGB")).with_format(
-        "numpy", columns=["image"], output_all_columns=True,
-    )
+    return builder.as_dataset(split=split)
 
 
 # Source files and images

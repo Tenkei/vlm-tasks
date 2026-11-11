@@ -142,7 +142,7 @@ def test_dataset_groups_all_references_before_limit_in_source_image_order(tmp_pa
     assert [sample["image_id"] for sample in dataset] == [13, 7]
     assert dataset[0]["captions"] == ["a cat sits on a mat", "a cat on a mat", "a cat sits on a mat"]
     assert dataset[1]["captions"] == ["two dogs play outside"] * 2
-    assert dataset[0]["image"].shape == (12, 20, 3) and "label" not in dataset.features
+    assert dataset[0]["image"].size == (20, 12) and "label" not in dataset.features
     with pytest.raises(FileNotFoundError, match="image not found"):
         load_coco_captions2017(annotations, images)
     (images / f"{13:012d}.jpg").write_bytes(b"corrupt")
