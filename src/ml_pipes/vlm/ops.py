@@ -72,6 +72,14 @@ def _attributes_instruction(attributes: Mapping[str, Mapping[str, str]]) -> str:
     )
 
 
+def _classification_instruction(labels: Mapping[str, str]) -> str:
+    return (
+        "Classify the image. Select exactly one allowed label for the subject "
+        "and property defined by context. This is one image-level decision. "
+        "Allowed labels and descriptions: " + json.dumps(labels)
+    )
+
+
 class _Task:
     def val(self, validator=None, **kwargs):
         """Evaluate this task and return its validator's metrics.
@@ -134,22 +142,46 @@ class _Task:
 
 @Operator
 class Classify(_Task):
+    """Classify using labels supplied at construction or per call."""
+
     def __init__(
-        self, model: ModelBackend, labels: LabelChoices, *, context: str | None = None
+        self, model: ModelBackend, labels: LabelChoices | None = None, *, context: str | None = None
     ) -> None:
         self._configure(model, context)
-        self.labels = _choices(labels)
-        self._spec = classification_spec(self.labels, multiple=False)
-        self._instruction = (
-            "Classify the image. Select exactly one allowed label for the subject "
-            "and property defined by context. This is one image-level decision. "
-            "Allowed labels and descriptions: " + json.dumps(self.labels)
-        )
+        self.labels = None if labels is None else _choices(labels)
+        self._spec = None if self.labels is None else classification_spec(self.labels, multiple=False)
+        self._instruction = None if self.labels is None else _classification_instruction(self.labels)
 
-    def __call__(self, image: ImageInput) -> ClassificationResult:
+    @overload
+    def __call__(self, image: ImageInput) -> ClassificationResult: ...
+
+    @overload
+    def __call__(self, image: tuple[ImageInput, LabelChoices]) -> ClassificationResult: ...
+
+    def __call__(self, image: Any) -> ClassificationResult:
+        response_spec, instruction = self._spec, self._instruction
+        if isinstance(image, tuple):
+            if len(image) != 2:
+                raise ValueError("Classify requires an image or an (image, labels) tuple")
+            image, choices = image
+            labels = _choices(choices)
+            response_spec = classification_spec(labels, multiple=False)
+            instruction = _classification_instruction(labels)
+        elif self.labels is None:
+            raise ValueError("Classify requires labels at construction or when called")
         image = load_image(image)
-        data = self._predict(image)
+        data = self._predict(image, instruction=instruction, response_spec=response_spec)
         return ClassificationResult(labels=tuple(data["labels"]))
+
+    def resolve_contract(
+        self,
+        upstream_annotation: Any,
+        validation_error_type: type[Exception],
+    ) -> tuple[tuple[Any, ...], Any]:
+        del upstream_annotation, validation_error_type
+        if self.labels is None:
+            return (tuple[ImageInput, LabelChoices],), ClassificationResult
+        return (ImageInput | tuple[ImageInput, LabelChoices],), ClassificationResult
 
 
 @Operator
@@ -186,24 +218,46 @@ _GEOMETRY = (
 )
 
 
+def _detection_instruction(labels: Mapping[str, str]) -> str:
+    return (
+        "Detect all instances matching the supplied labels and context. "
+        "Search exhaustively; return an empty detections list if none match. "
+        "Different instances may overlap. "
+        + _GEOMETRY + "\nAllowed labels and descriptions: " + json.dumps(labels)
+    )
+
+
 @Operator
 class Detect(_Task):
+    """Detect objects using labels supplied at construction or per call."""
+
     def __init__(
-        self, model: ModelBackend, labels: LabelChoices, *, context: str | None = None
+        self, model: ModelBackend, labels: LabelChoices | None = None, *, context: str | None = None
     ) -> None:
         self._configure(model, context)
-        self.labels = _choices(labels)
-        self._spec = detection_spec(self.labels)
-        self._instruction = (
-            "Detect all instances matching the supplied labels and context. "
-            "Search exhaustively; return an empty detections list if none match. "
-            "Different instances may overlap. "
-            + _GEOMETRY + "\nAllowed labels and descriptions: " + json.dumps(self.labels)
-        )
+        self.labels = None if labels is None else _choices(labels)
+        self._spec = None if self.labels is None else detection_spec(self.labels)
+        self._instruction = None if self.labels is None else _detection_instruction(self.labels)
 
-    def __call__(self, image: ImageInput) -> DetectionResult:
+    @overload
+    def __call__(self, image: ImageInput) -> DetectionResult: ...
+
+    @overload
+    def __call__(self, image: tuple[ImageInput, LabelChoices]) -> DetectionResult: ...
+
+    def __call__(self, image: Any) -> DetectionResult:
+        response_spec, instruction = self._spec, self._instruction
+        if isinstance(image, tuple):
+            if len(image) != 2:
+                raise ValueError("Detect requires an image or an (image, labels) tuple")
+            image, choices = image
+            labels = _choices(choices)
+            response_spec = detection_spec(labels)
+            instruction = _detection_instruction(labels)
+        elif self.labels is None:
+            raise ValueError("Detect requires labels at construction or when called")
         image = load_image(image)
-        data = self._predict(image)
+        data = self._predict(image, instruction=instruction, response_spec=response_spec)
         return DetectionResult(
             detections=tuple(
                 Detection(label=item["label"], box=_pixel_box(item["box"], image))
@@ -211,6 +265,16 @@ class Detect(_Task):
             ),
             image_size=image.size,
         )
+
+    def resolve_contract(
+        self,
+        upstream_annotation: Any,
+        validation_error_type: type[Exception],
+    ) -> tuple[tuple[Any, ...], Any]:
+        del upstream_annotation, validation_error_type
+        if self.labels is None:
+            return (tuple[ImageInput, LabelChoices],), DetectionResult
+        return (ImageInput | tuple[ImageInput, LabelChoices],), DetectionResult
 
 
 @Operator

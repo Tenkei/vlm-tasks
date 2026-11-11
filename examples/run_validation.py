@@ -7,7 +7,7 @@ from pathlib import Path
 import sys
 from time import perf_counter
 
-from examples.run_bedrock import DEFAULT_CONFIG, TASKS, create_backend
+from examples.run_bedrock import TASKS, create_backend
 from ml_pipes.vlm.validation import DATASETS, DEFAULT_DATASETS, DescribeMetrics, OVADDataset, prepare_dataset
 
 
@@ -19,8 +19,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--images", type=Path, help="Local grounding, OVAD, VQA v2, or COCO captions image directory")
     parser.add_argument("--dataset", choices=["refcocog", "refcoco", "refcoco+"], help="Grounding dataset; default refcocog")
     parser.add_argument("--split", default="val")
-    parser.add_argument("--config", type=Path, help="Task settings JSON; attributes discovers the dataset schema, named classify/detect use dataset labels, local classify/detect use image_tasks.json, ground/answer/describe use empty settings")
-    parser.add_argument("--class-map", type=Path, help="JSON mapping of dataset class names to task labels")
+    parser.add_argument("--config", type=Path, help="Optional task settings JSON; validation supplies classify/detect labels and discovers attributes from the dataset")
     parser.add_argument("--max-samples", type=int, help="Limit evaluated samples (expressions for grounding; object crops for attributes; questions for answer; images for describe)")
     parser.add_argument("--tokenizer-version", help="Describe PTB tokenizer version: 3.4.1 (default) or 4.6.0")
     parser.add_argument("--match-iou", type=float, help="Detection matching IoU; default 0.5")
@@ -58,8 +57,6 @@ def main(argv: list[str] | None = None) -> int:
             parser.error("--images is required for local grounding data")
         if automatic and (args.images is not None or args.dataset not in (None, "refcocog")):
             parser.error("Automatic grounding preparation supports refcocog; provide local --data and --images for other sources")
-        if args.class_map is not None:
-            parser.error("--class-map is not supported for grounding")
     elif args.task in {"attributes", "answer", "describe"}:
         if args.images is None and not automatic:
             parser.error(f"--images is required for local {args.task} data")
@@ -67,8 +64,6 @@ def main(argv: list[str] | None = None) -> int:
             parser.error("Automatic preparation supplies images; provide local --data with --images")
         if args.dataset is not None:
             parser.error("--dataset applies only to grounding")
-        if args.class_map is not None:
-            parser.error(f"--class-map is not supported for {args.task}")
     elif args.images is not None or args.dataset is not None:
         parser.error("--images applies only to grounding/attributes/answer/describe; --dataset applies only to grounding")
     if args.task == "answer" and args.split not in DATASETS["vqav2"].splits:
@@ -78,26 +73,21 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         task_settings = {}
-        if args.config is None and automatic and args.task in {"classify", "detect"}:
-            task_settings = {"labels": list(DATASETS[args.data].names)}
-        elif args.config is not None or args.task in {"classify", "detect"}:
-            config = json.loads((args.config or DEFAULT_CONFIG).read_text())
+        if args.config is not None:
+            config = json.loads(args.config.read_text())
             if not isinstance(config, dict) or not isinstance(config.get(args.task), dict):
                 raise ValueError(f"Configuration must contain an object for task {args.task!r}")
             task_settings = config[args.task]
-        class_map = None if args.class_map is None else json.loads(args.class_map.read_text())
         if args.task == "describe":
             # Preflight before downloading data or loading expensive model weights.
             args.tokenizer_version = "3.4.1" if args.tokenizer_version is None else args.tokenizer_version
             DescribeMetrics(tokenizer_version=args.tokenizer_version).prepare()
         preparation_seconds = 0.0
         if automatic:
-            classes = tuple(class_map or task_settings["labels"]) if args.task == "classify" else None
             started = perf_counter()
             print(f"Preparing {args.data} split {args.split}...", file=sys.stderr, flush=True)
             prepared = prepare_dataset(
                 args.data, split=args.split, max_samples=args.max_samples,
-                classes=classes,
                 **({"groups": tuple(task_settings["attributes"])} if args.task == "attributes" and task_settings.get("attributes") is not None else {}),
             )
             preparation_seconds = perf_counter() - started
@@ -117,7 +107,7 @@ def main(argv: list[str] | None = None) -> int:
         load_seconds = perf_counter() - started
         task = TASKS[args.task](backend, **task_settings)
         settings = {
-            "data": args.data, "split": args.split, "class_map": class_map,
+            "data": args.data, "split": args.split,
             "max_samples": args.max_samples,
         }
         if args.match_iou is not None:

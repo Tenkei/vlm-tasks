@@ -325,7 +325,7 @@ def test_image_dimensions_corruption_and_invalid_options(tmp_path):
             RefCOCODataset(annotations, images, dataset=dataset, split=split)
     with pytest.raises(ValueError, match="requires images"):
         Ground(backend).val(data=annotations)
-    with pytest.raises(ValueError, match="class_map"):
+    with pytest.raises(TypeError, match="class_map"):
         Ground(backend).val(data=annotations, images=images, class_map={"cat": "cat"})
     assert not backend.calls
 

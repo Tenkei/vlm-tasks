@@ -148,40 +148,35 @@ For the complete argument contracts, see the
 
 ### Classify: CIFAR-10
 
-| Validation setting | Purpose |
-|---|---|
-| `class_map` | Select dataset classes and map their names to task labels; omitted when names match |
-
 ```python
 from ml_pipes.vlm import Classify
 
-task = Classify(
-    backend,
-    labels={"feline": "A cat", "canine": "A dog"},
-)
+task = Classify(backend)
 metrics = task.val(
     data="cifar10",
-    class_map={"cat": "feline", "dog": "canine"},
     max_samples=100,
 )
 ```
 
-Several dataset classes can map to one task label.
+Dataset labels replace constructor labels for classification
+validation.
 
 ### Detect: COCO128
 
 | Validation setting | Purpose |
 |---|---|
-| `class_map` | Select dataset classes and map their names to task labels; omitted when names match |
 | `match_iou` | Inclusive box-matching IoU threshold; defaults to `0.5` |
 
 ```python
 from ml_pipes.vlm import Detect
 
-task = Detect(backend, labels=["person", "car"])
+task = Detect(backend)
 metrics = task.val(data="coco128", match_iou=0.75, max_samples=100)
 print(metrics.precision, metrics.recall, metrics.f1)
 ```
+
+Dataset labels replace constructor labels for detection
+validation.
 
 Detection does not report AP/mAP because predictions have no confidence ranking.
 
@@ -398,7 +393,7 @@ class CustomValidator(ClassificationValidator):
     def build_dataset(self):
         return my_dataset
 
-task = Classify(backend, labels=["cat", "dog"])
+task = Classify(backend)
 metrics = task.val(validator=CustomValidator, data="my-source")
 ```
 

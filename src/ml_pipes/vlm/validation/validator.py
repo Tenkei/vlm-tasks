@@ -15,7 +15,6 @@ from ._vqa import SCORER_METADATA, validate_targets
 from ._caption_tokenizer import DEFAULT_TOKENIZER_VERSION
 from .data import (
     COCOCaptionsDataset, ClassificationDataset, DataLoader, OVADDataset, RefCOCODataset, VQAv2Dataset, YOLODataset,
-    _classification_classes,
 )
 from .metrics import AnswerMetrics, AttributesMetrics, ClassificationMetrics, DescribeMetrics, DetectionMetrics, GroundingMetrics
 from .prepare import DATASETS, prepare_dataset
@@ -36,7 +35,6 @@ class BaseValidator:
 
     def __init__(
         self, task, data=None, *, dataloader=None, split: str = "val",
-        class_map: Mapping[str, str] | None = None,
         max_samples: int | None = None, verbose: bool = True, cache_dir=None,
     ) -> None:
         if data is None and dataloader is None:
@@ -45,12 +43,6 @@ class BaseValidator:
             raise ValueError("Supply exactly one of data or dataloader")
         if max_samples is not None and (type(max_samples) is not int or max_samples < 1):
             raise ValueError("max_samples must be a positive integer or None")
-        if class_map is not None and (
-            not isinstance(class_map, Mapping) or not class_map
-            or any(not isinstance(key, str) or not key.strip() for key in class_map)
-            or any(not isinstance(value, str) or not value.strip() for value in class_map.values())
-        ):
-            raise ValueError("class_map must be a nonempty dataset-name to task-label mapping")
         self.task = task
         self.data = data
         self.split = split
@@ -58,7 +50,6 @@ class BaseValidator:
         self.verbose = verbose
         self.cache_dir = cache_dir
         self._provided_dataloader = dataloader
-        self._requested_class_map = None if class_map is None else dict(class_map)
 
     def __call__(self):
         started = perf_counter()
@@ -68,7 +59,6 @@ class BaseValidator:
             self.build_dataset() if self._provided_dataloader is None
             else self._provided_dataloader.dataset
         )
-        self._align_classes()
         self.dataloader = (
             self.get_dataloader(self.dataset) if self._provided_dataloader is None
             else self._provided_dataloader
@@ -113,27 +103,6 @@ class BaseValidator:
     def setup(self) -> None:
         """Preflight task-specific runtime requirements before inference."""
 
-    def _align_classes(self) -> None:
-        self.class_map = self._resolve_class_map(self.dataset.names)
-        self.names = tuple(name for name in self.task.labels if name in self.class_map.values())
-
-    def _resolve_class_map(self, names: Mapping[int, str]) -> dict[int, str]:
-        dataset_names = set(names.values())
-        task_names = set(self.task.labels)
-        mapping = self._requested_class_map
-        if mapping is None:
-            mapping = {name: name for name in self.task.labels}
-        missing = set(mapping) - dataset_names
-        unknown = set(mapping.values()) - task_names
-        if missing or unknown:
-            raise ValueError(
-                f"Invalid class alignment: missing dataset names={sorted(missing)}, "
-                f"unknown task labels={sorted(unknown)}. Supply class_map for aliases or a subset."
-            )
-        return {
-            class_id: mapping[name] for class_id, name in names.items() if name in mapping
-        }
-
     def build_dataset(self):
         raise NotImplementedError
 
@@ -142,12 +111,9 @@ class BaseValidator:
             return None
         if DATASETS[self.data].task != task:
             raise ValueError(f"Dataset {self.data!r} does not support {task} validation")
-        classes = None
-        if task == "classify":
-            classes = tuple(self._requested_class_map or self.task.labels)
         self.prepared_dataset = prepare_dataset(
             self.data, split=self.split, max_samples=self.max_samples,
-            cache_dir=self.cache_dir, classes=classes,
+            cache_dir=self.cache_dir,
             **({"groups": tuple(self.task.attributes)} if task == "attributes" and self.task.attributes is not None else {}),
         )
         return self.prepared_dataset
@@ -178,8 +144,6 @@ class DescribeValidator(BaseValidator):
 
     def __init__(self, *args, images=None, tokenizer_version=DEFAULT_TOKENIZER_VERSION, **kwargs):
         super().__init__(*args, **kwargs)
-        if self._requested_class_map is not None:
-            raise ValueError("class_map is not supported for describe validation")
         if self.split not in ("train", "val"):
             raise ValueError("COCO captions supports labeled train and val splits only")
         automatic = isinstance(self.data, str) and self.data in DATASETS
@@ -202,9 +166,6 @@ class DescribeValidator(BaseValidator):
             self.images if prepared is None else prepared.images,
             split=self.split, max_samples=self.max_samples,
         )
-
-    def _align_classes(self):
-        pass
 
     def init_metrics(self):
         self.metrics.dataset_metadata = {**getattr(self.dataset, "metadata", {}), **self.metrics.dataset_metadata}
@@ -244,8 +205,6 @@ class AnswerValidator(BaseValidator):
 
     def __init__(self, *args, images=None, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        if self._requested_class_map is not None:
-            raise ValueError("class_map is not supported for answer validation")
         if self.split not in ("train", "val"):
             raise ValueError("VQA v2 supports labeled train and val splits only")
         automatic = isinstance(self.data, str) and self.data in DATASETS
@@ -262,10 +221,6 @@ class AnswerValidator(BaseValidator):
             self.images if prepared is None else prepared.images,
             split=self.split, max_samples=self.max_samples,
         )
-
-    def _align_classes(self) -> None:
-        # Answers have no fixed vocabulary; answer types are reporting groups.
-        pass
 
     def init_metrics(self) -> None:
         self.metrics = AnswerMetrics()
@@ -308,8 +263,6 @@ class AttributesValidator(BaseValidator):
 
     def __init__(self, *args, images=None, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        if self._requested_class_map is not None:
-            raise ValueError("class_map is not supported for attributes validation")
         automatic = isinstance(self.data, str) and self.data in DATASETS
         if automatic and images is not None:
             raise ValueError("Automatic OVAD preparation supplies images; use local data with images")
@@ -327,7 +280,7 @@ class AttributesValidator(BaseValidator):
             max_samples=self.max_samples,
         )
 
-    def _align_classes(self) -> None:
+    def init_metrics(self) -> None:
         from ..ops import _attribute_choices, _choices
 
         schema = getattr(self.dataset, "attributes", None)
@@ -342,7 +295,6 @@ class AttributesValidator(BaseValidator):
             if set(choices) != set(vocabulary):
                 raise ValueError(f"Attribute choices for {group} must match the complete dataset vocabulary")
 
-    def init_metrics(self) -> None:
         self.metrics = AttributesMetrics(self.attributes)
         self.metrics.dataset_metadata = dict(getattr(self.dataset, "metadata", {}))
 
@@ -369,19 +321,20 @@ class AttributesValidator(BaseValidator):
 
 
 class ClassificationValidator(BaseValidator):
-    """Validate a single-label Classify task against class directories."""
+    """Validate single-label classification using the dataset's vocabulary."""
 
     default_dataset = "cifar10"
 
     def build_dataset(self):
         prepared = self.prepare_named_dataset("classify")
-        root = self.data if prepared is None else prepared.data
-        names = {class_id: path.name for class_id, path in _classification_classes(root, self.split).items()}
-        class_map = self._resolve_class_map(names)
-        return ClassificationDataset(root, split=self.split, class_ids=class_map)
+        return ClassificationDataset(self.data if prepared is None else prepared.data, split=self.split)
 
     def init_metrics(self) -> None:
-        self.metrics = ClassificationMetrics(self.names, prediction_names=tuple(self.task.labels))
+        self.names = tuple(self.dataset.names.values())
+        self.metrics = ClassificationMetrics(self.names)
+
+    def predict_sample(self, sample: dict):
+        return self.task((sample["img"], self.names))
 
     def update_metrics(self, prediction, sample: dict) -> None:
         if prediction is not None and (
@@ -389,13 +342,13 @@ class ClassificationValidator(BaseValidator):
         ):
             raise TypeError("ClassificationValidator requires one-label ClassificationResult outputs")
         self.metrics.update(
-            self.class_map[int(sample["cls"][0])],
+            self.dataset.names[int(sample["cls"][0])],
             None if prediction is None else prediction.labels[0],
         )
 
 
 class DetectionValidator(BaseValidator):
-    """Validate a Detect task against YOLO detection labels."""
+    """Validate detection using the YOLO dataset's complete vocabulary."""
 
     default_dataset = "coco128"
 
@@ -414,21 +367,22 @@ class DetectionValidator(BaseValidator):
         return YOLODataset(self.data if prepared is None else prepared.data, split=self.split)
 
     def init_metrics(self) -> None:
+        self.names = tuple(self.dataset.names.values())
         self.metrics = DetectionMetrics(self.names, match_iou=self.match_iou)
+
+    def predict_sample(self, sample: dict):
+        return self.task((sample["img"], self.names))
 
     def update_metrics(self, prediction, sample: dict) -> None:
         if prediction is not None and not isinstance(prediction, DetectionResult):
             raise TypeError("DetectionValidator requires DetectionResult outputs")
-        indices = [i for i, class_id in enumerate(sample["cls"]) if int(class_id) in self.class_map]
-        target_labels = [self.class_map[int(sample["cls"][i])] for i in indices]
-        detections = [] if prediction is None else [
-            item for item in prediction.detections if item.label in self.names
-        ]
+        target_labels = [self.dataset.names[int(class_id)] for class_id in sample["cls"]]
+        detections = [] if prediction is None else prediction.detections
         boxes = np.array([
             [item.box.x1, item.box.y1, item.box.x2, item.box.y2] for item in detections
         ]).reshape(-1, 4)
         self.metrics.update(
-            target_labels, sample["bboxes"][indices],
+            target_labels, sample["bboxes"],
             [item.label for item in detections], boxes,
         )
 
@@ -440,8 +394,6 @@ class GroundingValidator(BaseValidator):
 
     def __init__(self, *args, images=None, dataset: str = "refcocog", **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        if self._requested_class_map is not None:
-            raise ValueError("class_map is not supported for grounding validation")
         automatic = isinstance(self.data, str) and self.data in DATASETS
         if automatic and (images is not None or dataset != "refcocog"):
             raise ValueError("Automatic grounding preparation supports refcocog; use local data and images for other sources")
@@ -458,19 +410,16 @@ class GroundingValidator(BaseValidator):
             dataset=self.dataset_name, split=self.split,
         )
 
-    def _align_classes(self) -> None:
-        # Ground has no task vocabulary: categories are reporting groups only.
-        self.class_map = dict(self.dataset.names)
-        self.names = tuple(self.class_map.values())
-
     def init_metrics(self) -> None:
+        # Ground has no task vocabulary: categories are reporting groups only.
+        self.names = tuple(self.dataset.names.values())
         self.metrics = GroundingMetrics(self.names, geometry=self.task.geometry)
         self.metrics.dataset_metadata = dict(getattr(self.dataset, "metadata", {}))
 
     def predict_sample(self, sample: dict):
         if np.asarray(sample["cls"]).shape != (1,) or np.asarray(sample["bboxes"]).shape != (1, 4):
             raise ValueError("Grounding validation requires exactly one category and target box")
-        if sample["cls"][0] not in self.class_map:
+        if sample["cls"][0] not in self.dataset.names:
             raise ValueError("Unknown grounding category ID")
         return self.task((sample["img"], sample["target"]))
 
@@ -481,6 +430,6 @@ class GroundingValidator(BaseValidator):
             if prediction.image_size != sample["img"].size:
                 raise ValueError("Grounding prediction dimensions differ from the input image")
         self.metrics.update(
-            self.class_map[int(sample["cls"][0])], sample["bboxes"][0],
+            self.dataset.names[int(sample["cls"][0])], sample["bboxes"][0],
             prediction, str(sample["im_file"]),
         )

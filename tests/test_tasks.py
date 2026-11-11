@@ -25,7 +25,7 @@ from ml_pipes.vlm import (
     PydanticAIBackend,
 )
 from ml_pipes.vlm._images import ImageInput
-from ml_pipes.vlm.ops import AttributeChoices
+from ml_pipes.vlm.ops import AttributeChoices, LabelChoices
 
 
 @pytest.fixture(autouse=True)
@@ -92,11 +92,18 @@ def test_tasks_accept_image_paths(tmp_path, image, path_type, make_task, payload
 
 @pytest.mark.parametrize("path_type", [str, Path])
 @pytest.mark.parametrize("configured", [False, True])
-@pytest.mark.parametrize("kind", ["ground", "attributes", "answer"])
+@pytest.mark.parametrize("kind", ["classify", "detect", "ground", "attributes", "answer"])
 def test_paths_work_with_per_call_settings(tmp_path, image, path_type, configured, kind):
     path = tmp_path / "image.png"
     assert cv2.imwrite(str(path), image.array)
-    if kind == "ground":
+    if kind in {"classify", "detect"}:
+        payload = {"labels": ["window"]} if kind == "classify" else {"detections": []}
+        backend, _ = backend_for(payload)
+        task_type = Classify if kind == "classify" else Detect
+        task = task_type(backend, ["old label"] if configured else None)
+        settings = {"window": "A visible window"}
+        input_type = tuple[path_type, dict[str, str]]
+    elif kind == "ground":
         backend, _ = backend_for({
             "status": "found", "box": {"x1": 0, "y1": 0, "x2": 0.5, "y2": 1},
         })
@@ -172,6 +179,73 @@ def test_classification_context_descriptions_and_scores(image):
     assert content[1].media_type == "image/png"
     schema_text = json.dumps(op._spec.schema)
     assert '"enum": ["clean", "dirty"]' in schema_text
+
+
+@pytest.mark.parametrize("task_type", [Classify, Detect])
+@pytest.mark.parametrize("configured", [False, True])
+def test_label_overrides_preserve_defaults_and_context(image, task_type, configured):
+    requests = []
+
+    def backend(request):
+        requests.append(request)
+        if task_type is Classify:
+            return ModelResponse({"labels": ["new" if len(requests) == 1 else "old"]})
+        return ModelResponse({"detections": []})
+
+    task = task_type(backend, {"old": "Old description"} if configured else None, context="The subject.")
+    spec, instruction = task._spec, task._instruction
+    task((image, {"new": "New description"}))
+    assert "New description" in requests[0].instruction
+    assert "Old description" not in requests[0].instruction
+    assert "The subject." in requests[0].instruction
+    assert "old" not in json.dumps(requests[0].response_spec.schema)
+    assert task.labels == ({"old": "Old description"} if configured else None)
+    assert task._spec is spec and task._instruction == instruction
+    if configured:
+        task(image)
+        assert requests[1].response_spec is spec
+        assert "Old description" in requests[1].instruction
+    else:
+        with pytest.raises(ValueError, match="requires labels"):
+            task(image)
+        assert len(requests) == 1
+
+
+@pytest.mark.parametrize("task_type", [Classify, Detect])
+@pytest.mark.parametrize("labels", [None, [], {}, ["new", "new"], "new", {"new": 1}])
+def test_invalid_label_overrides_fail_before_inference(image, task_type, labels):
+    backend, calls = backend_for({})
+    task = task_type(backend, ["old"])
+    with pytest.raises(ValueError):
+        task((image, labels))
+    assert task.labels == {"old": ""}
+    assert not calls
+
+
+@pytest.mark.parametrize("task_type", [Classify, Detect])
+@pytest.mark.parametrize("length", [0, 1, 3])
+def test_label_tasks_reject_malformed_tuples_before_inference(image, task_type, length):
+    backend, calls = backend_for({})
+    with pytest.raises(ValueError, match="image, labels"):
+        task_type(backend)(tuple([image] * length))
+    assert not calls
+
+
+@pytest.mark.parametrize("task_type,result_type", [(Classify, ClassificationResult), (Detect, DetectionResult)])
+@pytest.mark.parametrize("configured", [False, True])
+def test_label_task_pipeline_contracts(task_type, result_type, configured):
+    backend, _ = backend_for({})
+    pipeline = Pipeline([task_type(backend, ["old"] if configured else None)])
+    contract = pipeline.validate(strict=True)
+    expected = ImageInput | tuple[ImageInput, LabelChoices] if configured else tuple[ImageInput, LabelChoices]
+    assert contract.input_type == expected
+    assert contract.output_type is result_type
+    pipeline.validate(pipeline_input_type=tuple[ImagePayload, list[str]], strict=True)
+    with pytest.raises(PipelineValidationError):
+        pipeline.validate(pipeline_input_type=tuple[ImagePayload, int], strict=True)
+    if not configured:
+        with pytest.raises(PipelineValidationError):
+            pipeline.validate(pipeline_input_type=ImagePayload, strict=True)
 
 
 @pytest.mark.parametrize("labels", [[], ["clean", "dirty"], ["absent"], ["clean", "clean"]])
@@ -638,13 +712,16 @@ def test_shared_backend_does_not_share_task_schema_or_history(image):
 ])
 def test_operator_runs_and_validates_in_pipeline(image, task, payload, result_type):
     backend, _ = backend_for(payload)
-    pipeline = Pipeline([task(backend)])
+    operator = task(backend)
+    pipeline = Pipeline([operator])
     contract = pipeline.validate(strict=True)
     expected_input = ImageInput
     if result_type in (GroundingResult, AnswerResult):
         expected_input = ImageInput | tuple[ImageInput, str]
     elif result_type is AttributePredictionResult:
         expected_input = ImageInput | tuple[ImageInput, AttributeChoices]
+    elif isinstance(operator, (Classify, Detect)):
+        expected_input = ImageInput | tuple[ImageInput, LabelChoices]
     assert contract.input_type == expected_input
     assert contract.output_type is result_type
     result = pipeline(image)

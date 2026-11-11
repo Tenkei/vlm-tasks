@@ -64,22 +64,20 @@ def box(label, x1=0.25, y1=0.25, x2=0.75, y2=0.75):
     return {"label": label, "box": {"x1": x1, "y1": y1, "x2": x2, "y2": y2}}
 
 
-def test_classification_aliases_failures_and_out_of_subset_predictions(tmp_path):
-    data = classification_data(tmp_path, classes=("cat", "dog", "excluded"), per_class=2)
+def test_classification_uses_dataset_labels_and_keeps_failures(tmp_path):
+    data = classification_data(tmp_path, per_class=2)
     backend = Backend(
-        {"labels": ["feline"]}, {"labels": ["dog"]},
-        ModelExecutionError("unavailable"), {"labels": ["other"]},
+        {"labels": ["cat"]}, {"labels": ["dog"]},
+        ModelExecutionError("unavailable"), {"labels": ["cat"]},
     )
     task = Classify(backend, ["feline", "dog", "other"])
-    metrics = task.val(
-        data=data, class_map={"cat": "feline", "dog": "dog"}, verbose=False,
-    )
+    metrics = task.val(data=data, verbose=False)
     assert isinstance(metrics, ClassificationMetrics)
     assert task.metrics is metrics
     assert metrics.results_dict == {"samples": 4, "failures": 1, "failure_rate": 0.25, "accuracy_top1": 0.25}
-    np.testing.assert_array_equal(metrics.confusion_matrix, [[1, 1, 0, 0], [0, 0, 1, 1]])
-    assert metrics.prediction_names == ("feline", "dog", "other")
-    assert metrics.summary()[0] == {"class": "feline", "support": 2, "precision": 1.0, "recall": 0.5, "f1": 2 / 3}
+    np.testing.assert_array_equal(metrics.confusion_matrix, [[1, 1, 0], [1, 0, 1]])
+    assert metrics.names == metrics.prediction_names == ("cat", "dog")
+    assert metrics.summary()[0] == {"class": "cat", "support": 2, "precision": 0.5, "recall": 0.5, "f1": 0.5}
     assert metrics.failures[0]["type"] == "ModelExecutionError"
     assert metrics.failures[0]["message"] == "unavailable"
     assert metrics.failures[0]["im_file"].endswith("dog/0.png")
@@ -96,23 +94,20 @@ def test_detection_counts_duplicates_wrong_classes_and_failed_images(tmp_path):
     ])
     backend = Backend(
         {"detections": [
-            box("pedestrian", 0, 0, 0.5, 0.5),
-            box("pedestrian", 0, 0, 0.5, 0.5),
-            box("pedestrian", 0.5, 0.5, 1, 1),
-            box("ignored"),
+            box("person", 0, 0, 0.5, 0.5),
+            box("person", 0, 0, 0.5, 0.5),
+            box("person", 0.5, 0.5, 1, 1),
         ]},
         {"detections": [box("dog")]},
         InvalidModelResponseError("bad response"), ModelExecutionError("unavailable"),
     )
-    metrics = Detect(backend, ["pedestrian", "dog", "ignored"]).val(
-        data=data, class_map={"person": "pedestrian", "dog": "dog"}, verbose=False,
-    )
+    metrics = Detect(backend, ["pedestrian", "dog", "ignored"]).val(data=data, verbose=False)
     assert metrics.results_dict == {
         "samples": 4, "failures": 2, "failure_rate": 0.5, "match_iou": 0.5,
         "tp": 1, "fp": 3, "fn": 2, "precision": 0.25, "recall": 1 / 3, "f1": 2 / 7,
     }
     assert metrics.summary()[0] == {
-        "class": "pedestrian", "support": 2, "tp": 1, "fp": 2, "fn": 1,
+        "class": "person", "support": 2, "tp": 1, "fp": 2, "fn": 1,
         "precision": 1 / 3, "recall": 0.5, "f1": 0.4,
     }
     assert metrics.dataset_counts == {"labeled_images": 2, "empty_labels": 1, "missing_labels": 1}
@@ -132,22 +127,21 @@ def test_original_detection_coordinates_and_metadata_are_preserved(tmp_path):
     assert (metrics.precision, metrics.recall, metrics.f1) == (1, 1, 1)
 
 
-def test_detection_keeps_images_with_only_unselected_annotations(tmp_path):
+def test_detection_scores_classes_absent_from_constructor_labels(tmp_path):
     data = detection_data(tmp_path, ["1 0.5 0.5 0.5 0.5\n"])
     metrics = Detect(Backend({"detections": [box("person")]}), ["person"]).val(data=data, verbose=False)
     assert metrics.results_dict["samples"] == 1
     assert metrics.results_dict["fp"] == 1
-    assert metrics.results_dict["fn"] == 0
+    assert metrics.results_dict["fn"] == 1
 
 
-def test_many_dataset_classes_can_map_to_one_task_label(tmp_path):
+def test_constructor_only_labels_are_invalid_validation_predictions(tmp_path):
     data = classification_data(tmp_path)
-    metrics = Classify(Backend({"labels": ["animal"]}), ["animal"]).val(
-        data=data, class_map={"cat": "animal", "dog": "animal"}, verbose=False,
-    )
-    assert metrics.names == ("animal",)
-    assert metrics.top1 == 1
-    assert metrics.summary()[0]["support"] == 2
+    metrics = Classify(Backend({"labels": ["animal"]}), ["animal"]).val(data=data, verbose=False)
+    assert metrics.names == ("cat", "dog")
+    assert metrics.top1 == 0
+    assert len(metrics.failures) == 2
+    assert all(failure["type"] == "InvalidModelResponseError" for failure in metrics.failures)
 
 
 @pytest.mark.parametrize("task_kind", ["classify", "detect"])
@@ -218,19 +212,16 @@ def test_classification_dataset_rejects_invalid_class_ids(tmp_path, class_ids):
         ClassificationDataset(root, class_ids=class_ids)
 
 
-@pytest.mark.parametrize("custom_loader", [False, True])
-def test_classification_subset_does_not_decode_excluded_images(tmp_path, custom_loader):
+def test_classification_dataset_selection_does_not_decode_excluded_images(tmp_path):
     data = classification_data(tmp_path, per_class=2)
     (data / "val" / "cat" / "0.png").write_bytes(b"corrupt but outside selected classes")
     (data / "val" / "dog" / "1.png").write_bytes(b"corrupt but past sample limit")
-    settings = {"data": data}
-    if custom_loader:
-        dataset = ClassificationDataset(data, class_ids=[1])
-        loader = DataLoader(dataset)
-        assert len(loader) == 2
-        settings = {"dataloader": loader}
-    metrics = Classify(Backend({"labels": ["dog"]}), ["dog"]).val(**settings, max_samples=1, verbose=False)
+    dataset = ClassificationDataset(data, class_ids=[1])
+    loader = DataLoader(dataset)
+    assert len(loader) == 2
+    metrics = Classify(Backend({"labels": ["dog"]})).val(dataloader=loader, max_samples=1, verbose=False)
     assert metrics.seen == 1 and metrics.top1 == 1
+    assert metrics.names == ("cat", "dog")
 
 
 def test_custom_validator_class():
@@ -271,21 +262,60 @@ def test_injected_loader_and_custom_dataset_construction(tmp_path):
     assert task.val(validator=CustomDatasetValidator, data="unused", verbose=False).top1 == 1
 
 
-@pytest.mark.parametrize("mapping", [{}, {"missing": "cat"}, {"cat": "unknown"}, [], {"cat": 1}])
-def test_invalid_class_alignment_fails_before_execution(tmp_path, mapping):
+@pytest.mark.parametrize("task_type", [Classify, Detect, Ground])
+def test_removed_class_map_fails_before_execution(tmp_path, task_type):
     data = classification_data(tmp_path)
     backend = Backend({"labels": ["cat"]})
-    with pytest.raises(ValueError):
-        Classify(backend, ["cat"]).val(data=data, class_map=mapping, verbose=False)
+    with pytest.raises(TypeError, match="class_map"):
+        task_type(backend).val(data=data, class_map={"cat": "cat"}, verbose=False)
     assert not backend.calls
 
 
-def test_default_alignment_requires_all_task_labels(tmp_path):
-    data = classification_data(tmp_path)
-    backend = Backend({"labels": ["cat"]})
-    with pytest.raises(ValueError, match="missing dataset names"):
-        Classify(backend, ["cat", "other"]).val(data=data, verbose=False)
-    assert not backend.calls
+@pytest.mark.parametrize("custom_loader", [False, True])
+@pytest.mark.parametrize("task_type", [Classify, Detect])
+def test_validation_overrides_labels_without_mutating_task(tmp_path, custom_loader, task_type):
+    if task_type is Classify:
+        data = classification_data(tmp_path)
+        dataset = ClassificationDataset(data)
+        payload = {"labels": ["cat"]}
+        labels = ("cat", "dog")
+        original_payload = {"labels": ["original"]}
+    else:
+        data = detection_data(tmp_path, ["0 0.5 0.5 0.5 0.5"])
+        dataset = YOLODataset(data)
+        payload = {"detections": [box("person")]}
+        labels = ("person", "dog")
+        original_payload = {"detections": [box("original")]}
+    backend = Backend(payload, original_payload)
+    task = task_type(backend, {"original": "Original description"}, context="Keep this context.")
+    spec, instruction = task._spec, task._instruction
+    settings = {"dataloader": DataLoader(dataset)} if custom_loader else {"data": data}
+    metrics = task.val(**settings, max_samples=1, verbose=False)
+    assert metrics.names == labels
+    assert metrics.summary()[1]["support"] == 0
+    request = backend.calls[0]
+    assert "Keep this context." in request.instruction
+    assert "Original description" not in request.instruction
+    assert "original" not in json.dumps(request.response_spec.schema)
+    assert all(label in json.dumps(request.response_spec.schema) for label in labels)
+    assert task.labels == {"original": "Original description"}
+    assert task._spec is spec and task._instruction == instruction
+    task(dataset[0]["img"])
+    assert backend.calls[1].response_spec is spec
+
+
+@pytest.mark.parametrize("task_type", [Classify, Detect])
+def test_validation_accepts_tasks_without_constructor_labels(tmp_path, task_type):
+    if task_type is Classify:
+        data = classification_data(tmp_path)
+        payload = {"labels": ["cat"]}
+    else:
+        data = detection_data(tmp_path, ["0 0.5 0.5 0.5 0.5"])
+        payload = {"detections": [box("person")]}
+    task = task_type(Backend(payload))
+    metrics = task.val(data=data, max_samples=1, verbose=False)
+    assert metrics.seen == 1 and not metrics.failures
+    assert task.labels is task._spec is task._instruction is None
 
 
 @pytest.mark.parametrize("max_samples", [0, -1, True, 1.5])
@@ -306,10 +336,20 @@ def test_exact_split_and_empty_evaluation_errors(tmp_path):
     data = classification_data(tmp_path)
     with pytest.raises(FileNotFoundError, match="split not found"):
         ClassificationDataset(data, split="test")
-    (tmp_path / "val" / "empty").mkdir()
+    empty = tmp_path / "empty_dataset"
+    (empty / "val" / "empty").mkdir(parents=True)
     backend = Backend({"labels": ["empty"]})
-    with pytest.raises(ValueError, match="No samples"):
-        Classify(backend, ["empty"]).val(data=data, verbose=False)
+    with pytest.raises(ValueError, match="No classification images"):
+        Classify(backend, ["empty"]).val(data=empty, verbose=False)
+
+    class EmptyLoader:
+        dataset = ClassificationDataset(data)
+
+        def __iter__(self):
+            return iter(())
+
+    with pytest.raises(ValueError, match="No samples to evaluate"):
+        Classify(backend).val(dataloader=EmptyLoader(), verbose=False)
     assert not backend.calls
     with pytest.raises(ValueError, match="split name"):
         ClassificationDataset(data, split="../val")
@@ -452,14 +492,12 @@ def test_detection_example_and_execution_failure_exit_code(tmp_path, monkeypatch
     data = detection_data(tmp_path, ["0 0.5 0.5 0.5 0.5"])
     config = tmp_path / "tasks.json"
     config.write_text(json.dumps({"detect": {"labels": ["pedestrian"]}}))
-    mapping = tmp_path / "mapping.json"
-    mapping.write_text('{"person": "pedestrian"}')
     args = [
         "--task", "detect", "--data", str(data), "--config", str(config),
-        "--class-map", str(mapping), "--match-iou", "0.75",
+        "--match-iou", "0.75",
         "--model", "test",
     ]
-    monkeypatch.setattr(run_validation, "create_backend", lambda args: Backend({"detections": [box("pedestrian")]}))
+    monkeypatch.setattr(run_validation, "create_backend", lambda args: Backend({"detections": [box("person")]}))
     assert run_validation.main(args) == 0
     report = json.loads(capsys.readouterr().out)
     assert report["metrics"]["f1"] == 1

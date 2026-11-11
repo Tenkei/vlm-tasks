@@ -86,6 +86,12 @@ python -m examples.run_validation \
 Use `--task classify`, `--task detect`, `--task ground`, `--task answer`, or `--task describe` for
 the other [built-in validations](../docs/validation.md#available-validations).
 
+Classification and detection use labels from the dataset for both named and
+local data. No task configuration is required; optional `--config` settings
+can supply context. Dataset labels override constructor labels and descriptions
+during validation. Class selection and category remapping belong in the data;
+`--class-map` has been removed.
+
 Evaluate Answer on VQA v2 with questions supplied by the dataset:
 
 ```bash

@@ -279,12 +279,14 @@ def test_ground_val_uses_default_dataset_and_records_preparation(tmp_path, http,
     assert metrics.results_dict[score] == 1
 
 
-def test_classification_default_download_respects_task_class_selection(tmp_path, http, monkeypatch):
+def test_classification_default_download_uses_full_dataset_vocabulary(tmp_path, http, monkeypatch):
     cifar_source(http, monkeypatch)
-    task = Classify(lambda request: ModelResponse({"labels": ["feline"]}), ["feline"])
-    metrics = task.val(class_map={"cat": "feline"}, max_samples=2, cache_dir=tmp_path, verbose=False)
+    task = Classify(lambda request: ModelResponse({"labels": ["cat"]}), ["feline"])
+    metrics = task.val(max_samples=2, cache_dir=tmp_path, verbose=False)
     assert metrics.seen == 2 and metrics.top1 == 1
-    assert metrics.dataset_metadata["preparation"]["classes"] == ["cat"]
+    assert metrics.dataset_metadata["preparation"]["classes"] is None
+    assert metrics.names == tuple(sorted(preparation._CIFAR_NAMES))
+    assert task.labels == {"feline": ""}
 
 
 def test_detection_default_download_and_task_dataset_mismatch(tmp_path, http, monkeypatch):
@@ -335,6 +337,7 @@ def test_runner_classification_default_uses_dataset_labels(tmp_path, http, monke
     ]) == 0
     report = json.loads(capsys.readouterr().out)
     assert report["metrics"]["samples"] == 2 and report["metrics"]["accuracy_top1"] == 1
-    assert report["task_config"]["labels"] == list(preparation._CIFAR_NAMES)
+    assert report["task_config"] == {}
+    assert [row["class"] for row in report["per_class"]] == sorted(preparation._CIFAR_NAMES)
     assert report["dataset_metadata"]["preparation"]["dataset"] == "cifar10"
     assert len(http[1]) == 1

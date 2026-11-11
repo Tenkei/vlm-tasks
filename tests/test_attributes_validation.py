@@ -246,7 +246,7 @@ def test_class_map_rejected_and_custom_loader_never_accesses_labels(tmp_path):
     dataset = OVADDataset(path, images, groups=("material",))
     backend = Backend({"attributes": {"material": "metal"}})
     task = Attributes(backend, dataset.attributes)
-    with pytest.raises(ValueError, match="class_map"):
+    with pytest.raises(TypeError, match="class_map"):
         task.val(data=path, images=images, class_map={"material": "material"})
     assert not backend.calls
     # This dataset exposes neither names nor class IDs; the loader owns crops.

@@ -44,6 +44,16 @@ task = Classify(
 design distinction between finding all instances and locating one target, see
 [Detection vs grounding](design.md#detection-vs-grounding).
 
+Supply `Classify` and `Detect` labels at construction or with each call:
+
+```python
+task = Classify(backend)
+result = task(("image.jpg", ["indoor", "outdoor"]))
+```
+
+Per-call labels replace the defaults for that request without changing stored
+labels or context. [Validation](validation.md) uses dataset labels.
+
 ## Grounding targets and geometry
 
 Set a default target, then override it for individual requests:
@@ -143,8 +153,8 @@ Output wording is preserved; benchmark normalization belongs in a validator.
 For allowed labels, categorical attributes, or coordinates, use the corresponding
 task contract. Descriptions and free-text answers do not enforce those formats.
 
-`Describe` currently requires an explicit custom validator for
-`.val()`; see [custom validation](validation.md#custom-loaders-and-validators).
+`Describe.val()` defaults to
+[COCO Captions 2017](validation.md#describe-coco-captions).
 `Answer.val()` defaults to [VQA v2](validation.md#answer-vqa-v2), with questions
 supplied by the dataset.
 

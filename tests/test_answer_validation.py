@@ -282,7 +282,6 @@ def test_custom_loader_bad_targets_and_programming_errors_propagate(tmp_path):
 @pytest.mark.parametrize("settings,match", [
     ({"data": "local"}, "requires images"),
     ({"data": "vqav2", "images": "images"}, "supplies images"),
-    ({"class_map": {"cat": "cat"}}, "class_map"),
     ({"split": "test"}, "labeled train and val"),
     ({"max_samples": 0}, "max_samples"),
 ])

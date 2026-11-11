@@ -63,9 +63,9 @@ Import from `ml_pipes.vlm`. `model` must be a callable `ModelBackend`, normally
 
 | Constructor | Call input | Return type |
 |---|---|---|
-| `Classify(model, labels, *, context=None)` | `ImageInput` | `ClassificationResult` with exactly one allowed label |
+| `Classify(model, labels=None, *, context=None)` | `ImageInput` or `tuple[ImageInput, LabelChoices]` | `ClassificationResult` with exactly one allowed label |
 | `ClassifyMultiLabel(model, labels, *, context=None)` | `ImageInput` | `ClassificationResult` with zero or more distinct allowed labels |
-| `Detect(model, labels, *, context=None)` | `ImageInput` | `DetectionResult`; empty detections are valid |
+| `Detect(model, labels=None, *, context=None)` | `ImageInput` or `tuple[ImageInput, LabelChoices]` | `DetectionResult`; empty detections are valid |
 | `Ground(model, target=None, *, context=None, geometry="box")` | `ImageInput` or `tuple[ImageInput, str]` | `GroundingResult` |
 | `Attributes(model, attributes=None, *, context=None)` | `ImageInput` or `tuple[ImageInput, AttributeChoices]` | `AttributePredictionResult` with exactly one allowed value per attribute |
 | `Describe(model, *, context=None)` | `ImageInput` | `DescriptionResult` with one factual natural-language description |
@@ -153,7 +153,6 @@ Validation arguments:
 | `dataloader` | `None` | Loader exposing `.dataset`; yields task sample dictionaries |
 | `split` | `"val"` | Requested dataset split |
 | `max_samples` | `None` | Positive integer or unlimited; images, grounding expressions, attribute objects, or questions |
-| `class_map` | `None` | Nonempty dataset-name to task-label mapping; classification/detection only |
 | `images` | `None` | Required image directory for local grounding/OVAD/VQA v2/COCO captions data without a custom loader |
 | `dataset` | `"refcocog"` | Grounding only: `"refcocog"`, `"refcoco"`, `"refcoco+"` |
 | `match_iou` | `0.5` | Detection only; finite value in `(0, 1]` |
@@ -164,7 +163,7 @@ Validation arguments:
 `validator` is a class instantiated with `task=self` and the forwarded keywords,
 then called without arguments.
 
-See the [validation guide](validation.md) for dataset formats, class selection,
+See the [validation guide](validation.md) for dataset formats, sample selection,
 scoring, failure handling, and examples.
 
 ### Dataset preparation
@@ -222,7 +221,7 @@ Import from `ml_pipes.vlm.validation`.
 
 ```text
 BaseValidator(task, data=None, *, dataloader=None, split="val",
-              class_map=None, max_samples=None, verbose=True, cache_dir=None)
+              max_samples=None, verbose=True, cache_dir=None)
 ```
 
 Concrete validators accept the same base arguments. `DetectionValidator` adds

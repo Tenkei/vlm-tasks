@@ -280,7 +280,7 @@ def test_custom_loader_duplicate_images_stop_before_repeated_inference(tmp_path,
 
 
 @pytest.mark.parametrize("settings", [
-    {"class_map": {"cat": "cat"}}, {"split": "test"}, {"tokenizer_version": "latest"},
+    {"split": "test"}, {"tokenizer_version": "latest"},
     {"images": "local"}, {"data": "local"}, {"max_samples": 0},
 ])
 def test_invalid_settings_fail_without_model_execution(settings, tokenizer):
