@@ -107,7 +107,7 @@ def main(argv: list[str] | None = None) -> int:
         result["elapsed_seconds"] = perf_counter() - started
         report["results"][name] = result
 
-    serialized = json.dumps(report, indent=2)
+    serialized = json.dumps(report, indent=2, default=str)
     print(serialized)
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)

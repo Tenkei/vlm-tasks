@@ -90,7 +90,8 @@ class _Task:
 
     Subclasses implement a typed ``__call__`` that validates task inputs, loads
     an ``ImagePayload``, resolves concrete instructions and a ``ResponseSpec``,
-    calls ``_predict``, and converts the validated mapping into a task result.
+    calls ``_predict``, and converts its validated data into a task result,
+    forwarding the response's usage.
     Per-call values are passed as arguments to ``_predict`` without changing
     the stored defaults. Missing required inputs fail before model execution.
 
@@ -161,8 +162,8 @@ class _Task:
     def _predict(
         self, image: ImagePayload, *, instruction: str | None = None,
         response_spec: ResponseSpec | None = None,
-    ) -> Mapping[str, object]:
-        """Execute a request and return its validated response mapping.
+    ) -> ModelResponse:
+        """Execute a request and return validated data with its usage.
 
         ``image`` must already be an ``ImagePayload``. Omitted instructions
         and response specifications use ``_instruction`` and ``_spec``;
@@ -181,7 +182,7 @@ class _Task:
         response = self.model(ModelRequest(image, instruction, response_spec))
         if not isinstance(response, ModelResponse):
             raise InvalidModelResponseError("The backend must return a ModelResponse")
-        return response_spec.validate(response.data)
+        return ModelResponse(data=response_spec.validate(response.data), usage=response.usage)
 
 
 @Operator
@@ -214,8 +215,8 @@ class Classify(_Task):
         elif self.labels is None:
             raise ValueError("Classify requires labels at construction or when called")
         image = load_image(image)
-        data = self._predict(image, instruction=instruction, response_spec=response_spec)
-        return ClassificationResult(labels=tuple(data["labels"]))
+        response = self._predict(image, instruction=instruction, response_spec=response_spec)
+        return ClassificationResult(labels=tuple(response.data["labels"]), usage=response.usage)
 
     def resolve_contract(
         self,
@@ -245,8 +246,8 @@ class ClassifyMultiLabel(_Task):
 
     def __call__(self, image: ImageInput) -> ClassificationResult:
         image = load_image(image)
-        data = self._predict(image)
-        return ClassificationResult(labels=tuple(data["labels"]))
+        response = self._predict(image)
+        return ClassificationResult(labels=tuple(response.data["labels"]), usage=response.usage)
 
 
 def _pixel_box(box: Mapping[str, float], image: ImagePayload) -> BoundingBox:
@@ -301,13 +302,14 @@ class Detect(_Task):
         elif self.labels is None:
             raise ValueError("Detect requires labels at construction or when called")
         image = load_image(image)
-        data = self._predict(image, instruction=instruction, response_spec=response_spec)
+        response = self._predict(image, instruction=instruction, response_spec=response_spec)
         return DetectionResult(
             detections=tuple(
                 Detection(label=item["label"], box=_pixel_box(item["box"], image))
-                for item in data["detections"]
+                for item in response.data["detections"]
             ),
             image_size=image.size,
+            usage=response.usage,
         )
 
     def resolve_contract(
@@ -365,9 +367,10 @@ class Ground(_Task):
             raise ValueError("Ground requires a target at construction or when called")
         target = _text(target, "target")
         image = load_image(image)
-        data = self._predict(
+        response = self._predict(
             image, instruction=self._instruction + "\nTarget: " + json.dumps(target)
         )
+        data = response.data
         box = data.get("box")
         point = data.get("point")
         return GroundingResult(
@@ -378,6 +381,7 @@ class Ground(_Task):
             point=None if point is None else Point(
                 point["x"] * image.size[0], point["y"] * image.size[1],
             ),
+            usage=response.usage,
         )
 
     def resolve_contract(
@@ -426,8 +430,8 @@ class Attributes(_Task):
         elif self.attributes is None:
             raise ValueError("Attributes requires attribute choices at construction or when called")
         image = load_image(image)
-        data = self._predict(image, instruction=instruction, response_spec=response_spec)
-        return AttributePredictionResult(attributes=dict(data["attributes"]))
+        response = self._predict(image, instruction=instruction, response_spec=response_spec)
+        return AttributePredictionResult(attributes=dict(response.data["attributes"]), usage=response.usage)
 
     def resolve_contract(
         self,
@@ -456,8 +460,8 @@ class Describe(_Task):
 
     def __call__(self, image: ImageInput) -> DescriptionResult:
         image = load_image(image)
-        data = self._predict(image)
-        return DescriptionResult(description=data["description"])
+        response = self._predict(image)
+        return DescriptionResult(description=response.data["description"], usage=response.usage)
 
 
 @Operator
@@ -496,10 +500,10 @@ class Answer(_Task):
             raise ValueError("Answer requires a question at construction or when called")
         question = _text(question, "question")
         image = load_image(image)
-        data = self._predict(
+        response = self._predict(
             image, instruction=self._instruction + "\nQuestion: " + json.dumps(question)
         )
-        return AnswerResult(status=data["status"], answer=data["answer"])
+        return AnswerResult(status=response.data["status"], answer=response.data["answer"], usage=response.usage)
 
     def resolve_contract(
         self,

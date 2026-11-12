@@ -7,13 +7,13 @@ from .types import (
     AnswerResult, AttributePredictionResult, BoundingBox, ClassificationResult,
     DescriptionResult, Detection, DetectionResult, GroundingResult,
     ModelBackend, ModelRequest, ModelResponse,
-    Point, ResponseSpec,
+    Point, ResponseSpec, Usage,
 )
 
 __all__ = [
     "Classify", "ClassifyMultiLabel", "Detect", "Ground", "Attributes", "Describe", "Answer",
     "PydanticAIBackend", "TransformersModel", "BoundingBox", "Point", "ClassificationResult", "Detection",
     "DetectionResult", "GroundingResult", "AttributePredictionResult", "DescriptionResult", "AnswerResult",
-    "ModelBackend", "ModelRequest", "ModelResponse", "ResponseSpec",
+    "ModelBackend", "ModelRequest", "ModelResponse", "ResponseSpec", "Usage",
     "InvalidModelResponseError", "ModelExecutionError",
 ]

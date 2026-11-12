@@ -91,6 +91,18 @@ Import from `ml_pipes.vlm`. All result types are frozen dataclasses.
 | `DescriptionResult` | `description: str`; nonempty, non-whitespace text |
 | `AnswerResult` | `status`: `"answered"` or `"unanswerable"`; `answer: str` or `None` in case of `unanswerable` |
 
+All task results have an optional `usage` object with these fields:
+
+| Field | Type | Description |
+|---|---|---|
+| `input_tokens`, `output_tokens` | `int` | Input and output token counts; default `0` |
+| `cache_read_tokens`, `cache_write_tokens`, `output_reasoning_tokens` | `int` | Cached and reasoning token counts; default `0` |
+| `requests`, `unmeasured_requests` | `int` | Model-response steps and responses missing usage; default `0` |
+| `estimated_cost`, `reported_cost` | `Decimal \| None` | Estimated and provider-reported costs in USD; default `None` |
+| `total_tokens` | `int` | `input_tokens + output_tokens` |
+
+See [usage](tasks.md#usage) for accounting and cost semantics.
+
 Task results use original-image pixels and `image_size=(width, height)`.
 Found grounding results contain only the selected geometry; other statuses have
 `box=None` and `point=None`. Current tasks leave scores unset.
@@ -121,7 +133,7 @@ The communication types are frozen dataclasses:
 |---|---|
 | `ModelRequest` | `image: ImagePayload`; `instruction: str`; `response_spec: ResponseSpec` |
 | `ResponseSpec` | `schema: Mapping[str, object]`; `validate: Callable[[object], Mapping[str, object]]` |
-| `ModelResponse` | `data: Mapping[str, object]` |
+| `ModelResponse` | `data: Mapping[str, object]`; keyword-only `usage: Usage | None = None` |
 
 See [model backends](model-backends.md) for provider setup, output modes,
 retries, and custom backend integration. The

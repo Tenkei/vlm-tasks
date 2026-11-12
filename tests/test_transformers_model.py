@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 from contextlib import nullcontext
+from dataclasses import replace
+from decimal import Decimal
 import json
 import sys
 from types import SimpleNamespace
@@ -103,6 +105,11 @@ def test_all_tasks_receive_schema_and_rgb_image_with_fresh_history(adapter, imag
     assert results[5].description == "A clean window."
     assert results[6].status == "answered"
     assert results[6].answer == "clean"
+    for result in results:
+        assert result.usage.input_tokens == 3
+        assert result.usage.output_tokens == 2
+        assert result.usage.requests == 1
+        assert result.usage.estimated_cost is result.usage.reported_cost is None
     for chat in processor.chats:
         assert [message["role"] for message in chat] == ["system", "user"]
         assert '"properties"' in chat[0]["content"][0]["text"]
@@ -116,7 +123,11 @@ def test_all_tasks_receive_schema_and_rgb_image_with_fresh_history(adapter, imag
 
 def test_schema_failure_retries_with_response_and_feedback(adapter, image):
     backend, processor = adapter(['{"labels": ["unknown"]}', '{"labels": ["clean"]}'], retries=1)
-    assert Pipeline([Classify(backend, ["clean", "dirty"])])(image).labels == ("clean",)
+    result = Pipeline([Classify(backend, ["clean", "dirty"])])(image)
+    assert result.labels == ("clean",)
+    assert result.usage.input_tokens == 6
+    assert result.usage.output_tokens == 4
+    assert result.usage.requests == 2
     assert len(processor.chats) == 2
     retried = processor.chats[1]
     assert [message["role"] for message in retried] == ["system", "user", "assistant", "user"]
@@ -220,7 +231,13 @@ def test_cli_runs_describe_and_answer_with_default_config(adapter, tmp_path, mon
     description = {"description": "A dark image."}
     answer = {"status": "unanswerable", "answer": None}
     backend, _ = adapter([json.dumps(description), json.dumps(answer)])
-    monkeypatch.setattr(module, "create_backend", lambda args: backend)
+
+    def with_cost(request):
+        response = backend(request)
+        return replace(response, usage=replace(response.usage, estimated_cost=Decimal("0.001")))
+
+    with_cost.model = backend.model
+    monkeypatch.setattr(module, "create_backend", lambda args: with_cost)
     output = tmp_path / "results.json"
 
     status = module.main([
@@ -230,8 +247,12 @@ def test_cli_runs_describe_and_answer_with_default_config(adapter, tmp_path, mon
 
     report = json.loads(output.read_text())
     assert status == 0
-    assert report["results"]["describe"]["prediction"] == description
-    assert report["results"]["answer"]["prediction"] == answer
+    for task, expected in (("describe", description), ("answer", answer)):
+        prediction = report["results"][task]["prediction"]
+        usage = prediction.pop("usage")
+        assert prediction == expected
+        assert usage["input_tokens"] == 3 and usage["output_tokens"] == 2
+        assert usage["estimated_cost"] == "0.001"
     assert report["task_config"]["answer"]["question"] == "What is the main subject doing?"
 
 

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import is_dataclass
+from decimal import Decimal
 from pathlib import Path
 
 import cv2
@@ -14,6 +15,7 @@ from pydantic_ai import models
 from pydantic_ai.messages import ModelResponse as AIResponse, TextPart, ToolCallPart
 from pydantic_ai.models.function import FunctionModel
 from pydantic_ai.profiles import ModelProfile
+from pydantic_ai.usage import RequestUsage
 
 from ml_pipes.core import Pipeline
 from ml_pipes.vision import ImagePayload
@@ -23,7 +25,7 @@ from ml_pipes.vlm import (
     ClassificationResult, Classify, ClassifyMultiLabel, Describe, DescriptionResult,
     Detect, DetectionResult, Ground, GroundingResult,
     InvalidModelResponseError, ModelExecutionError, ModelResponse,
-    PydanticAIBackend,
+    PydanticAIBackend, Usage,
 )
 from ml_pipes.vlm._images import ImageInput
 from ml_pipes.vlm.ops import AttributeChoices, LabelChoices
@@ -47,6 +49,8 @@ def backend_for(*responses, retries=0, output_mode="prompted"):
         value = responses[min(len(calls) - 1, len(responses) - 1)]
         if isinstance(value, Exception):
             raise value
+        if isinstance(value, AIResponse):
+            return value
         if info.output_tools:
             return AIResponse(parts=[
                 ToolCallPart(info.output_tools[0].name, value, tool_call_id="prediction")
@@ -157,7 +161,7 @@ def test_public_exports():
         "Classify", "ClassifyMultiLabel", "Detect", "Ground", "Attributes", "Describe", "Answer",
         "PydanticAIBackend", "TransformersModel", "BoundingBox", "Point", "ClassificationResult", "Detection",
         "DetectionResult", "GroundingResult", "AttributePredictionResult", "DescriptionResult", "AnswerResult",
-        "ModelBackend", "ModelRequest", "ModelResponse", "ResponseSpec",
+        "ModelBackend", "ModelRequest", "ModelResponse", "ResponseSpec", "Usage",
         "InvalidModelResponseError", "ModelExecutionError",
     }
     assert set(vlm.__all__) == expected
@@ -703,6 +707,91 @@ def test_shared_backend_does_not_share_task_schema_or_history(image):
     assert detect(image).detections == ()
     assert classify(image).labels == ("dirty",)
     assert [len(messages) for messages, _ in calls] == [1, 1, 1]
+
+
+def test_usage_includes_corrections_and_is_scoped_to_each_call(image):
+    def response(label, *, cost, reported):
+        return AIResponse(
+            parts=[TextPart(json.dumps({"labels": [label]}))],
+            usage=RequestUsage(input_tokens=100, output_tokens=20, cache_read_tokens=30,
+                               cache_write_tokens=10, output_reasoning_tokens=5, cost=Decimal(cost)),
+            provider_details={"cost": reported},
+        )
+
+    backend, _ = backend_for(
+        response("unknown", cost="0.002", reported=0.001),
+        response("clean", cost="0.003", reported=0.002),
+        response("clean", cost="0", reported=0),
+        retries=1,
+    )
+    task = Classify(backend, ["clean"])
+    first = task(image).usage
+    second = task(image).usage
+    assert first == Usage(input_tokens=200, output_tokens=40, cache_read_tokens=60,
+                          cache_write_tokens=20, output_reasoning_tokens=10, requests=2,
+                          estimated_cost=Decimal("0.005"), reported_cost=Decimal("0.003"))
+    assert first.total_tokens == 240
+    assert second.requests == 1
+    assert second.input_tokens == 100 and second.output_tokens == 20
+    assert second.estimated_cost == second.reported_cost == Decimal(0)
+
+
+def test_partial_provider_cost_is_not_reported_as_a_total(image):
+    backend, _ = backend_for(
+        AIResponse(parts=[TextPart('{"labels": ["unknown"]}')],
+                   usage=RequestUsage(input_tokens=100, output_tokens=10),
+                   provider_details={"cost": 0.001}),
+        AIResponse(parts=[TextPart('{"labels": ["clean"]}')],
+                   usage=RequestUsage(input_tokens=100, output_tokens=10)),
+        retries=1,
+    )
+    usage = Classify(backend, ["clean"])(image).usage
+    assert usage.requests == 2
+    assert usage.reported_cost is None and usage.estimated_cost is None
+
+
+def test_missing_usage_is_identified_and_unknown_cost_is_not_zero(image):
+    backend, _ = backend_for(AIResponse(
+        parts=[TextPart('{"labels": ["clean"]}')],
+        usage=RequestUsage(unmeasured_requests=1),
+    ))
+    usage = Classify(backend, ["clean"])(image).usage
+    assert usage.requests == usage.unmeasured_requests == 1
+    assert usage.total_tokens == 0
+    assert usage.estimated_cost is None and usage.reported_cost is None
+
+
+def test_backend_preserves_pydantic_ai_price_estimates(image):
+    model = FunctionModel(
+        lambda messages, info: AIResponse(
+            parts=[TextPart('{"labels": ["clean"]}')],
+            usage=RequestUsage(input_tokens=100, output_tokens=10),
+            provider_name="openai",
+        ),
+        model_name="gpt-4o-mini",
+    )
+    usage = Classify(PydanticAIBackend(model), ["clean"])(image).usage
+    assert usage.estimated_cost is not None and usage.estimated_cost > 0
+    assert usage.reported_cost is None
+
+
+@pytest.mark.parametrize("usage", [None, Usage(input_tokens=100, output_tokens=20)])
+@pytest.mark.parametrize(("task", "payload"), [
+    (lambda b: Classify(b, ["clean"]), {"labels": ["clean"]}),
+    (lambda b: ClassifyMultiLabel(b, ["clean"]), {"labels": []}),
+    (lambda b: Detect(b, ["window"]), {"detections": []}),
+    (lambda b: Ground(b, "window"), {"status": "not_found", "box": None}),
+    (lambda b: Ground(b, "window", geometry="point"), {"status": "not_found", "point": None}),
+    (lambda b: Attributes(b, {"color": ["red"]}), {"attributes": {"color": "red"}}),
+    (lambda b: Describe(b), {"description": "A red chair."}),
+    (lambda b: Answer(b, "What color?"), {"status": "answered", "answer": "red"}),
+])
+def test_task_results_preserve_optional_backend_usage(image, task, payload, usage):
+    def backend(request):
+        assert "usage" not in request.response_spec.schema["properties"]
+        return ModelResponse(payload, usage=usage)
+
+    assert Pipeline([task(backend)])(image).usage is usage
 
 
 @pytest.mark.parametrize(("task", "payload", "result_type"), [

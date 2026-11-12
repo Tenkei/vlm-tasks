@@ -172,6 +172,30 @@ Valid structure does not establish visual accuracy: an empty detection list or
 a box on the wrong object can still be valid. Use [validation](validation.md)
 to measure quality on labeled data.
 
+## Usage
+
+Task results expose optional `usage` supplied by the backend:
+
+```python
+task = Classify(backend, labels=["cat", "dog"])
+result = task("image.jpg")
+if result.usage is not None:
+    print(result.usage.input_tokens, result.usage.output_tokens)
+    print(result.usage.estimated_cost, result.usage.reported_cost)
+```
+
+PydanticAI usage includes structured-output correction attempts for that call.
+Cached input tokens and reasoning output tokens are included in the respective
+input/output totals. `requests` counts agent model-response steps; SDK transport
+retries may be unobservable. A positive `unmeasured_requests` means some responses
+omitted usage, so token totals are incomplete.
+
+Costs use USD `Decimal` values. `estimated_cost` is PydanticAI's best-effort known
+subtotal using its pricing data; it may be incomplete. `reported_cost` is
+available when every response supplies a provider-reported charge, such as
+OpenRouter. Unknown costs are `None`. Local Transformers report token counts
+without monetary cost. Custom backends may omit usage entirely.
+
 ## Use in ml-pipes pipelines
 
 Tasks also work as pipeline operators:
@@ -200,13 +224,13 @@ interface may change. Subclasses follow this convention:
 | Member | Subclass responsibility |
 |---|---|
 | `__init__` | Call `_configure(model, context)`, then set `_instruction` and `_spec` (`ResponseSpec`) defaults |
-| `__call__` | Validate task inputs, load an `ImagePayload`, call `_predict()`, and convert its validated mapping into a result |
+| `__call__` | Validate task inputs, load an `ImagePayload`, call `_predict()`, and convert `response.data` into a result, forwarding `response.usage` |
 | `resolve_contract` | Declare input types when they depend on instance configuration |
 
 An instruction or response specification may default to `None` when supplied
 per call. Resolve it before calling `_predict(image, instruction=...,
 response_spec=...)`. Keep overrides local to the call. `_predict()` appends
-context and validates the model response against the selected specification.
+context and returns a `ModelResponse` with validated data and the backend's usage.
 
 Decorate concrete tasks with `@Operator` and annotate their input and result
 types for pipeline integration. New task types use

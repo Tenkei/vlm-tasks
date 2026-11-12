@@ -2,15 +2,16 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from decimal import Decimal
 from typing import Literal
 
-from pydantic_ai import Agent, BinaryContent, ModelRetry, NativeOutput, PromptedOutput, StructuredDict, ToolOutput
+from pydantic_ai import Agent, BinaryContent, ModelRetry, NativeOutput, PromptedOutput, StructuredDict, ToolOutput, messages
 from pydantic_ai.exceptions import UnexpectedModelBehavior
 from pydantic_ai.models import Model
 
 from ._images import encode_image
 from .errors import InvalidModelResponseError, ModelExecutionError
-from .types import ModelRequest, ModelResponse
+from .types import ModelRequest, ModelResponse, Usage
 
 __all__ = ["PydanticAIBackend"]
 
@@ -60,4 +61,25 @@ class PydanticAIBackend:
             raise InvalidModelResponseError(str(exc)) from exc
         except Exception as exc:
             raise ModelExecutionError(str(exc)) from exc
-        return ModelResponse(data=result.output)
+        usage = result.usage
+        responses = [message for message in result.new_messages() if isinstance(message, messages.ModelResponse)]
+        reported_costs = [(response.provider_details or {}).get("cost") for response in responses]
+        reported_cost = (
+            sum((Decimal(str(cost)) for cost in reported_costs), Decimal(0))
+            if reported_costs and all(cost is not None for cost in reported_costs)
+            else None
+        )
+        return ModelResponse(
+            data=result.output,
+            usage=Usage(
+                input_tokens=usage.input_tokens,
+                output_tokens=usage.output_tokens,
+                cache_read_tokens=usage.cache_read_tokens,
+                cache_write_tokens=usage.cache_write_tokens,
+                output_reasoning_tokens=usage.output_reasoning_tokens,
+                requests=usage.requests,
+                unmeasured_requests=usage.unmeasured_requests,
+                estimated_cost=usage.cost,
+                reported_cost=reported_cost,
+            ),
+        )

@@ -159,6 +159,8 @@ Implement the callable `ModelBackend` protocol to integrate another runtime.
 Each call receives a `ModelRequest` with the decoded image, task instruction,
 and `ResponseSpec`. The spec contains the JSON Schema and a validation callable.
 Return a `ModelResponse` containing the structured output mapping.
+Optionally pass `usage=Usage(...)` to include token counts and costs in task
+results; import `Usage` from `ml_pipes.vlm`.
 
 The task validates the returned data before converting it into its public result.
 Backends can also use `response_spec.validate(data)` to validate responses and
