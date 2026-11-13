@@ -8,6 +8,11 @@ VLM tasks is a thin interface that coerces **vision-language models
 (VLMs)** into producing structured results for tasks such as classification,
 detection, grounding and attribute prediction.
 
+**VLM tasks focuses on vision tasks.** For general LLM tasks such as chat,
+text generation and agent workflows, see other popular projects.
+
+## Why VLM tasks
+
 Choose a task, provide the minimum information it needs, such as labels or a
 target description, and add optional context. The framework handles prompting
 and enforces the task's output structure, returning a Python result you can use
@@ -16,21 +21,20 @@ in your application.
 Built-in validation helps you measure prediction quality on labeled datasets
 and compare models on your own data.
 
-## Use cases
+## Available tasks
 
-Use VLM tasks alongside models such as YOLO, DETR, SAM, and Florence to add
-structured decisions defined by your labels, attributes, and context:
+| Task                 | What it does                                                                    |
+|----------------------|---------------------------------------------------------------------------------|
+| `Classify`           | Choose exactly one label, such as cat or dog.                                   |
+| `ClassifyMultiLabel` | Choose all applicable labels, such as scratched and stained.                    |
+| `Detect`             | Find matching objects and return labeled bounding boxes.                        |
+| `Ground`             | Locate a described target, such as “the leftmost cat,” as a box or point.       |
+| `Attributes`         | Predict named properties, such as material and condition, from allowed choices. |
+| `Describe`           | Describe an image in natural language, with optional focus and detail.          |
+| `Answer`             | Answer a question about an image, or report that it cannot be answered.         |
 
-- **Enrich traditional CV model outputs:** use a pretrained VLM's visual and
-  language knowledge to add information such as descriptions or attributes to
-  your detections.
-- **Extend beyond model vocabulary:** express targets, relationships, and
-  task criteria in natural language, and generate outputs or descriptions beyond
-  an existing CV model's trained vocabulary.
-- **Support novel classes and labels:** use VLMs' pretrained weights to work with
-  new classes or labels without additional training.
-- **Common VLM tasks:** leverage the structured output to
-  integrate VLMs into your applications or pipelines.
+For task options and result types, see the [API reference](docs/reference.md).
+For the broader roadmap, see the [task catalog](docs/design.md#task-catalog).
 
 ## Quick start
 
@@ -87,7 +91,23 @@ print(result.attributes["material"])  # wood
 See [available tasks](#available-tasks) for the full list and the
 [API reference](docs/reference.md#operators) for task options.
 
-### Built-in validation
+## Use cases
+
+Use VLM tasks alongside models such as YOLO, DETR, SAM, and Florence to add
+structured decisions defined by your labels, attributes, and context:
+
+- **Enrich traditional CV model outputs:** use a pretrained VLM's visual and
+  language knowledge to add information such as descriptions or attributes to
+  your detections.
+- **Extend beyond model vocabulary:** express targets, relationships, and
+  task criteria in natural language, and generate outputs or descriptions beyond
+  an existing CV model's trained vocabulary.
+- **Support novel classes and labels:** use VLMs' pretrained weights to work with
+  new classes or labels without additional training.
+- **Common VLM tasks:** leverage the structured output to
+  integrate VLMs into your applications or pipelines.
+
+## Built-in validation
 
 A model can produce the right response format and still make the wrong
 prediction. Use built-in validation to measure accuracy on a dataset that is
@@ -108,17 +128,6 @@ print(metrics.results_dict)
 
 See the [validation](docs/validation.md) guide for details.
 
-### Model benchmarks
-
-See the [model comparison table](benchmarks/README.md) for task validation
-metrics and usage on fixed 100-sample subsets. The
-[methodology](benchmarks/methodology.md), [Transformers runner](benchmarks/src/run_transformers.py),
-and [Bedrock runner](benchmarks/src/run_bedrock.py) document how to reproduce the
-runs and add models.
-
-The [partial token-budget experiment](benchmarks/experiments/token-budget/qwen3-vl-2b-20261112-double-tokens/README.md)
-compares 4,096 and 8,192 tokens on three capped detection samples.
-
 ### Validate on your own data
 
 ```python
@@ -131,22 +140,24 @@ metrics = tasks.Attributes(backend).val(dataset=dataset)
 See the [custom dataset guide](docs/validation.md#using-your-own-dataset) for
 supported formats and setup.
 
-## Available tasks
+## Benchmarks
 
-| Task | What it does | Status |
-|---|---|---|
-| `Classify` | Choose exactly one label, such as cat or dog. | Available |
-| `ClassifyMultiLabel` | Choose all applicable labels, such as scratched and stained. | Available |
-| `Detect` | Find matching objects and return labeled bounding boxes. | Available |
-| `Ground` | Locate a described target, such as “the leftmost cat,” as a box or point. | Available |
-| `Attributes` | Predict named properties, such as material and condition, from allowed choices. | Available |
-| `Describe` | Describe an image in natural language, with optional focus and detail. | Available |
-| `Answer` | Answer a question about an image, or report that it cannot be answered. | Available |
-| `ReadText` | Read text visible in an image (OCR). | Planned |
+Combining tasks with built-in validation lets us benchmark different VLMs
+through a shared evaluation workflow. The [benchmark report](benchmarks/README.md)
+brings these results together to help you choose a model for your vision tasks.
 
-Planned tasks are the next additions; they are not available yet. For task
-options and result types, see the [API reference](docs/reference.md). For the
-broader roadmap, see the [task catalog](docs/design.md#task-catalog).
+Explore the results from two views:
+
+- [Model profiles](benchmarks/README.md#model-profiles) show each model's
+  strengths and weaknesses across tasks.
+- [Task comparisons](benchmarks/README.md#task-comparisons) compare models
+  within each task.
+
+Use the charts for an overview and the detailed tables to weigh task performance
+against reliability, token usage, latency and cost. The
+[table field guide](benchmarks/README.md#table-field-guide) explains the reported
+values, and the [methodology](benchmarks/methodology.md) explains how to reproduce
+the benchmarks or evaluate another model.
 
 ## How tasks work
 
