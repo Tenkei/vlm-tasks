@@ -119,7 +119,7 @@ def test_comparison_normalizes_usage_and_rates_by_evaluated_samples(tmp_path, sa
     assert "Input tokens / sample | Output tokens / sample | Estimated cost / 1,000 samples | Mean latency (s)" in table
     assert "Failure rate (at cap)" in table
     assert "| At cap |" not in table
-    assert f"| {100 * sample_scale} | Top-1 accuracy 90% | 2% (1%) | 0 | 41 | 0.2 | 1 |" in table
+    assert f"| {100 * sample_scale} | Top-1 Acc 90% | 2% (1%) | 0 | 41 | 0.2 | 1 |" in table
     assert "Each row evaluates 100" not in table
     assert (tmp_path / "reports/report-manifest.json").is_file()
 

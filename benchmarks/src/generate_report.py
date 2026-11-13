@@ -206,7 +206,12 @@ def generate_report(directory):
         "failure rates and cap rates use this count. Samples can share images.", "",
         "- **Validation metrics**, **Main metric**: task quality scores from the validators. "
         "Main metric selects the score used in the overview and charts. Higher is better; "
-        "ratios are percentages and caption scores use their native scale. Bold overview values "
+        "ratios are percentages and caption scores use their native scale. "
+        "`Acc` means accuracy: `Top-1 Acc` measures classification, `Mean Acc` averages "
+        "attribute-group accuracies, `VQA Acc` uses answer consensus, and `Point-in-box Acc` "
+        "counts predicted points inside target boxes. For Grounding (Box), `Acc@0.5`, "
+        "`Acc@0.75` and `Acc@0.9` require IoU ≥ the indicated threshold. "
+        "Detection's `P`, `R` and `F1` use the indicated IoU matching threshold. Bold overview values "
         "mark the best observed result within a task. These small subsets provide a preliminary "
         "comparison; datasets and scoring differ by task. See the [scoring rules](../docs/validation.md) "
         "and [benchmark method](methodology.md) for metric definitions and subset limitations.", "",

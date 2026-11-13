@@ -6,12 +6,12 @@ Main validation metric per task; **best observed values** are bold. Failures are
 
 | Task | Main metric | [Qwen3-VL-2B](#qwen3-vl-2b) | [Gemma 3 27B](#gemma-3-27b) | [Kimi K3.1](#kimi-k31) | [Qwen3-VL-235B](#qwen3-vl-235b) |
 |---|---|---:|---:|---:|---:|
-| [Classification](#classification) | Top-1 accuracy | 93% | 82% | 67% | **96%** |
-| [Detection](#detection) | F1@.5 | 11.24% | 8.27% | **63.75%** | 16.67% |
-| [Grounding (Box)](#box) | Acc@.5 | 22% | 16% | **92%** | 31% |
-| [Grounding (Point)](#point) | Point in box | 35% | 53% | **98%** | 41% |
-| [Attributes](#attributes) | Accuracy | 55.27% | 70.22% | **75.68%** | 73.86% |
-| [VQA](#vqa) | VQA accuracy | 65% | 56% | 42.7% | **68.4%** |
+| [Classification](#classification) | Top-1 Acc | 93% | 82% | 67% | **96%** |
+| [Detection](#detection) | F1@0.5 | 11.24% | 8.27% | **63.75%** | 16.67% |
+| [Grounding (Box)](#box) | Acc@0.5 | 22% | 16% | **92%** | 31% |
+| [Grounding (Point)](#point) | Point-in-box Acc | 35% | 53% | **98%** | 41% |
+| [Attributes](#attributes) | Acc | 55.27% | 70.22% | **75.68%** | 73.86% |
+| [VQA](#vqa) | VQA Acc | 65% | 56% | 42.7% | **68.4%** |
 | [Captioning](#captioning) | ROUGE-L | 0.3017 | **0.4274** | 0.3301 | 0.3841 |
 
 ## Model profiles
@@ -56,12 +56,12 @@ All profiles use the same axes and scale; higher is better. Failures are include
 
 | Model | Task / dataset | N | Validation metrics | Failure rate (at cap) | Input tokens / sample | Output tokens / sample | Estimated cost / 1,000 samples | Mean latency (s) |
 |---|---|---:|---|---:|---:|---:|---:|---:|
-| Qwen/Qwen3-VL-2B-Instruct | [classify / cifar10](runs/qwen3-vl-2b-20261112/classify.json) | 100 | Top-1 accuracy 93% | 0% (0%) | 332 | 7 | — | 0.705 |
-| Qwen/Qwen3-VL-2B-Instruct | [detect / coco128](runs/qwen3-vl-2b-20261112/detect.json) | 100 | P@.5 33.56%; R@.5 6.75%; F1@.5 11.24% | 21% (13%) | 1,394 | 661 | — | 30.166 |
-| Qwen/Qwen3-VL-2B-Instruct | [ground_box / refcocog](runs/qwen3-vl-2b-20261112/ground_box.json) | 100 | Acc@.5 22%; Acc@.75 2%; Acc@.9 0%; Mean IoU 28.04% | 2% (0%) | 684 | 48 | — | 2.794 |
-| Qwen/Qwen3-VL-2B-Instruct | [ground_point / refcocog](runs/qwen3-vl-2b-20261112/ground_point.json) | 100 | Point in box 35% | 0% (0%) | 648 | 28 | — | 1.986 |
-| Qwen/Qwen3-VL-2B-Instruct | [attributes / ovad](runs/qwen3-vl-2b-20261112/attributes.json) | 100 | Accuracy 55.27%; Mean accuracy 58.45%; Macro F1 46.93% | 1% (0%) | 1,602 | 152 | — | 7.82 |
-| Qwen/Qwen3-VL-2B-Instruct | [answer / vqav2](runs/qwen3-vl-2b-20261112/answer.json) | 100 | VQA accuracy 65% | 0% (0%) | 572 | 14 | — | 1.432 |
+| Qwen/Qwen3-VL-2B-Instruct | [classify / cifar10](runs/qwen3-vl-2b-20261112/classify.json) | 100 | Top-1 Acc 93% | 0% (0%) | 332 | 7 | — | 0.705 |
+| Qwen/Qwen3-VL-2B-Instruct | [detect / coco128](runs/qwen3-vl-2b-20261112/detect.json) | 100 | P@0.5 33.56%; R@0.5 6.75%; F1@0.5 11.24% | 21% (13%) | 1,394 | 661 | — | 30.166 |
+| Qwen/Qwen3-VL-2B-Instruct | [ground_box / refcocog](runs/qwen3-vl-2b-20261112/ground_box.json) | 100 | Acc@0.5 22%; Acc@0.75 2%; Acc@0.9 0%; Mean IoU 28.04% | 2% (0%) | 684 | 48 | — | 2.794 |
+| Qwen/Qwen3-VL-2B-Instruct | [ground_point / refcocog](runs/qwen3-vl-2b-20261112/ground_point.json) | 100 | Point-in-box Acc 35% | 0% (0%) | 648 | 28 | — | 1.986 |
+| Qwen/Qwen3-VL-2B-Instruct | [attributes / ovad](runs/qwen3-vl-2b-20261112/attributes.json) | 100 | Acc 55.27%; Mean Acc 58.45%; Macro F1 46.93% | 1% (0%) | 1,602 | 152 | — | 7.82 |
+| Qwen/Qwen3-VL-2B-Instruct | [answer / vqav2](runs/qwen3-vl-2b-20261112/answer.json) | 100 | VQA Acc 65% | 0% (0%) | 572 | 14 | — | 1.432 |
 | Qwen/Qwen3-VL-2B-Instruct | [describe / coco_captions2017](runs/qwen3-vl-2b-20261112/describe.json) | 100 | CIDEr 0.0355; BLEU-1 0.2861; BLEU-2 0.1889; BLEU-3 0.1155; BLEU-4 0.069; ROUGE-L 0.3017 | 0% (0%) | 452 | 66 | — | 3.272 |
 
 </details>
@@ -77,12 +77,12 @@ All profiles use the same axes and scale; higher is better. Failures are include
 
 | Model | Task / dataset | N | Validation metrics | Failure rate (at cap) | Input tokens / sample | Output tokens / sample | Estimated cost / 1,000 samples | Mean latency (s) |
 |---|---|---:|---|---:|---:|---:|---:|---:|
-| google.gemma-3-27b-it | [classify / cifar10](runs/gemma3-27b-bedrock-20261112/classify.json) | 100 | Top-1 accuracy 82% | 0% (0%) | 523 | 7 | 0.123 | 0.907 |
-| google.gemma-3-27b-it | [detect / coco128](runs/gemma3-27b-bedrock-20261112/detect.json) | 100 | P@.5 11.43%; R@.5 6.48%; F1@.5 8.27% | 2% (0%) | 1,301 | 297 | 0.412 | 7.009 |
-| google.gemma-3-27b-it | [ground_box / refcocog](runs/gemma3-27b-bedrock-20261112/ground_box.json) | 100 | Acc@.5 16%; Acc@.75 0%; Acc@.9 0%; Mean IoU 23.97% | 0% (0%) | 695 | 52 | 0.18 | 2.091 |
-| google.gemma-3-27b-it | [ground_point / refcocog](runs/gemma3-27b-bedrock-20261112/ground_point.json) | 100 | Point in box 53% | 0% (0%) | 660 | 31 | 0.164 | 1.715 |
-| google.gemma-3-27b-it | [attributes / ovad](runs/gemma3-27b-bedrock-20261112/attributes.json) | 100 | Accuracy 70.22%; Mean accuracy 69.47%; Macro F1 53.78% | 1% (0%) | 1,726 | 206 | 0.475 | 4.527 |
-| google.gemma-3-27b-it | [answer / vqav2](runs/gemma3-27b-bedrock-20261112/answer.json) | 100 | VQA accuracy 56% | 0% (0%) | 537 | 16 | 0.13 | 1.288 |
+| google.gemma-3-27b-it | [classify / cifar10](runs/gemma3-27b-bedrock-20261112/classify.json) | 100 | Top-1 Acc 82% | 0% (0%) | 523 | 7 | 0.123 | 0.907 |
+| google.gemma-3-27b-it | [detect / coco128](runs/gemma3-27b-bedrock-20261112/detect.json) | 100 | P@0.5 11.43%; R@0.5 6.48%; F1@0.5 8.27% | 2% (0%) | 1,301 | 297 | 0.412 | 7.009 |
+| google.gemma-3-27b-it | [ground_box / refcocog](runs/gemma3-27b-bedrock-20261112/ground_box.json) | 100 | Acc@0.5 16%; Acc@0.75 0%; Acc@0.9 0%; Mean IoU 23.97% | 0% (0%) | 695 | 52 | 0.18 | 2.091 |
+| google.gemma-3-27b-it | [ground_point / refcocog](runs/gemma3-27b-bedrock-20261112/ground_point.json) | 100 | Point-in-box Acc 53% | 0% (0%) | 660 | 31 | 0.164 | 1.715 |
+| google.gemma-3-27b-it | [attributes / ovad](runs/gemma3-27b-bedrock-20261112/attributes.json) | 100 | Acc 70.22%; Mean Acc 69.47%; Macro F1 53.78% | 1% (0%) | 1,726 | 206 | 0.475 | 4.527 |
+| google.gemma-3-27b-it | [answer / vqav2](runs/gemma3-27b-bedrock-20261112/answer.json) | 100 | VQA Acc 56% | 0% (0%) | 537 | 16 | 0.13 | 1.288 |
 | google.gemma-3-27b-it | [describe / coco_captions2017](runs/gemma3-27b-bedrock-20261112/describe.json) | 100 | CIDEr 0.3408; BLEU-1 0.5041; BLEU-2 0.3213; BLEU-3 0.1994; BLEU-4 0.1179; ROUGE-L 0.4274 | 0% (0%) | 443 | 30 | 0.113 | 1.569 |
 
 </details>
@@ -98,12 +98,12 @@ All profiles use the same axes and scale; higher is better. Failures are include
 
 | Model | Task / dataset | N | Validation metrics | Failure rate (at cap) | Input tokens / sample | Output tokens / sample | Estimated cost / 1,000 samples | Mean latency (s) |
 |---|---|---:|---|---:|---:|---:|---:|---:|
-| moonshotai.kimi-k3.1 | [classify / cifar10](runs/kimi-k3.1-bedrock-20261112/classify.json) | 100 | Top-1 accuracy 67% | 0% (0%) | 364 | 745 | 16.363 | 7.852 |
-| moonshotai.kimi-k3.1 | [detect / coco128](runs/kimi-k3.1-bedrock-20261112/detect.json) | 100 | P@.5 70.72%; R@.5 58.03%; F1@.5 63.75% | 1% (1%) | 1,598 | 2,366 | 51.028 | 20.167 |
-| moonshotai.kimi-k3.1 | [ground_box / refcocog](runs/kimi-k3.1-bedrock-20261112/ground_box.json) | 100 | Acc@.5 92%; Acc@.75 78%; Acc@.9 55%; Mean IoU 82.51% | 0% (0%) | 866 | 960 | 21.232 | 9.909 |
-| moonshotai.kimi-k3.1 | [ground_point / refcocog](runs/kimi-k3.1-bedrock-20261112/ground_point.json) | 100 | Point in box 98% | 0% (0%) | 830 | 665 | 15.454 | 7.589 |
-| moonshotai.kimi-k3.1 | [attributes / ovad](runs/kimi-k3.1-bedrock-20261112/attributes.json) | 100 | Accuracy 75.68%; Mean accuracy 76.79%; Macro F1 58.72% | 0% (0%) | 1,655 | 2,238 | 47.504 | 18.575 |
-| moonshotai.kimi-k3.1 | [answer / vqav2](runs/kimi-k3.1-bedrock-20261112/answer.json) | 100 | VQA accuracy 42.7% | 0% (0%) | 769 | 277 | 8.617 | 4.611 |
+| moonshotai.kimi-k3.1 | [classify / cifar10](runs/kimi-k3.1-bedrock-20261112/classify.json) | 100 | Top-1 Acc 67% | 0% (0%) | 364 | 745 | 16.363 | 7.852 |
+| moonshotai.kimi-k3.1 | [detect / coco128](runs/kimi-k3.1-bedrock-20261112/detect.json) | 100 | P@0.5 70.72%; R@0.5 58.03%; F1@0.5 63.75% | 1% (1%) | 1,598 | 2,366 | 51.028 | 20.167 |
+| moonshotai.kimi-k3.1 | [ground_box / refcocog](runs/kimi-k3.1-bedrock-20261112/ground_box.json) | 100 | Acc@0.5 92%; Acc@0.75 78%; Acc@0.9 55%; Mean IoU 82.51% | 0% (0%) | 866 | 960 | 21.232 | 9.909 |
+| moonshotai.kimi-k3.1 | [ground_point / refcocog](runs/kimi-k3.1-bedrock-20261112/ground_point.json) | 100 | Point-in-box Acc 98% | 0% (0%) | 830 | 665 | 15.454 | 7.589 |
+| moonshotai.kimi-k3.1 | [attributes / ovad](runs/kimi-k3.1-bedrock-20261112/attributes.json) | 100 | Acc 75.68%; Mean Acc 76.79%; Macro F1 58.72% | 0% (0%) | 1,655 | 2,238 | 47.504 | 18.575 |
+| moonshotai.kimi-k3.1 | [answer / vqav2](runs/kimi-k3.1-bedrock-20261112/answer.json) | 100 | VQA Acc 42.7% | 0% (0%) | 769 | 277 | 8.617 | 4.611 |
 | moonshotai.kimi-k3.1 | [describe / coco_captions2017](runs/kimi-k3.1-bedrock-20261112/describe.json) | 100 | CIDEr 0.0375; BLEU-1 0.3712; BLEU-2 0.2074; BLEU-3 0.1116; BLEU-4 0.0574; ROUGE-L 0.3301 | 0% (0%) | 644 | 237 | 7.318 | 4.372 |
 
 </details>
@@ -119,12 +119,12 @@ All profiles use the same axes and scale; higher is better. Failures are include
 
 | Model | Task / dataset | N | Validation metrics | Failure rate (at cap) | Input tokens / sample | Output tokens / sample | Estimated cost / 1,000 samples | Mean latency (s) |
 |---|---|---:|---|---:|---:|---:|---:|---:|
-| qwen.qwen3-vl-235b-a22b | [classify / cifar10](runs/qwen3-vl-235b-bedrock-20261112/classify.json) | 100 | Top-1 accuracy 96% | 0% (0%) | 332 | 7 | 0.195 | 0.519 |
-| qwen.qwen3-vl-235b-a22b | [detect / coco128](runs/qwen3-vl-235b-bedrock-20261112/detect.json) | 100 | P@.5 90.67%; R@.5 9.18%; F1@.5 16.67% | 26% (1%) | 1,394 | 162 | 1.169 | 2.915 |
-| qwen.qwen3-vl-235b-a22b | [ground_box / refcocog](runs/qwen3-vl-235b-bedrock-20261112/ground_box.json) | 100 | Acc@.5 31%; Acc@.75 29%; Acc@.9 14%; Mean IoU 28.13% | 53% (0%) | 684 | 41 | 0.471 | 1.13 |
-| qwen.qwen3-vl-235b-a22b | [ground_point / refcocog](runs/qwen3-vl-235b-bedrock-20261112/ground_point.json) | 100 | Point in box 41% | 50% (0%) | 648 | 26 | 0.412 | 1.032 |
-| qwen.qwen3-vl-235b-a22b | [attributes / ovad](runs/qwen3-vl-235b-bedrock-20261112/attributes.json) | 100 | Accuracy 73.86%; Mean accuracy 72.45%; Macro F1 56.55% | 5% (0%) | 1,602 | 168 | 1.297 | 2.681 |
-| qwen.qwen3-vl-235b-a22b | [answer / vqav2](runs/qwen3-vl-235b-bedrock-20261112/answer.json) | 100 | VQA accuracy 68.4% | 0% (0%) | 572 | 14 | 0.34 | 0.785 |
+| qwen.qwen3-vl-235b-a22b | [classify / cifar10](runs/qwen3-vl-235b-bedrock-20261112/classify.json) | 100 | Top-1 Acc 96% | 0% (0%) | 332 | 7 | 0.195 | 0.519 |
+| qwen.qwen3-vl-235b-a22b | [detect / coco128](runs/qwen3-vl-235b-bedrock-20261112/detect.json) | 100 | P@0.5 90.67%; R@0.5 9.18%; F1@0.5 16.67% | 26% (1%) | 1,394 | 162 | 1.169 | 2.915 |
+| qwen.qwen3-vl-235b-a22b | [ground_box / refcocog](runs/qwen3-vl-235b-bedrock-20261112/ground_box.json) | 100 | Acc@0.5 31%; Acc@0.75 29%; Acc@0.9 14%; Mean IoU 28.13% | 53% (0%) | 684 | 41 | 0.471 | 1.13 |
+| qwen.qwen3-vl-235b-a22b | [ground_point / refcocog](runs/qwen3-vl-235b-bedrock-20261112/ground_point.json) | 100 | Point-in-box Acc 41% | 50% (0%) | 648 | 26 | 0.412 | 1.032 |
+| qwen.qwen3-vl-235b-a22b | [attributes / ovad](runs/qwen3-vl-235b-bedrock-20261112/attributes.json) | 100 | Acc 73.86%; Mean Acc 72.45%; Macro F1 56.55% | 5% (0%) | 1,602 | 168 | 1.297 | 2.681 |
+| qwen.qwen3-vl-235b-a22b | [answer / vqav2](runs/qwen3-vl-235b-bedrock-20261112/answer.json) | 100 | VQA Acc 68.4% | 0% (0%) | 572 | 14 | 0.34 | 0.785 |
 | qwen.qwen3-vl-235b-a22b | [describe / coco_captions2017](runs/qwen3-vl-235b-bedrock-20261112/describe.json) | 100 | CIDEr 0.0995; BLEU-1 0.4305; BLEU-2 0.2745; BLEU-3 0.1676; BLEU-4 0.0958; ROUGE-L 0.3841 | 0% (0%) | 452 | 39 | 0.342 | 1.023 |
 
 </details>
@@ -185,10 +185,10 @@ All profiles use the same axes and scale; higher is better. Failures are include
 
 | Model | Task / dataset | N | Validation metrics | Failure rate (at cap) | Input tokens / sample | Output tokens / sample | Estimated cost / 1,000 samples | Mean latency (s) |
 |---|---|---:|---|---:|---:|---:|---:|---:|
-| Qwen/Qwen3-VL-2B-Instruct | [classify / cifar10](runs/qwen3-vl-2b-20261112/classify.json) | 100 | Top-1 accuracy 93% | 0% (0%) | 332 | 7 | — | 0.705 |
-| google.gemma-3-27b-it | [classify / cifar10](runs/gemma3-27b-bedrock-20261112/classify.json) | 100 | Top-1 accuracy 82% | 0% (0%) | 523 | 7 | 0.123 | 0.907 |
-| moonshotai.kimi-k3.1 | [classify / cifar10](runs/kimi-k3.1-bedrock-20261112/classify.json) | 100 | Top-1 accuracy 67% | 0% (0%) | 364 | 745 | 16.363 | 7.852 |
-| qwen.qwen3-vl-235b-a22b | [classify / cifar10](runs/qwen3-vl-235b-bedrock-20261112/classify.json) | 100 | Top-1 accuracy 96% | 0% (0%) | 332 | 7 | 0.195 | 0.519 |
+| Qwen/Qwen3-VL-2B-Instruct | [classify / cifar10](runs/qwen3-vl-2b-20261112/classify.json) | 100 | Top-1 Acc 93% | 0% (0%) | 332 | 7 | — | 0.705 |
+| google.gemma-3-27b-it | [classify / cifar10](runs/gemma3-27b-bedrock-20261112/classify.json) | 100 | Top-1 Acc 82% | 0% (0%) | 523 | 7 | 0.123 | 0.907 |
+| moonshotai.kimi-k3.1 | [classify / cifar10](runs/kimi-k3.1-bedrock-20261112/classify.json) | 100 | Top-1 Acc 67% | 0% (0%) | 364 | 745 | 16.363 | 7.852 |
+| qwen.qwen3-vl-235b-a22b | [classify / cifar10](runs/qwen3-vl-235b-bedrock-20261112/classify.json) | 100 | Top-1 Acc 96% | 0% (0%) | 332 | 7 | 0.195 | 0.519 |
 
 </details>
 
@@ -201,10 +201,10 @@ All profiles use the same axes and scale; higher is better. Failures are include
 
 | Model | Task / dataset | N | Validation metrics | Failure rate (at cap) | Input tokens / sample | Output tokens / sample | Estimated cost / 1,000 samples | Mean latency (s) |
 |---|---|---:|---|---:|---:|---:|---:|---:|
-| Qwen/Qwen3-VL-2B-Instruct | [detect / coco128](runs/qwen3-vl-2b-20261112/detect.json) | 100 | P@.5 33.56%; R@.5 6.75%; F1@.5 11.24% | 21% (13%) | 1,394 | 661 | — | 30.166 |
-| google.gemma-3-27b-it | [detect / coco128](runs/gemma3-27b-bedrock-20261112/detect.json) | 100 | P@.5 11.43%; R@.5 6.48%; F1@.5 8.27% | 2% (0%) | 1,301 | 297 | 0.412 | 7.009 |
-| moonshotai.kimi-k3.1 | [detect / coco128](runs/kimi-k3.1-bedrock-20261112/detect.json) | 100 | P@.5 70.72%; R@.5 58.03%; F1@.5 63.75% | 1% (1%) | 1,598 | 2,366 | 51.028 | 20.167 |
-| qwen.qwen3-vl-235b-a22b | [detect / coco128](runs/qwen3-vl-235b-bedrock-20261112/detect.json) | 100 | P@.5 90.67%; R@.5 9.18%; F1@.5 16.67% | 26% (1%) | 1,394 | 162 | 1.169 | 2.915 |
+| Qwen/Qwen3-VL-2B-Instruct | [detect / coco128](runs/qwen3-vl-2b-20261112/detect.json) | 100 | P@0.5 33.56%; R@0.5 6.75%; F1@0.5 11.24% | 21% (13%) | 1,394 | 661 | — | 30.166 |
+| google.gemma-3-27b-it | [detect / coco128](runs/gemma3-27b-bedrock-20261112/detect.json) | 100 | P@0.5 11.43%; R@0.5 6.48%; F1@0.5 8.27% | 2% (0%) | 1,301 | 297 | 0.412 | 7.009 |
+| moonshotai.kimi-k3.1 | [detect / coco128](runs/kimi-k3.1-bedrock-20261112/detect.json) | 100 | P@0.5 70.72%; R@0.5 58.03%; F1@0.5 63.75% | 1% (1%) | 1,598 | 2,366 | 51.028 | 20.167 |
+| qwen.qwen3-vl-235b-a22b | [detect / coco128](runs/qwen3-vl-235b-bedrock-20261112/detect.json) | 100 | P@0.5 90.67%; R@0.5 9.18%; F1@0.5 16.67% | 26% (1%) | 1,394 | 162 | 1.169 | 2.915 |
 
 </details>
 
@@ -222,10 +222,10 @@ All profiles use the same axes and scale; higher is better. Failures are include
 
 | Model | Task / dataset | N | Validation metrics | Failure rate (at cap) | Input tokens / sample | Output tokens / sample | Estimated cost / 1,000 samples | Mean latency (s) |
 |---|---|---:|---|---:|---:|---:|---:|---:|
-| Qwen/Qwen3-VL-2B-Instruct | [ground_box / refcocog](runs/qwen3-vl-2b-20261112/ground_box.json) | 100 | Acc@.5 22%; Acc@.75 2%; Acc@.9 0%; Mean IoU 28.04% | 2% (0%) | 684 | 48 | — | 2.794 |
-| google.gemma-3-27b-it | [ground_box / refcocog](runs/gemma3-27b-bedrock-20261112/ground_box.json) | 100 | Acc@.5 16%; Acc@.75 0%; Acc@.9 0%; Mean IoU 23.97% | 0% (0%) | 695 | 52 | 0.18 | 2.091 |
-| moonshotai.kimi-k3.1 | [ground_box / refcocog](runs/kimi-k3.1-bedrock-20261112/ground_box.json) | 100 | Acc@.5 92%; Acc@.75 78%; Acc@.9 55%; Mean IoU 82.51% | 0% (0%) | 866 | 960 | 21.232 | 9.909 |
-| qwen.qwen3-vl-235b-a22b | [ground_box / refcocog](runs/qwen3-vl-235b-bedrock-20261112/ground_box.json) | 100 | Acc@.5 31%; Acc@.75 29%; Acc@.9 14%; Mean IoU 28.13% | 53% (0%) | 684 | 41 | 0.471 | 1.13 |
+| Qwen/Qwen3-VL-2B-Instruct | [ground_box / refcocog](runs/qwen3-vl-2b-20261112/ground_box.json) | 100 | Acc@0.5 22%; Acc@0.75 2%; Acc@0.9 0%; Mean IoU 28.04% | 2% (0%) | 684 | 48 | — | 2.794 |
+| google.gemma-3-27b-it | [ground_box / refcocog](runs/gemma3-27b-bedrock-20261112/ground_box.json) | 100 | Acc@0.5 16%; Acc@0.75 0%; Acc@0.9 0%; Mean IoU 23.97% | 0% (0%) | 695 | 52 | 0.18 | 2.091 |
+| moonshotai.kimi-k3.1 | [ground_box / refcocog](runs/kimi-k3.1-bedrock-20261112/ground_box.json) | 100 | Acc@0.5 92%; Acc@0.75 78%; Acc@0.9 55%; Mean IoU 82.51% | 0% (0%) | 866 | 960 | 21.232 | 9.909 |
+| qwen.qwen3-vl-235b-a22b | [ground_box / refcocog](runs/qwen3-vl-235b-bedrock-20261112/ground_box.json) | 100 | Acc@0.5 31%; Acc@0.75 29%; Acc@0.9 14%; Mean IoU 28.13% | 53% (0%) | 684 | 41 | 0.471 | 1.13 |
 
 </details>
 
@@ -238,10 +238,10 @@ All profiles use the same axes and scale; higher is better. Failures are include
 
 | Model | Task / dataset | N | Validation metrics | Failure rate (at cap) | Input tokens / sample | Output tokens / sample | Estimated cost / 1,000 samples | Mean latency (s) |
 |---|---|---:|---|---:|---:|---:|---:|---:|
-| Qwen/Qwen3-VL-2B-Instruct | [ground_point / refcocog](runs/qwen3-vl-2b-20261112/ground_point.json) | 100 | Point in box 35% | 0% (0%) | 648 | 28 | — | 1.986 |
-| google.gemma-3-27b-it | [ground_point / refcocog](runs/gemma3-27b-bedrock-20261112/ground_point.json) | 100 | Point in box 53% | 0% (0%) | 660 | 31 | 0.164 | 1.715 |
-| moonshotai.kimi-k3.1 | [ground_point / refcocog](runs/kimi-k3.1-bedrock-20261112/ground_point.json) | 100 | Point in box 98% | 0% (0%) | 830 | 665 | 15.454 | 7.589 |
-| qwen.qwen3-vl-235b-a22b | [ground_point / refcocog](runs/qwen3-vl-235b-bedrock-20261112/ground_point.json) | 100 | Point in box 41% | 50% (0%) | 648 | 26 | 0.412 | 1.032 |
+| Qwen/Qwen3-VL-2B-Instruct | [ground_point / refcocog](runs/qwen3-vl-2b-20261112/ground_point.json) | 100 | Point-in-box Acc 35% | 0% (0%) | 648 | 28 | — | 1.986 |
+| google.gemma-3-27b-it | [ground_point / refcocog](runs/gemma3-27b-bedrock-20261112/ground_point.json) | 100 | Point-in-box Acc 53% | 0% (0%) | 660 | 31 | 0.164 | 1.715 |
+| moonshotai.kimi-k3.1 | [ground_point / refcocog](runs/kimi-k3.1-bedrock-20261112/ground_point.json) | 100 | Point-in-box Acc 98% | 0% (0%) | 830 | 665 | 15.454 | 7.589 |
+| qwen.qwen3-vl-235b-a22b | [ground_point / refcocog](runs/qwen3-vl-235b-bedrock-20261112/ground_point.json) | 100 | Point-in-box Acc 41% | 50% (0%) | 648 | 26 | 0.412 | 1.032 |
 
 </details>
 
@@ -256,10 +256,10 @@ All profiles use the same axes and scale; higher is better. Failures are include
 
 | Model | Task / dataset | N | Validation metrics | Failure rate (at cap) | Input tokens / sample | Output tokens / sample | Estimated cost / 1,000 samples | Mean latency (s) |
 |---|---|---:|---|---:|---:|---:|---:|---:|
-| Qwen/Qwen3-VL-2B-Instruct | [attributes / ovad](runs/qwen3-vl-2b-20261112/attributes.json) | 100 | Accuracy 55.27%; Mean accuracy 58.45%; Macro F1 46.93% | 1% (0%) | 1,602 | 152 | — | 7.82 |
-| google.gemma-3-27b-it | [attributes / ovad](runs/gemma3-27b-bedrock-20261112/attributes.json) | 100 | Accuracy 70.22%; Mean accuracy 69.47%; Macro F1 53.78% | 1% (0%) | 1,726 | 206 | 0.475 | 4.527 |
-| moonshotai.kimi-k3.1 | [attributes / ovad](runs/kimi-k3.1-bedrock-20261112/attributes.json) | 100 | Accuracy 75.68%; Mean accuracy 76.79%; Macro F1 58.72% | 0% (0%) | 1,655 | 2,238 | 47.504 | 18.575 |
-| qwen.qwen3-vl-235b-a22b | [attributes / ovad](runs/qwen3-vl-235b-bedrock-20261112/attributes.json) | 100 | Accuracy 73.86%; Mean accuracy 72.45%; Macro F1 56.55% | 5% (0%) | 1,602 | 168 | 1.297 | 2.681 |
+| Qwen/Qwen3-VL-2B-Instruct | [attributes / ovad](runs/qwen3-vl-2b-20261112/attributes.json) | 100 | Acc 55.27%; Mean Acc 58.45%; Macro F1 46.93% | 1% (0%) | 1,602 | 152 | — | 7.82 |
+| google.gemma-3-27b-it | [attributes / ovad](runs/gemma3-27b-bedrock-20261112/attributes.json) | 100 | Acc 70.22%; Mean Acc 69.47%; Macro F1 53.78% | 1% (0%) | 1,726 | 206 | 0.475 | 4.527 |
+| moonshotai.kimi-k3.1 | [attributes / ovad](runs/kimi-k3.1-bedrock-20261112/attributes.json) | 100 | Acc 75.68%; Mean Acc 76.79%; Macro F1 58.72% | 0% (0%) | 1,655 | 2,238 | 47.504 | 18.575 |
+| qwen.qwen3-vl-235b-a22b | [attributes / ovad](runs/qwen3-vl-235b-bedrock-20261112/attributes.json) | 100 | Acc 73.86%; Mean Acc 72.45%; Macro F1 56.55% | 5% (0%) | 1,602 | 168 | 1.297 | 2.681 |
 
 </details>
 
@@ -272,10 +272,10 @@ All profiles use the same axes and scale; higher is better. Failures are include
 
 | Model | Task / dataset | N | Validation metrics | Failure rate (at cap) | Input tokens / sample | Output tokens / sample | Estimated cost / 1,000 samples | Mean latency (s) |
 |---|---|---:|---|---:|---:|---:|---:|---:|
-| Qwen/Qwen3-VL-2B-Instruct | [answer / vqav2](runs/qwen3-vl-2b-20261112/answer.json) | 100 | VQA accuracy 65% | 0% (0%) | 572 | 14 | — | 1.432 |
-| google.gemma-3-27b-it | [answer / vqav2](runs/gemma3-27b-bedrock-20261112/answer.json) | 100 | VQA accuracy 56% | 0% (0%) | 537 | 16 | 0.13 | 1.288 |
-| moonshotai.kimi-k3.1 | [answer / vqav2](runs/kimi-k3.1-bedrock-20261112/answer.json) | 100 | VQA accuracy 42.7% | 0% (0%) | 769 | 277 | 8.617 | 4.611 |
-| qwen.qwen3-vl-235b-a22b | [answer / vqav2](runs/qwen3-vl-235b-bedrock-20261112/answer.json) | 100 | VQA accuracy 68.4% | 0% (0%) | 572 | 14 | 0.34 | 0.785 |
+| Qwen/Qwen3-VL-2B-Instruct | [answer / vqav2](runs/qwen3-vl-2b-20261112/answer.json) | 100 | VQA Acc 65% | 0% (0%) | 572 | 14 | — | 1.432 |
+| google.gemma-3-27b-it | [answer / vqav2](runs/gemma3-27b-bedrock-20261112/answer.json) | 100 | VQA Acc 56% | 0% (0%) | 537 | 16 | 0.13 | 1.288 |
+| moonshotai.kimi-k3.1 | [answer / vqav2](runs/kimi-k3.1-bedrock-20261112/answer.json) | 100 | VQA Acc 42.7% | 0% (0%) | 769 | 277 | 8.617 | 4.611 |
+| qwen.qwen3-vl-235b-a22b | [answer / vqav2](runs/qwen3-vl-235b-bedrock-20261112/answer.json) | 100 | VQA Acc 68.4% | 0% (0%) | 572 | 14 | 0.34 | 0.785 |
 
 </details>
 
@@ -303,7 +303,7 @@ All profiles use the same axes and scale; higher is better. Failures are include
 
 - **N**: the number of evaluated samples, including failures. Token means, cost projections, failure rates and cap rates use this count. Samples can share images.
 
-- **Validation metrics**, **Main metric**: task quality scores from the validators. Main metric selects the score used in the overview and charts. Higher is better; ratios are percentages and caption scores use their native scale. Bold overview values mark the best observed result within a task. These small subsets provide a preliminary comparison; datasets and scoring differ by task. See the [scoring rules](../docs/validation.md) and [benchmark method](methodology.md) for metric definitions and subset limitations.
+- **Validation metrics**, **Main metric**: task quality scores from the validators. Main metric selects the score used in the overview and charts. Higher is better; ratios are percentages and caption scores use their native scale. `Acc` means accuracy: `Top-1 Acc` measures classification, `Mean Acc` averages attribute-group accuracies, `VQA Acc` uses answer consensus, and `Point-in-box Acc` counts predicted points inside target boxes. For Grounding (Box), `Acc@0.5`, `Acc@0.75` and `Acc@0.9` require IoU ≥ the indicated threshold. Detection's `P`, `R` and `F1` use the indicated IoU matching threshold. Bold overview values mark the best observed result within a task. These small subsets provide a preliminary comparison; datasets and scoring differ by task. See the [scoring rules](../docs/validation.md) and [benchmark method](methodology.md) for metric definitions and subset limitations.
 
 - **Failure rate (at cap)**: the percentage of samples that failed, followed in parentheses by the percentage of responses reaching the configured output limit (4,096 tokens in these runs). Both rates use N. A cap hit can be a valid response; inspect raw output to distinguish truncation from completion exactly at the limit.
 

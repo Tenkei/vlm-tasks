@@ -27,35 +27,35 @@ class TaskSpec:
 TASKS = {
     "classify": TaskSpec(
         dataset="cifar10", operator="Classify", title="Classification",
-        metrics=(("accuracy_top1", "Top-1 accuracy"),),
-        primary_metric="accuracy_top1", chart_metric_label="Accuracy",
+        metrics=(("accuracy_top1", "Top-1 Acc"),),
+        primary_metric="accuracy_top1", chart_metric_label="Top-1 Acc",
     ),
     "detect": TaskSpec(
         dataset="coco128", operator="Detect", title="Detection",
-        metrics=(("precision", "P@.5"), ("recall", "R@.5"), ("f1", "F1@.5")),
+        metrics=(("precision", "P@0.5"), ("recall", "R@0.5"), ("f1", "F1@0.5")),
         primary_metric="f1", chart_metric_label="F1@0.5",
     ),
     "ground_box": TaskSpec(
         dataset="refcocog", operator="Ground", title="Grounding", geometry="box",
-        metrics=(("accuracy_iou_0.5", "Acc@.5"), ("accuracy_iou_0.75", "Acc@.75"),
-                 ("accuracy_iou_0.9", "Acc@.9"), ("mean_iou", "Mean IoU")),
+        metrics=(("accuracy_iou_0.5", "Acc@0.5"), ("accuracy_iou_0.75", "Acc@0.75"),
+                 ("accuracy_iou_0.9", "Acc@0.9"), ("mean_iou", "Mean IoU")),
         primary_metric="accuracy_iou_0.5", chart_metric_label="Acc@0.5",
     ),
     "ground_point": TaskSpec(
         dataset="refcocog", operator="Ground", title="Grounding", geometry="point",
-        metrics=(("point_in_box_accuracy", "Point in box"),),
-        primary_metric="point_in_box_accuracy", chart_metric_label="Accuracy",
+        metrics=(("point_in_box_accuracy", "Point-in-box Acc"),),
+        primary_metric="point_in_box_accuracy", chart_metric_label="Point-in-box Acc",
     ),
     "attributes": TaskSpec(
         dataset="ovad", operator="Attributes", title="Attributes",
-        metrics=(("accuracy", "Accuracy"), ("mean_attribute_accuracy", "Mean accuracy"),
+        metrics=(("accuracy", "Acc"), ("mean_attribute_accuracy", "Mean Acc"),
                  ("macro_f1", "Macro F1")),
-        primary_metric="accuracy", chart_metric_label="Accuracy",
+        primary_metric="accuracy", chart_metric_label="Acc",
     ),
     "answer": TaskSpec(
         dataset="vqav2", operator="Answer", title="VQA",
-        metrics=(("vqa_accuracy", "VQA accuracy"),),
-        primary_metric="vqa_accuracy", chart_metric_label="Accuracy",
+        metrics=(("vqa_accuracy", "VQA Acc"),),
+        primary_metric="vqa_accuracy", chart_metric_label="VQA Acc",
     ),
     "describe": TaskSpec(
         dataset="coco_captions2017", operator="Describe", title="Captioning",

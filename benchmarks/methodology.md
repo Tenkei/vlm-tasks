@@ -143,15 +143,22 @@ Task titles are bold, with metric labels and values in regular weight.
 There is no normalization to the best observed model or to sample count.
 Failures retain their original scoring penalties.
 
-| Axis | Recorded metric |
-|---|---|
-| Classification | Top-1 accuracy |
-| Detection | F1 at IoU 0.5 |
-| Grounding (Box) | Accuracy at IoU 0.5 |
-| Grounding (Point) | Point-in-box accuracy |
-| Attributes | Accuracy across known attribute decisions |
-| VQA | VQA accuracy |
-| Captioning | ROUGE-L |
+| Axis | Display label | Recorded metric |
+|---|---|---|
+| Classification | Top-1 Acc | Top-1 accuracy |
+| Detection | F1@0.5 | F1 at IoU 0.5 |
+| Grounding (Box) | Acc@0.5 | Accuracy at IoU ≥0.5 |
+| Grounding (Point) | Point-in-box Acc | Point-in-box accuracy |
+| Attributes | Acc | Accuracy across known attribute decisions |
+| VQA | VQA Acc | VQA accuracy |
+| Captioning | ROUGE-L | ROUGE-L |
+
+`Acc` abbreviates accuracy throughout the charts and comparison tables.
+`Mean Acc` is the mean of the per-attribute-group accuracies. Grounding (Box)
+also reports `Acc@0.75` and `Acc@0.9`; each suffix is the minimum box IoU
+required for a correct prediction. Accuracy metrics without an IoU threshold
+have no `@` suffix. The [Table field guide](README.md#table-field-guide)
+explains the display labels alongside the other table fields.
 
 ROUGE-L is bounded by 0–1, which allows a fixed scale. CIDEr has no fixed
 0–1 bound and remains in the table. Each axis summarizes a different task;

@@ -161,7 +161,7 @@ z
    <text style="font-weight: 700; font-size: 21px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #243244" x="288" y="29.780719" transform="rotate(-0 288 29.780719)">Classification</text>
   </g>
   <g id="text_10">
-   <text style="font-size: 13px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #596778" x="288" y="51.84" transform="rotate(-0 288 51.84)">Accuracy</text>
+   <text style="font-size: 13px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #596778" x="288" y="51.84" transform="rotate(-0 288 51.84)">Top-1 Acc</text>
   </g>
   <g id="text_11">
    <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #596778" x="288" y="326.592" transform="rotate(-0 288 326.592)">Higher is better · Failures included</text>

@@ -93,7 +93,7 @@ L 288 155.52
         <tspan x="68.378906" y="-0.40625" style="font-weight: 700; font-size: 10px; font-family: 'DejaVu Sans'; fill: #243244">n</tspan>
        </text>
       </g>
-      <text style="font-size: 10px; font-family: 'DejaVu Sans'; fill: #243244" transform="translate(257.220312 136.619805)">Accuracy 82</text>
+      <text style="font-size: 10px; font-family: 'DejaVu Sans'; fill: #243244" transform="translate(256.204687 136.619805)">Top-1 Acc 82</text>
      </g>
     </g>
     <g id="xtick_2">
@@ -157,7 +157,7 @@ L 355.477599 451.158678
      </g>
      <g id="text_4">
       <!-- $\mathbf{Grounding\ (Point)}$ -->
-      <g style="fill: #243244" transform="translate(367.409402 472.533174)">
+      <g style="fill: #243244" transform="translate(367.409402 472.532783)">
        <text>
         <tspan x="0" y="-0.40625" style="font-weight: 700; font-size: 10px; font-family: 'DejaVu Sans'; fill: #243244">G</tspan>
         <tspan x="8.208008" y="-0.40625" style="font-weight: 700; font-size: 10px; font-family: 'DejaVu Sans'; fill: #243244">r</tspan>
@@ -177,7 +177,7 @@ L 355.477599 451.158678
         <tspan x="96.455046" y="-0.40625" style="font-weight: 700; font-size: 10px; font-family: 'DejaVu Sans'; fill: #243244">)</tspan>
        </text>
       </g>
-      <text style="font-size: 10px; font-family: 'DejaVu Sans'; fill: #243244" transform="translate(367.409402 484.535127)">Accuracy 53</text>
+      <text style="font-size: 10px; font-family: 'DejaVu Sans'; fill: #243244" transform="translate(367.409402 484.535518)">Point-in-box Acc 53</text>
      </g>
     </g>
     <g id="xtick_5">
@@ -202,7 +202,7 @@ L 220.522401 451.158678
         <tspan x="51.499023" y="-0.40625" style="font-weight: 700; font-size: 10px; font-family: 'DejaVu Sans'; fill: #243244">s</tspan>
        </text>
       </g>
-      <text style="font-size: 10px; font-family: 'DejaVu Sans'; fill: #243244" transform="translate(137.490598 484.535127)">Accuracy 70.2</text>
+      <text style="font-size: 10px; font-family: 'DejaVu Sans'; fill: #243244" transform="translate(165.484348 484.535127)">Acc 70.2</text>
      </g>
     </g>
     <g id="xtick_6">
@@ -220,7 +220,7 @@ L 136.379211 345.646456
         <tspan x="16.240234" y="-0.578125" style="font-weight: 700; font-size: 10px; font-family: 'DejaVu Sans'; fill: #243244">A</tspan>
        </text>
       </g>
-      <text style="font-size: 10px; font-family: 'DejaVu Sans'; fill: #243244" transform="translate(48.009319 360.364414)">Accuracy 56</text>
+      <text style="font-size: 10px; font-family: 'DejaVu Sans'; fill: #243244" transform="translate(51.271819 360.364414)">VQA Acc 56</text>
      </g>
     </g>
     <g id="xtick_7">

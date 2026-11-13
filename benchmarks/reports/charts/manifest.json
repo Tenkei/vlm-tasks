@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-13T04:01:26.097996+00:00",
+  "generated_at": "2026-11-13T04:22:23.099988+00:00",
   "matplotlib_version": "3.11.2",
   "numpy_version": "2.5.4",
   "radial_range": [
@@ -12,7 +12,7 @@
       "task": "classify",
       "metric": "accuracy_top1",
       "label": "Classification",
-      "metric_label": "Accuracy"
+      "metric_label": "Top-1 Acc"
     },
     {
       "task": "detect",
@@ -30,19 +30,19 @@
       "task": "ground_point",
       "metric": "point_in_box_accuracy",
       "label": "Grounding (Point)",
-      "metric_label": "Accuracy"
+      "metric_label": "Point-in-box Acc"
     },
     {
       "task": "attributes",
       "metric": "accuracy",
       "label": "Attributes",
-      "metric_label": "Accuracy"
+      "metric_label": "Acc"
     },
     {
       "task": "answer",
       "metric": "vqa_accuracy",
       "label": "VQA",
-      "metric_label": "Accuracy"
+      "metric_label": "VQA Acc"
     },
     {
       "task": "describe",
@@ -154,7 +154,7 @@
       "task": "classify",
       "title": "Classification",
       "metric": "accuracy_top1",
-      "metric_label": "Accuracy",
+      "metric_label": "Top-1 Acc",
       "figure": "task-comparisons/classify",
       "bar_range": [
         0,
@@ -271,7 +271,7 @@
       "task": "ground_point",
       "title": "Grounding (Point)",
       "metric": "point_in_box_accuracy",
-      "metric_label": "Accuracy",
+      "metric_label": "Point-in-box Acc",
       "figure": "task-comparisons/ground_point",
       "bar_range": [
         0,
@@ -310,7 +310,7 @@
       "task": "attributes",
       "title": "Attributes",
       "metric": "accuracy",
-      "metric_label": "Accuracy",
+      "metric_label": "Acc",
       "figure": "task-comparisons/attributes",
       "bar_range": [
         0,
@@ -349,7 +349,7 @@
       "task": "answer",
       "title": "VQA",
       "metric": "vqa_accuracy",
-      "metric_label": "Accuracy",
+      "metric_label": "VQA Acc",
       "figure": "task-comparisons/answer",
       "bar_range": [
         0,
@@ -426,8 +426,8 @@
   ],
   "source_sha256": {
     "benchmarks/src/generate_charts.py": "c90a4eaea2be16665a78dbbb9be1a20436d02f101dcc2821771fc42ee1425b99",
-    "benchmarks/src/generate_report.py": "6597730fd7d5b17be5821aeab6174f1501e27c592f18a0311bcb57709572b749",
-    "benchmarks/src/task_registry.py": "6560235c80797ac0f9f893408dccdd16fc843bd4f854c3ce627d95d726b31033",
+    "benchmarks/src/generate_report.py": "ddc760d80cb65f12afeec771e81b44d17c7c039a0a064d419c2ac7bf3c0e9e2c",
+    "benchmarks/src/task_registry.py": "0e4c9349d51d308385d1868a2d399f5db597abb01f3eac484f90822765e8eb1d",
     "benchmarks/src/artifacts.py": "4719423a8260c04ecf9f56992f39af1c98c3cdb2531e9a15099052b1d084bab9"
   },
   "reports_sha256": {
@@ -461,26 +461,26 @@
     "qwen3-vl-235b-bedrock-20261112/describe.json": "0e40f77e1867cc7bd95aa64a77cbdfc78cae4e72588d69614d58fd1c29898daf"
   },
   "figures_sha256": {
-    "model-profiles/qwen3-vl-2b-20261112.png": "a6ad3c5d872cc0887524205a1146693d18c572531d92a5d316cf9e1ebebfd515",
-    "model-profiles/qwen3-vl-2b-20261112.svg": "e77d7d88584c1d8d7ce74a98d1bdce4978aa036115aea7d7e4d340ec83e29ead",
-    "model-profiles/gemma3-27b-bedrock-20261112.png": "e13e7d661c46fe2272656018a0b00f7df07216e212411c6890139467c20e29fb",
-    "model-profiles/gemma3-27b-bedrock-20261112.svg": "46e72608c3dd80d66183f79542f34904501c69dd125bda85dce4d56b5967e0e1",
-    "model-profiles/kimi-k3.1-bedrock-20261112.png": "01040890cc0804bbebb739ec9981d5a54f901a12959980fa505e004668c2372d",
-    "model-profiles/kimi-k3.1-bedrock-20261112.svg": "c5e6334b42757a5e3f093debb9fa947bd112b7e8157a79c11f5051a0d82b8d90",
-    "model-profiles/qwen3-vl-235b-bedrock-20261112.png": "becb9e0432d1a6b5d9444f3c3358f09589aad0cdd5321e3214e1aceac919b6d8",
-    "model-profiles/qwen3-vl-235b-bedrock-20261112.svg": "bf9d4a7ec1b1f91d216491f9710260bbfb97ff90a4eef69ef096dd32464e1bf4",
-    "task-comparisons/classify.png": "dfd78a30bf1a56ab49dad172a07b90fd318336105b8825efd7de5ace77ae7c47",
-    "task-comparisons/classify.svg": "02cb3885ac4e9b871928167148c8e2e659b562b80e27f508e6c347deff02bcfb",
+    "model-profiles/qwen3-vl-2b-20261112.png": "8613096ebac4f3d52809fa33de65f106349e45f0d7d7ae6f00c75e9af1a7f61f",
+    "model-profiles/qwen3-vl-2b-20261112.svg": "bcdcaca6974cc7445e4af4c58028aaae2012c9806c6e7ce4b2ebf9ba2a6e59fc",
+    "model-profiles/gemma3-27b-bedrock-20261112.png": "9fa84ba22273594942e8246495f8d970bf560fdbe857e11dc57451d06ebab3b7",
+    "model-profiles/gemma3-27b-bedrock-20261112.svg": "587e85931391ae3d6780a001c5b05db96289abcf0c007d3a6cad17cda6701bb2",
+    "model-profiles/kimi-k3.1-bedrock-20261112.png": "cf62e9bf822e8cf0be1b6ad544b5a107b7a7b01b87512f618536e9325f823d9f",
+    "model-profiles/kimi-k3.1-bedrock-20261112.svg": "cf390c1135b8f16e7a604c2427493534e8ae5bffa69e0f3f76be9362ec3c2410",
+    "model-profiles/qwen3-vl-235b-bedrock-20261112.png": "344c12825689e20c7624cb2313e02515961c4c85316e8b9386c9f8aa5f79ab69",
+    "model-profiles/qwen3-vl-235b-bedrock-20261112.svg": "5da2b00f90c0ce60a69ddb89463fc13090017e083849b54c640208490dfb3f12",
+    "task-comparisons/classify.png": "9a4150f1353722f99bb7aae3d2d6be139e21c3c131866aba0a72dc753baef464",
+    "task-comparisons/classify.svg": "398072a003e1502b2dad5f90b9e56394f0453f252e80e18c21640c9b5efa7973",
     "task-comparisons/detect.png": "d233b77024098f5a35adc08c257483576bf277f03e3415d45c1c5b6bb38ff715",
     "task-comparisons/detect.svg": "1e6859a79ea20f8325562062a03bd624b66245cdd72358f8488f61d23d003a3b",
     "task-comparisons/ground_box.png": "09f27186a368f63bd6fdb228c715e07359a2633ad298e9f1e0f9f377d337c89b",
     "task-comparisons/ground_box.svg": "6bb0b96146fd34269a5e8e53fd1287bc9a9ad5b5c39a322105c730d25b13f9f5",
-    "task-comparisons/ground_point.png": "01550f1a5e6eebf8eb6e8e6bf278e6215bf6b822effc9ea71985a2c0a8c0d487",
-    "task-comparisons/ground_point.svg": "512410303282ca85ef0452866b36cfa59f63713e7907a25d7468bd361ca79878",
-    "task-comparisons/attributes.png": "cfa69e38c98be6a05ee1a75fdb23f138627c13a5df8fb394e1ddfce07004abc9",
-    "task-comparisons/attributes.svg": "dc7edeb2eb8ff37b93655a81e95c63c8b4221f91112b3306b087be6d3d4a18d6",
-    "task-comparisons/answer.png": "c4fc0dac6f42a4ed1bb5d082ee4fbeb60481245a0b7ccf6337fc7aa8b81eb26f",
-    "task-comparisons/answer.svg": "b737f03355f04ace54185f8b35b1cb61f088e938c8e3fb5bcbeceebeb5b22728",
+    "task-comparisons/ground_point.png": "33dbdb3d14dc9fa1996ab4f9e8a4be19c022ecba3ccb7d8d3980019e6e1424e6",
+    "task-comparisons/ground_point.svg": "23ba8f020187cb7f51e0b90bb96ade0063db12b76c88c99cf1fc250cb307d668",
+    "task-comparisons/attributes.png": "24c39d853a75a6b2248574f8fc9d4a7e92b2c06d4a71414038fa5114d00167d4",
+    "task-comparisons/attributes.svg": "50b767ffa53eb0d1c22a705b692964313a5210b9629e90014684b95fb76561c7",
+    "task-comparisons/answer.png": "ad2ba75ba4086de864068c88bf3d4befcb881c013ca6d395f12d32b07c119dcf",
+    "task-comparisons/answer.svg": "d00e91890670034f455210dc2498b2e012e356c55ef5cc14ba307778d9cf7078",
     "task-comparisons/describe.png": "ad975ce4ee2ebeb3726dd3b0129daaa0f0c4c25d2c8f36568dff3448ad49d12f",
     "task-comparisons/describe.svg": "b5077deef8a199346abc435a7cd49977c41c3ee1e932c0d88d09153a34fdd7a6"
   }
