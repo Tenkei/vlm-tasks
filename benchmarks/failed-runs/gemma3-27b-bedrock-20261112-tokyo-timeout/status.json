@@ -1,0 +1,7 @@
+{
+  "status": "startup_timed_out",
+  "reason": "First Gemma Tokyo request exceeded the 600-second read timeout; no returned generation or task metrics",
+  "attempted_requests": 1,
+  "unmeasured_requests": 1,
+  "superseded_by": "benchmarks/results/gemma3-27b-bedrock-20261112"
+}

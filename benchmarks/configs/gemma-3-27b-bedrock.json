@@ -1,0 +1,13 @@
+{
+  "model": "google.gemma-3-27b-it",
+  "profile": "benchmark",
+  "region": "us-east-1",
+  "region_note": "Tokyo's first request exceeded the 600-second timeout; benchmark uses US East (N. Virginia)",
+  "temperature": 0.0,
+  "max_new_tokens": 4096,
+  "samples_per_task": 100,
+  "tasks": ["classify", "detect", "ground_box", "ground_point", "attributes", "answer", "describe"],
+  "tokenizer_version": "3.4.1",
+  "match_iou": 0.5,
+  "sdk_total_max_attempts": 1
+}

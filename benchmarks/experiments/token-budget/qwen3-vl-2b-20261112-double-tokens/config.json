@@ -1,0 +1,18 @@
+{
+  "model": "Qwen/Qwen3-VL-2B-Instruct",
+  "revision": "89644892e4d85e24eaac8bacfd4f463576704203",
+  "device": "mps",
+  "dtype": "float16",
+  "seed": 42,
+  "max_new_tokens": 8192,
+  "samples_per_task": {
+    "detect": 13
+  },
+  "tasks": [
+    "detect"
+  ],
+  "tokenizer_version": "3.4.1",
+  "match_iou": 0.5,
+  "baseline_samples_per_task": 100,
+  "experiment": "double token budget on capped baseline samples"
+}

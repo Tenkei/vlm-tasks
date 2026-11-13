@@ -1,0 +1,33 @@
+{
+  "model": "moonshotai.kimi-k3.1",
+  "inference_profile": "global.moonshotai.kimi-k3.1",
+  "profile": "benchmark",
+  "region": "ap-northeast-1",
+  "temperature": null,
+  "temperature_note": "Bedrock Kimi K3.1 rejects temperature; omit the field and use provider-controlled sampling",
+  "max_new_tokens": 4096,
+  "samples_per_task": 100,
+  "tasks": [
+    "classify",
+    "detect",
+    "ground_box",
+    "ground_point",
+    "attributes",
+    "answer",
+    "describe"
+  ],
+  "tokenizer_version": "3.4.1",
+  "match_iou": 0.5,
+  "sdk_total_max_attempts": 1,
+  "pricing": {
+    "source": "https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-moonshot-ai-kimi-k3-1-highspeed.html",
+    "source_section": "Pricing: Global CRIS, Standard tier",
+    "retrieved_at": "2026-11-12",
+    "rates_usd_per_million_tokens": {
+      "input": "4.00",
+      "output": "20.00",
+      "cache_read": "0.20",
+      "cache_write": "5.00"
+    }
+  }
+}

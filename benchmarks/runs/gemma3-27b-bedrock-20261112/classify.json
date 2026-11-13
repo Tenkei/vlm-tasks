@@ -1,0 +1,128 @@
+{
+  "task": "classify",
+  "dataset": "cifar10",
+  "model": "google.gemma-3-27b-it",
+  "inference_model_id": "google.gemma-3-27b-it",
+  "revision": null,
+  "device": "bedrock/us-east-1",
+  "dtype": "provider-managed",
+  "backend": "bedrock",
+  "region": "us-east-1",
+  "completed_at": "2026-11-12T05:38:57.873686+00:00",
+  "metrics": {
+    "samples": 100,
+    "failures": 0,
+    "failure_rate": 0.0,
+    "accuracy_top1": 0.82
+  },
+  "summary": [
+    {
+      "class": "airplane",
+      "support": 10,
+      "precision": 1.0,
+      "recall": 0.9,
+      "f1": 0.9473684210526315
+    },
+    {
+      "class": "automobile",
+      "support": 6,
+      "precision": 0.8,
+      "recall": 0.6666666666666666,
+      "f1": 0.7272727272727273
+    },
+    {
+      "class": "bird",
+      "support": 8,
+      "precision": 0.7142857142857143,
+      "recall": 0.625,
+      "f1": 0.6666666666666666
+    },
+    {
+      "class": "cat",
+      "support": 10,
+      "precision": 0.875,
+      "recall": 0.7,
+      "f1": 0.7777777777777778
+    },
+    {
+      "class": "deer",
+      "support": 7,
+      "precision": 0.8333333333333334,
+      "recall": 0.7142857142857143,
+      "f1": 0.7692307692307693
+    },
+    {
+      "class": "dog",
+      "support": 8,
+      "precision": 0.5333333333333333,
+      "recall": 1.0,
+      "f1": 0.6956521739130435
+    },
+    {
+      "class": "frog",
+      "support": 16,
+      "precision": 0.9230769230769231,
+      "recall": 0.75,
+      "f1": 0.8275862068965517
+    },
+    {
+      "class": "horse",
+      "support": 11,
+      "precision": 0.8333333333333334,
+      "recall": 0.9090909090909091,
+      "f1": 0.8695652173913043
+    },
+    {
+      "class": "ship",
+      "support": 13,
+      "precision": 0.9230769230769231,
+      "recall": 0.9230769230769231,
+      "f1": 0.9230769230769231
+    },
+    {
+      "class": "truck",
+      "support": 11,
+      "precision": 0.8333333333333334,
+      "recall": 0.9090909090909091,
+      "f1": 0.8695652173913043
+    }
+  ],
+  "failures": [],
+  "dataset_counts": {
+    "evaluated_samples": 100
+  },
+  "dataset_metadata": {
+    "dataset_name": "cifar10",
+    "config_name": "plain_text",
+    "version": "0.0.0",
+    "split": "test"
+  },
+  "status_counts": {},
+  "dataset_fingerprint_sha256": "0f9065c9b5c6a57004358971243940585aab5bfbc85a8deb7ae369766b901163",
+  "speed_ms_per_sample": {
+    "load": 0.4397516418248415,
+    "inference": 907.1400095304125,
+    "metrics": 0.014496228541247547
+  },
+  "elapsed_seconds": 90.76224179202109,
+  "wall_seconds": 90.76692329198704,
+  "usage": {
+    "attempted_requests": 100,
+    "measured_requests": 100,
+    "unmeasured_requests": 0,
+    "input_tokens": 52300,
+    "output_tokens": 700,
+    "cache_read_tokens": 0,
+    "cache_write_tokens": 0,
+    "output_reasoning_tokens": 0,
+    "estimated_cost_usd": "0.01229500",
+    "costed_requests": 100,
+    "estimated_cost_complete": true,
+    "reported_cost_usd": null,
+    "cost_note": "Estimate from recorded pricing sources; Bedrock does not return invoiced charges",
+    "cost_sources": [
+      "genai-prices"
+    ],
+    "total_tokens": 53000
+  }
+}

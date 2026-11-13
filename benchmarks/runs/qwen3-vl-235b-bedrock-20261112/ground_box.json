@@ -1,0 +1,1077 @@
+{
+  "task": "ground_box",
+  "dataset": "refcocog",
+  "model": "qwen.qwen3-vl-235b-a22b",
+  "revision": null,
+  "device": "bedrock/ap-northeast-1",
+  "dtype": "provider-managed",
+  "backend": "bedrock",
+  "region": "ap-northeast-1",
+  "completed_at": "2026-11-12T04:35:19.108217+00:00",
+  "metrics": {
+    "samples": 100,
+    "failures": 53,
+    "failure_rate": 0.53,
+    "unique_images": 52,
+    "accuracy_iou_0.5": 0.31,
+    "accuracy_iou_0.75": 0.29,
+    "accuracy_iou_0.9": 0.14,
+    "mean_iou": 0.28134239696539437
+  },
+  "summary": [
+    {
+      "class": "person",
+      "support": 34,
+      "accuracy_iou_0.5": 0.23529411764705882,
+      "accuracy_iou_0.75": 0.20588235294117646,
+      "accuracy_iou_0.9": 0.08823529411764706,
+      "mean_iou": 0.2191066899696735
+    },
+    {
+      "class": "bicycle",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "car",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "motorcycle",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "airplane",
+      "support": 2,
+      "accuracy_iou_0.5": 1.0,
+      "accuracy_iou_0.75": 1.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.844748195800354
+    },
+    {
+      "class": "bus",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "train",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "truck",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "boat",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "traffic light",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "fire hydrant",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "stop sign",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "parking meter",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "bench",
+      "support": 2,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "bird",
+      "support": 2,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "cat",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "dog",
+      "support": 6,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "horse",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "sheep",
+      "support": 5,
+      "accuracy_iou_0.5": 0.8,
+      "accuracy_iou_0.75": 0.8,
+      "accuracy_iou_0.9": 0.8,
+      "mean_iou": 0.8012947610428496
+    },
+    {
+      "class": "cow",
+      "support": 2,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "elephant",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "bear",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "zebra",
+      "support": 1,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "giraffe",
+      "support": 4,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "backpack",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "umbrella",
+      "support": 1,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.18612335430601645
+    },
+    {
+      "class": "handbag",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "tie",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "suitcase",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "frisbee",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "skis",
+      "support": 2,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "snowboard",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "sports ball",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "kite",
+      "support": 2,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "baseball bat",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "baseball glove",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "skateboard",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "surfboard",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "tennis racket",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "bottle",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "wine glass",
+      "support": 2,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "cup",
+      "support": 2,
+      "accuracy_iou_0.5": 1.0,
+      "accuracy_iou_0.75": 0.5,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.7662087684044834
+    },
+    {
+      "class": "fork",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "knife",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "spoon",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "bowl",
+      "support": 8,
+      "accuracy_iou_0.5": 0.875,
+      "accuracy_iou_0.75": 0.875,
+      "accuracy_iou_0.9": 0.625,
+      "mean_iou": 0.7978199290645488
+    },
+    {
+      "class": "banana",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "apple",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "sandwich",
+      "support": 3,
+      "accuracy_iou_0.5": 0.6666666666666666,
+      "accuracy_iou_0.75": 0.6666666666666666,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.5348699686610318
+    },
+    {
+      "class": "orange",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "broccoli",
+      "support": 2,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "carrot",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "hot dog",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "pizza",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "donut",
+      "support": 2,
+      "accuracy_iou_0.5": 0.5,
+      "accuracy_iou_0.75": 0.5,
+      "accuracy_iou_0.9": 0.5,
+      "mean_iou": 0.4739145749926185
+    },
+    {
+      "class": "cake",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "chair",
+      "support": 5,
+      "accuracy_iou_0.5": 0.2,
+      "accuracy_iou_0.75": 0.2,
+      "accuracy_iou_0.9": 0.2,
+      "mean_iou": 0.18323435440348018
+    },
+    {
+      "class": "couch",
+      "support": 2,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "potted plant",
+      "support": 2,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "bed",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "dining table",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "toilet",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "tv",
+      "support": 2,
+      "accuracy_iou_0.5": 1.0,
+      "accuracy_iou_0.75": 1.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.8806216774776812
+    },
+    {
+      "class": "laptop",
+      "support": 2,
+      "accuracy_iou_0.5": 0.5,
+      "accuracy_iou_0.75": 0.5,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.4015244865884393
+    },
+    {
+      "class": "mouse",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "remote",
+      "support": 1,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "keyboard",
+      "support": 2,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "cell phone",
+      "support": 2,
+      "accuracy_iou_0.5": 0.5,
+      "accuracy_iou_0.75": 0.5,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.4273192805031158
+    },
+    {
+      "class": "microwave",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "oven",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "toaster",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "sink",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "refrigerator",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "book",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "clock",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "vase",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "scissors",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "teddy bear",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "hair drier",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "toothbrush",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    }
+  ],
+  "failures": [
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_grounding_validation_20261103/train2014/COCO_train2014_000000533220.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 342919,
+      "target": "a bush of plant behind middle woman"
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_grounding_validation_20261103/train2014/COCO_train2014_000000533220.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 342920,
+      "target": "green plant behind a table visible behind a lady ' s head"
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_grounding_validation_20261103/train2014/COCO_train2014_000000296760.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 342921,
+      "target": "black and white dog with pointy ears"
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_grounding_validation_20261103/train2014/COCO_train2014_000000296760.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 342922,
+      "target": "the black and white dog nearest the wall"
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_grounding_validation_20261103/train2014/COCO_train2014_000000416948.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 342923,
+      "target": "small cow laying down"
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_grounding_validation_20261103/train2014/COCO_train2014_000000416948.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 342924,
+      "target": "the front most cow to the right of other cows"
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_grounding_validation_20261103/train2014/COCO_train2014_000000096586.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 342927,
+      "target": "giraffe in the middle which is not eating leaves"
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_grounding_validation_20261103/train2014/COCO_train2014_000000096586.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 342928,
+      "target": "the giraffe in the middle"
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_grounding_validation_20261103/train2014/COCO_train2014_000000158686.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 342929,
+      "target": "green color vegetable in between potato and carrot"
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_grounding_validation_20261103/train2014/COCO_train2014_000000158686.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 342930,
+      "target": "bundle of broccoli"
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_grounding_validation_20261103/train2014/COCO_train2014_000000092760.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 342933,
+      "target": "a man skateboarding with grey pants and dark grey t - shirt on"
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_grounding_validation_20261103/train2014/COCO_train2014_000000092760.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 342934,
+      "target": "a skateboarder"
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_grounding_validation_20261103/train2014/COCO_train2014_000000283624.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 342935,
+      "target": "the black dog with the blue collar . on the left"
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_grounding_validation_20261103/train2014/COCO_train2014_000000283624.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 342936,
+      "target": "the black dog with the green collar"
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_grounding_validation_20261103/train2014/COCO_train2014_000000372198.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 342939,
+      "target": "a small girl starring at something , along with her elder sister"
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_grounding_validation_20261103/train2014/COCO_train2014_000000372198.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 342940,
+      "target": "little girl sitting with toy in her hand"
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_grounding_validation_20261103/train2014/COCO_train2014_000000404905.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 342941,
+      "target": "a dark table in the far left hand background"
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_grounding_validation_20261103/train2014/COCO_train2014_000000398083.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 342944,
+      "target": "the boy running"
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_grounding_validation_20261103/train2014/COCO_train2014_000000276874.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 342945,
+      "target": "the rod / ski with name trak nowax"
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_grounding_validation_20261103/train2014/COCO_train2014_000000276874.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 342946,
+      "target": "the red blue yellow and green ski on the very top of the pile"
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_grounding_validation_20261103/train2014/COCO_train2014_000000497807.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 342947,
+      "target": "long streamer on kite in the air"
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_grounding_validation_20261103/train2014/COCO_train2014_000000497807.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 342948,
+      "target": "the tail of a kite"
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_grounding_validation_20261103/train2014/COCO_train2014_000000384037.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 342955,
+      "target": "a man in a green jacket snowboarding"
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_grounding_validation_20261103/train2014/COCO_train2014_000000227891.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 342957,
+      "target": "the laptop on the left"
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_grounding_validation_20261103/train2014/COCO_train2014_000000227891.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 342958,
+      "target": "the gray keyboard with the touch pad"
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_grounding_validation_20261103/train2014/COCO_train2014_000000439325.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 342964,
+      "target": "a man with glasses in a white shirt and black pants sitting on a wooden bench reading some papers"
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_grounding_validation_20261103/train2014/COCO_train2014_000000099451.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 342968,
+      "target": "wii remotes are sitting on the laps of two children"
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_grounding_validation_20261103/train2014/COCO_train2014_000000426877.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 342970,
+      "target": "the man jumping who is wearing a white shirt and a light colored shorts"
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_grounding_validation_20261103/train2014/COCO_train2014_000000572998.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 342973,
+      "target": "referee dressed in a black shirt"
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_grounding_validation_20261103/train2014/COCO_train2014_000000572998.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 342974,
+      "target": "an umpire"
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_grounding_validation_20261103/train2014/COCO_train2014_000000298956.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 342975,
+      "target": "the taller giraffe"
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_grounding_validation_20261103/train2014/COCO_train2014_000000298956.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 342976,
+      "target": "a tall giraffe eating out of a metal basket"
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_grounding_validation_20261103/train2014/COCO_train2014_000000510976.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 342977,
+      "target": "the mobile phone with a number 2125 towards the top right side"
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_grounding_validation_20261103/train2014/COCO_train2014_000000163985.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 342985,
+      "target": "the boy that is skiing"
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_grounding_validation_20261103/train2014/COCO_train2014_000000321209.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 342988,
+      "target": "a bench with three men sitting on it"
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_grounding_validation_20261103/train2014/COCO_train2014_000000046592.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 342989,
+      "target": "a chair have black color & a white carrybag is here"
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_grounding_validation_20261103/train2014/COCO_train2014_000000223165.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 342992,
+      "target": "a light brown color sweet vada with dark brown another one"
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_grounding_validation_20261103/train2014/COCO_train2014_000000372198.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 342995,
+      "target": "a boy in pajamas in a suitcase"
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_grounding_validation_20261103/train2014/COCO_train2014_000000033992.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 342998,
+      "target": "left blacl chicken"
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_grounding_validation_20261103/train2014/COCO_train2014_000000033992.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 342999,
+      "target": "left black chicken"
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_grounding_validation_20261103/train2014/COCO_train2014_000000375904.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 343000,
+      "target": "the chair and glass table on the left"
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_grounding_validation_20261103/train2014/COCO_train2014_000000375904.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 343001,
+      "target": "a chair by the wall in a bedroom"
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_grounding_validation_20261103/train2014/COCO_train2014_000000456658.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 343002,
+      "target": "the bigger laptop on the left"
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_grounding_validation_20261103/train2014/COCO_train2014_000000301943.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 343003,
+      "target": "dog climbing on the window"
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_grounding_validation_20261103/train2014/COCO_train2014_000000301943.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 343004,
+      "target": "the dog with a paw on the windowsill"
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_grounding_validation_20261103/train2014/COCO_train2014_000000445829.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 343005,
+      "target": "a dark brown leather sofa behind a foot stool that has a laptop computer on it"
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_grounding_validation_20261103/train2014/COCO_train2014_000000445829.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 343006,
+      "target": "the black leather couch and ottoman in the center of the room"
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_grounding_validation_20261103/train2014/COCO_train2014_000000175370.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 343007,
+      "target": "a man skating on the wooden rod"
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_grounding_validation_20261103/train2014/COCO_train2014_000000240521.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 343009,
+      "target": "a man is smiling with his couple and both are wearing white cloth"
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_grounding_validation_20261103/train2014/COCO_train2014_000000173032.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 343012,
+      "target": "a person that is touching a child"
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_grounding_validation_20261103/train2014/COCO_train2014_000000479734.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 343013,
+      "target": "man in seashore"
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_grounding_validation_20261103/train2014/COCO_train2014_000000479734.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 343014,
+      "target": "a man falling off his surfboard"
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_grounding_validation_20261103/train2014/COCO_train2014_000000569037.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 343017,
+      "target": "an empty wine glass near the paper cup"
+    }
+  ],
+  "dataset_counts": {
+    "evaluated_expressions": 100,
+    "evaluated_images": 52,
+    "evaluated_samples": 100
+  },
+  "dataset_metadata": {
+    "dataset_name": "refcocog",
+    "config_name": "refcocog",
+    "version": "1.0.0",
+    "description": "MDETR RefCOCO annotations; RefCOCOg uses UMD splits, RefCOCO/+ use UNC.",
+    "split": "val"
+  },
+  "status_counts": {
+    "found": 37,
+    "not_found": 10,
+    "ambiguous": 0
+  },
+  "dataset_fingerprint_sha256": "ccde8d120ffa9a516aaa27b66ced9bcc5a6e0555202ece37b06fe21166b3373d",
+  "speed_ms_per_sample": {
+    "load": 4.2832879614434205,
+    "inference": 1129.9065829292522,
+    "metrics": 0.45794463949277997
+  },
+  "elapsed_seconds": 113.46964041600586,
+  "wall_seconds": 113.47015883302083,
+  "usage": {
+    "attempted_requests": 100,
+    "measured_requests": 100,
+    "unmeasured_requests": 0,
+    "input_tokens": 68433,
+    "output_tokens": 4066,
+    "cache_read_tokens": 0,
+    "cache_write_tokens": 0,
+    "output_reasoning_tokens": 0,
+    "estimated_cost_usd": "0.04708505",
+    "costed_requests": 100,
+    "estimated_cost_complete": true,
+    "reported_cost_usd": null,
+    "cost_note": "Estimate from pinned genai-prices package; Bedrock does not return invoiced charges",
+    "total_tokens": 72499
+  }
+}

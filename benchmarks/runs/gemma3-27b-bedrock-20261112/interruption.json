@@ -1,0 +1,16 @@
+{
+  "observed_at": "2026-11-12T06:09:17.845993+00:00",
+  "stage": "describe tokenizer preparation, before inference",
+  "exception": "huggingface_hub.errors.OfflineModeIsEnabled",
+  "reason": "datasets 4.8.5 attempted a metadata HEAD for the cached Stanford PTBTokenizer JAR with HF offline mode enabled",
+  "completed_tasks_retained": [
+    "classify",
+    "detect",
+    "ground_box",
+    "ground_point",
+    "attributes",
+    "answer"
+  ],
+  "model_requests_in_interrupted_task": 0,
+  "recovery": "--resume with HF_HUB_OFFLINE=0 HF_DATASETS_OFFLINE=0; original model settings unchanged"
+}

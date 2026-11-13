@@ -1,0 +1,7 @@
+{
+  "status": "startup_rejected",
+  "reason": "Bedrock Kimi K3.1 rejects the temperature field; no task metrics produced",
+  "attempted_requests": 1,
+  "returned_generations": 0,
+  "superseded_by": "benchmarks/results/kimi-k3.1-bedrock-20261112"
+}

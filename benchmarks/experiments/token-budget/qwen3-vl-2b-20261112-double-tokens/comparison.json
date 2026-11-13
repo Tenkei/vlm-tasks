@@ -1,0 +1,1731 @@
+{
+  "status": "stopped_by_user",
+  "recorded_at": "2026-11-12T04:20:09.616150+00:00",
+  "baseline_limit": 4096,
+  "rerun_limit": 8192,
+  "selected_samples": 13,
+  "interrupted_requests": 1,
+  "note": "Scores and token totals cover completed reruns only; interrupted generation usage is unknown.",
+  "postprocessor_sha256": "7b26c50bd82816b4c198939d01dff003e4fabaef2c9e5cc2af6728defdfd070b",
+  "tasks": {
+    "detect": {
+      "samples": 3,
+      "baseline_indices": [
+        13,
+        20,
+        21
+      ],
+      "baseline_metrics": {
+        "samples": 3,
+        "failures": 3,
+        "failure_rate": 1.0,
+        "match_iou": 0.5,
+        "tp": 0,
+        "fp": 0,
+        "fn": 40,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0
+      },
+      "rerun_metrics": {
+        "samples": 3,
+        "failures": 3,
+        "failure_rate": 1.0,
+        "match_iou": 0.5,
+        "tp": 0,
+        "fp": 0,
+        "fn": 40,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0
+      },
+      "baseline_summary": [
+        {
+          "class": "person",
+          "support": 20,
+          "tp": 0,
+          "fp": 0,
+          "fn": 20,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "bicycle",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "car",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "motorcycle",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "airplane",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "bus",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "train",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "truck",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "boat",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "traffic light",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "fire hydrant",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "stop sign",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "parking meter",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "bench",
+          "support": 2,
+          "tp": 0,
+          "fp": 0,
+          "fn": 2,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "bird",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "cat",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "dog",
+          "support": 1,
+          "tp": 0,
+          "fp": 0,
+          "fn": 1,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "horse",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "sheep",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "cow",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "elephant",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "bear",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "zebra",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "giraffe",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "backpack",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "umbrella",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "handbag",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "tie",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "suitcase",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "frisbee",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "skis",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "snowboard",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "sports ball",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "kite",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "baseball bat",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "baseball glove",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "skateboard",
+          "support": 3,
+          "tp": 0,
+          "fp": 0,
+          "fn": 3,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "surfboard",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "tennis racket",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "bottle",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "wine glass",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "cup",
+          "support": 4,
+          "tp": 0,
+          "fp": 0,
+          "fn": 4,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "fork",
+          "support": 1,
+          "tp": 0,
+          "fp": 0,
+          "fn": 1,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "knife",
+          "support": 1,
+          "tp": 0,
+          "fp": 0,
+          "fn": 1,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "spoon",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "bowl",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "banana",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "apple",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "sandwich",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "orange",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "broccoli",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "carrot",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "hot dog",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "pizza",
+          "support": 1,
+          "tp": 0,
+          "fp": 0,
+          "fn": 1,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "donut",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "cake",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "chair",
+          "support": 4,
+          "tp": 0,
+          "fp": 0,
+          "fn": 4,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "couch",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "potted plant",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "bed",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "dining table",
+          "support": 3,
+          "tp": 0,
+          "fp": 0,
+          "fn": 3,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "toilet",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "tv",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "laptop",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "mouse",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "remote",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "keyboard",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "cell phone",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "microwave",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "oven",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "toaster",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "sink",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "refrigerator",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "book",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "clock",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "vase",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "scissors",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "teddy bear",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "hair drier",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "toothbrush",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        }
+      ],
+      "rerun_summary": [
+        {
+          "class": "person",
+          "support": 20,
+          "tp": 0,
+          "fp": 0,
+          "fn": 20,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "bicycle",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "car",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "motorcycle",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "airplane",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "bus",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "train",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "truck",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "boat",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "traffic light",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "fire hydrant",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "stop sign",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "parking meter",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "bench",
+          "support": 2,
+          "tp": 0,
+          "fp": 0,
+          "fn": 2,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "bird",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "cat",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "dog",
+          "support": 1,
+          "tp": 0,
+          "fp": 0,
+          "fn": 1,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "horse",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "sheep",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "cow",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "elephant",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "bear",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "zebra",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "giraffe",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "backpack",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "umbrella",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "handbag",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "tie",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "suitcase",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "frisbee",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "skis",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "snowboard",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "sports ball",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "kite",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "baseball bat",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "baseball glove",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "skateboard",
+          "support": 3,
+          "tp": 0,
+          "fp": 0,
+          "fn": 3,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "surfboard",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "tennis racket",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "bottle",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "wine glass",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "cup",
+          "support": 4,
+          "tp": 0,
+          "fp": 0,
+          "fn": 4,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "fork",
+          "support": 1,
+          "tp": 0,
+          "fp": 0,
+          "fn": 1,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "knife",
+          "support": 1,
+          "tp": 0,
+          "fp": 0,
+          "fn": 1,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "spoon",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "bowl",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "banana",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "apple",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "sandwich",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "orange",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "broccoli",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "carrot",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "hot dog",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "pizza",
+          "support": 1,
+          "tp": 0,
+          "fp": 0,
+          "fn": 1,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "donut",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "cake",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "chair",
+          "support": 4,
+          "tp": 0,
+          "fp": 0,
+          "fn": 4,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "couch",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "potted plant",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "bed",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "dining table",
+          "support": 3,
+          "tp": 0,
+          "fp": 0,
+          "fn": 3,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "toilet",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "tv",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "laptop",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "mouse",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "remote",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "keyboard",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "cell phone",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "microwave",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "oven",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "toaster",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "sink",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "refrigerator",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "book",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "clock",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "vase",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "scissors",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "teddy bear",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "hair drier",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "toothbrush",
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        }
+      ],
+      "baseline_usage": {
+        "attempted_requests": 3,
+        "measured_requests": 3,
+        "unmeasured_requests": 0,
+        "input_tokens": 4106,
+        "output_tokens": 12288,
+        "total_tokens": 16394,
+        "estimated_cost_usd": null,
+        "reported_cost_usd": null,
+        "cost_note": "Local inference; electricity/hardware costs not measured"
+      },
+      "rerun_usage": {
+        "attempted_requests": 3,
+        "measured_requests": 3,
+        "unmeasured_requests": 0,
+        "input_tokens": 4106,
+        "output_tokens": 24576,
+        "total_tokens": 28682,
+        "estimated_cost_usd": null,
+        "reported_cost_usd": null,
+        "cost_note": "Local inference; electricity/hardware costs not measured"
+      },
+      "pairs": [
+        {
+          "baseline_index": 13,
+          "rerun_index": 0,
+          "baseline_valid": false,
+          "rerun_valid": false,
+          "baseline_output_tokens": 4096,
+          "rerun_output_tokens": 8192,
+          "rerun_at_cap": true,
+          "baseline_seconds": 177.26242937499774,
+          "rerun_seconds": 375.3759533329867,
+          "prediction_changed": false,
+          "raw_prefix_preserved": true,
+          "baseline_raw_text": [
+            "```json\n{\n  \"detections\": [\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.12,\n        \"y1\": 0.48,\n        \"x2\": 0.28,\n        \"y2\": 0.65\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.38,\n        \"y1\": 0.38,\n        \"x2\": 0.54,\n        \"y2\": 0.54\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.6,\n        \"y1\": 0.4,\n        \"x2\": 0.76,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.78,\n        \"y1\": 0.4,\n        \"x2\": 0.92,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.5,\n        \"y1\": 0.4,\n        \"x2\": 0.64,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.58,\n        \"y1\": 0.4,\n        \"x2\": 0.72,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.66,\n        \"y1\": 0.4,\n        \"x2\": 0.8,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.74,\n        \"y1\": 0.4,\n        \"x2\": 0.88,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.82,\n        \"y1\": 0.4,\n        \"x2\": 0.96,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.88,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.9,\n        \"y1\": 0.4,\n        \"x2\": 0.98,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.94,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.96,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n"
+          ],
+          "rerun_raw_text": [
+            "```json\n{\n  \"detections\": [\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.12,\n        \"y1\": 0.48,\n        \"x2\": 0.28,\n        \"y2\": 0.65\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.38,\n        \"y1\": 0.38,\n        \"x2\": 0.54,\n        \"y2\": 0.54\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.6,\n        \"y1\": 0.4,\n        \"x2\": 0.76,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.78,\n        \"y1\": 0.4,\n        \"x2\": 0.92,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.5,\n        \"y1\": 0.4,\n        \"x2\": 0.64,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.58,\n        \"y1\": 0.4,\n        \"x2\": 0.72,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.66,\n        \"y1\": 0.4,\n        \"x2\": 0.8,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.74,\n        \"y1\": 0.4,\n        \"x2\": 0.88,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.82,\n        \"y1\": 0.4,\n        \"x2\": 0.96,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.88,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.9,\n        \"y1\": 0.4,\n        \"x2\": 0.98,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.94,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.96,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.98,\n        \"y1\": 0.4,\n        \"x2\": 1.0,\n        \"y2\": 0.56\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n"
+          ]
+        },
+        {
+          "baseline_index": 20,
+          "rerun_index": 1,
+          "baseline_valid": false,
+          "rerun_valid": false,
+          "baseline_output_tokens": 4096,
+          "rerun_output_tokens": 8192,
+          "rerun_at_cap": true,
+          "baseline_seconds": 180.96326366701396,
+          "rerun_seconds": 379.60298224998405,
+          "prediction_changed": false,
+          "raw_prefix_preserved": true,
+          "baseline_raw_text": [
+            "```json\n{\n  \"detections\": [\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.78,\n        \"y1\": 0.68,\n        \"x2\": 0.81,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.82,\n        \"y1\": 0.68,\n        \"x2\": 0.85,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.88,\n        \"y1\": 0.68,\n        \"x2\": 0.91,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.0,\n        \"y1\": 0.68,\n        \"x2\": 1.03,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.03,\n        \"y1\": 0.68,\n        \"x2\": 1.06,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.06,\n        \"y1\": 0.68,\n        \"x2\": 1.09,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.09,\n        \"y1\": 0.68,\n        \"x2\": 1.12,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.12,\n        \"y1\": 0.68,\n        \"x2\": 1.15,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.15,\n        \"y1\": 0.68,\n        \"x2\": 1.18,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.18,\n        \"y1\": 0.68,\n        \"x2\": 1.21,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.21,\n        \"y1\": 0.68,\n        \"x2\": 1.24,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.24,\n        \"y1\": 0.68,\n        \"x2\": 1.27,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.27,\n        \"y1\": 0.68,\n        \"x2\": 1.3,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.3,\n        \"y1\": 0.68,\n        \"x2\": 1.33,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.33,\n        \"y1\": 0.68,\n        \"x2\": 1.36,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.36,\n        \"y1\": 0.68,\n        \"x2\": 1.39,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.39,\n        \"y1\": 0.68,\n        \"x2\": 1.42,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.42,\n        \"y1\": 0.68,\n        \"x2\": 1.45,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.45,\n        \"y1\": 0.68,\n        \"x2\": 1.48,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.48,\n        \"y1\": 0.68,\n        \"x2\": 1.51,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.51,\n        \"y1\": 0.68,\n        \"x2\": 1.54,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.54,\n        \"y1\": 0.68,\n        \"x2\": 1.57,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.57,\n        \"y1\": 0.68,\n        \"x2\": 1.6,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.6,\n        \"y1\": 0.68,\n        \"x2\": 1.63,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.63,\n        \"y1\": 0.68,\n        \"x2\": 1.66,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.66,\n        \"y1\": 0.68,\n        \"x2\": 1.69,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.69,\n        \"y1\": 0.68,\n        \"x2\": 1.72,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.72,\n        \"y1\": 0.68,\n        \"x2\": 1.75,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.75,\n        \"y1\": 0.68,\n        \"x2\": 1.78,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.78,\n        \"y1\": 0.68,\n        \"x2\": 1.81,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.81,\n        \"y1\": 0.68,\n        \"x2\": 1.84,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.84,\n        \"y1\": 0.68,\n        \"x2\": 1.87,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.87,\n        \"y1\": 0.68,\n        \"x2\": 1.9,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.9,\n        \"y1\": 0.68,\n        \"x2\": 1.93,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.93,\n        \"y1\": 0.68,\n        \"x2\": 1.96,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.96,\n        \"y1\": 0.68,\n        \"x2\": 1.99,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.99,\n        \"y1\": 0.68,\n        \"x2\": 2.02,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.02,\n        \"y1\": 0.68,\n        \"x2\": 2.05,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.05,\n        \"y1\": 0.68,\n        \"x2\": 2.08,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.08,\n        \"y1\": 0.68,\n        \"x2\": 2.11,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.11,\n        \"y1\": 0.68,\n        \"x2\": 2.14,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.14,\n        \"y1\": 0.68,\n        \"x2\": 2.17,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.17,\n        \"y1\": 0.68,\n        \"x2\": 2.2,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.2,\n        \"y1\": 0.68,\n        \"x2\": 2.23,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.23,\n        \"y1\": 0.68,\n        \"x2\": 2.26,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.26,\n        \"y1\": 0.68,\n        \"x2\": 2.29,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.29,\n        \"y1\": 0.68,\n        \"x2\": 2.32,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.32,\n        \"y1\": 0.68,\n        \"x2\": 2.35,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.35,\n        \"y1\": 0.68,\n        \"x2\": 2.38,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.38,\n        \"y1\": 0.68,\n        \"x2\": 2.41,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.41,\n        \"y1\": 0.68,\n        \"x2\": 2.44,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.44,\n        \"y1\": 0.68,\n        \"x2\": 2.47,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.47,\n        \"y1\": 0.68,\n        \"x2\": 2.5,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.5,\n        \"y1\": 0.68,\n        \"x2\": 2.53,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.53,\n        \"y1\": 0.68,\n        \"x2\": 2.56,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.56,\n        \"y1\": 0.68,\n        \"x2\": 2.59,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.59,\n        \"y1\": 0.68,\n        \"x2\": 2.62,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.62,\n        \"y1\": 0.68,\n        \"x2\": 2.65,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.65,\n        \"y1\": 0.68,\n        \"x2\": 2.68,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.68,\n        \"y1\": 0.68,\n        \"x2\": 2.71,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.71,\n        \"y1\": 0.68,\n        \"x2\": 2.74,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.74,\n        \"y1\": 0.68,\n        \"x2\": 2.77,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.77,\n        \"y1\": 0.68,\n        \"x2\": 2.8,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.8,\n        \"y1\": 0.68,\n        \"x2\": 2.83,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.83,\n        \"y1\": 0.68,\n        \"x2\": 2.86,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.86,\n        \"y1\": 0.68,\n        \"x2\": 2.89,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \""
+          ],
+          "rerun_raw_text": [
+            "```json\n{\n  \"detections\": [\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.78,\n        \"y1\": 0.68,\n        \"x2\": 0.81,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.82,\n        \"y1\": 0.68,\n        \"x2\": 0.85,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.88,\n        \"y1\": 0.68,\n        \"x2\": 0.91,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.0,\n        \"y1\": 0.68,\n        \"x2\": 1.03,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.03,\n        \"y1\": 0.68,\n        \"x2\": 1.06,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.06,\n        \"y1\": 0.68,\n        \"x2\": 1.09,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.09,\n        \"y1\": 0.68,\n        \"x2\": 1.12,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.12,\n        \"y1\": 0.68,\n        \"x2\": 1.15,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.15,\n        \"y1\": 0.68,\n        \"x2\": 1.18,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.18,\n        \"y1\": 0.68,\n        \"x2\": 1.21,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.21,\n        \"y1\": 0.68,\n        \"x2\": 1.24,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.24,\n        \"y1\": 0.68,\n        \"x2\": 1.27,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.27,\n        \"y1\": 0.68,\n        \"x2\": 1.3,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.3,\n        \"y1\": 0.68,\n        \"x2\": 1.33,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.33,\n        \"y1\": 0.68,\n        \"x2\": 1.36,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.36,\n        \"y1\": 0.68,\n        \"x2\": 1.39,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.39,\n        \"y1\": 0.68,\n        \"x2\": 1.42,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.42,\n        \"y1\": 0.68,\n        \"x2\": 1.45,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.45,\n        \"y1\": 0.68,\n        \"x2\": 1.48,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.48,\n        \"y1\": 0.68,\n        \"x2\": 1.51,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.51,\n        \"y1\": 0.68,\n        \"x2\": 1.54,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.54,\n        \"y1\": 0.68,\n        \"x2\": 1.57,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.57,\n        \"y1\": 0.68,\n        \"x2\": 1.6,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.6,\n        \"y1\": 0.68,\n        \"x2\": 1.63,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.63,\n        \"y1\": 0.68,\n        \"x2\": 1.66,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.66,\n        \"y1\": 0.68,\n        \"x2\": 1.69,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.69,\n        \"y1\": 0.68,\n        \"x2\": 1.72,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.72,\n        \"y1\": 0.68,\n        \"x2\": 1.75,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.75,\n        \"y1\": 0.68,\n        \"x2\": 1.78,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.78,\n        \"y1\": 0.68,\n        \"x2\": 1.81,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.81,\n        \"y1\": 0.68,\n        \"x2\": 1.84,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.84,\n        \"y1\": 0.68,\n        \"x2\": 1.87,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.87,\n        \"y1\": 0.68,\n        \"x2\": 1.9,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.9,\n        \"y1\": 0.68,\n        \"x2\": 1.93,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.93,\n        \"y1\": 0.68,\n        \"x2\": 1.96,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.96,\n        \"y1\": 0.68,\n        \"x2\": 1.99,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 1.99,\n        \"y1\": 0.68,\n        \"x2\": 2.02,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.02,\n        \"y1\": 0.68,\n        \"x2\": 2.05,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.05,\n        \"y1\": 0.68,\n        \"x2\": 2.08,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.08,\n        \"y1\": 0.68,\n        \"x2\": 2.11,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.11,\n        \"y1\": 0.68,\n        \"x2\": 2.14,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.14,\n        \"y1\": 0.68,\n        \"x2\": 2.17,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.17,\n        \"y1\": 0.68,\n        \"x2\": 2.2,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.2,\n        \"y1\": 0.68,\n        \"x2\": 2.23,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.23,\n        \"y1\": 0.68,\n        \"x2\": 2.26,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.26,\n        \"y1\": 0.68,\n        \"x2\": 2.29,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.29,\n        \"y1\": 0.68,\n        \"x2\": 2.32,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.32,\n        \"y1\": 0.68,\n        \"x2\": 2.35,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.35,\n        \"y1\": 0.68,\n        \"x2\": 2.38,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.38,\n        \"y1\": 0.68,\n        \"x2\": 2.41,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.41,\n        \"y1\": 0.68,\n        \"x2\": 2.44,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.44,\n        \"y1\": 0.68,\n        \"x2\": 2.47,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.47,\n        \"y1\": 0.68,\n        \"x2\": 2.5,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.5,\n        \"y1\": 0.68,\n        \"x2\": 2.53,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.53,\n        \"y1\": 0.68,\n        \"x2\": 2.56,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.56,\n        \"y1\": 0.68,\n        \"x2\": 2.59,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.59,\n        \"y1\": 0.68,\n        \"x2\": 2.62,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.62,\n        \"y1\": 0.68,\n        \"x2\": 2.65,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.65,\n        \"y1\": 0.68,\n        \"x2\": 2.68,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.68,\n        \"y1\": 0.68,\n        \"x2\": 2.71,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.71,\n        \"y1\": 0.68,\n        \"x2\": 2.74,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.74,\n        \"y1\": 0.68,\n        \"x2\": 2.77,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.77,\n        \"y1\": 0.68,\n        \"x2\": 2.8,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.8,\n        \"y1\": 0.68,\n        \"x2\": 2.83,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.83,\n        \"y1\": 0.68,\n        \"x2\": 2.86,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.86,\n        \"y1\": 0.68,\n        \"x2\": 2.89,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.89,\n        \"y1\": 0.68,\n        \"x2\": 2.92,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.92,\n        \"y1\": 0.68,\n        \"x2\": 2.95,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.95,\n        \"y1\": 0.68,\n        \"x2\": 2.98,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 2.98,\n        \"y1\": 0.68,\n        \"x2\": 3.01,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 3.01,\n        \"y1\": 0.68,\n        \"x2\": 3.04,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 3.04,\n        \"y1\": 0.68,\n        \"x2\": 3.07,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 3.07,\n        \"y1\": 0.68,\n        \"x2\": 3.1,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 3.1,\n        \"y1\": 0.68,\n        \"x2\": 3.13,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 3.13,\n        \"y1\": 0.68,\n        \"x2\": 3.16,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 3.16,\n        \"y1\": 0.68,\n        \"x2\": 3.19,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 3.19,\n        \"y1\": 0.68,\n        \"x2\": 3.22,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 3.22,\n        \"y1\": 0.68,\n        \"x2\": 3.25,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 3.25,\n        \"y1\": 0.68,\n        \"x2\": 3.28,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 3.28,\n        \"y1\": 0.68,\n        \"x2\": 3.31,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 3.31,\n        \"y1\": 0.68,\n        \"x2\": 3.34,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 3.34,\n        \"y1\": 0.68,\n        \"x2\": 3.37,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 3.37,\n        \"y1\": 0.68,\n        \"x2\": 3.4,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 3.4,\n        \"y1\": 0.68,\n        \"x2\": 3.43,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 3.43,\n        \"y1\": 0.68,\n        \"x2\": 3.46,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 3.46,\n        \"y1\": 0.68,\n        \"x2\": 3.49,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 3.49,\n        \"y1\": 0.68,\n        \"x2\": 3.52,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 3.52,\n        \"y1\": 0.68,\n        \"x2\": 3.55,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 3.55,\n        \"y1\": 0.68,\n        \"x2\": 3.58,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 3.58,\n        \"y1\": 0.68,\n        \"x2\": 3.61,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 3.61,\n        \"y1\": 0.68,\n        \"x2\": 3.64,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 3.64,\n        \"y1\": 0.68,\n        \"x2\": 3.67,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 3.67,\n        \"y1\": 0.68,\n        \"x2\": 3.7,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 3.7,\n        \"y1\": 0.68,\n        \"x2\": 3.73,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 3.73,\n        \"y1\": 0.68,\n        \"x2\": 3.76,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 3.76,\n        \"y1\": 0.68,\n        \"x2\": 3.79,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 3.79,\n        \"y1\": 0.68,\n        \"x2\": 3.82,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 3.82,\n        \"y1\": 0.68,\n        \"x2\": 3.85,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 3.85,\n        \"y1\": 0.68,\n        \"x2\": 3.88,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 3.88,\n        \"y1\": 0.68,\n        \"x2\": 3.91,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 3.91,\n        \"y1\": 0.68,\n        \"x2\": 3.94,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 3.94,\n        \"y1\": 0.68,\n        \"x2\": 3.97,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 3.97,\n        \"y1\": 0.68,\n        \"x2\": 4.0,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 4.0,\n        \"y1\": 0.68,\n        \"x2\": 4.03,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 4.03,\n        \"y1\": 0.68,\n        \"x2\": 4.06,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 4.06,\n        \"y1\": 0.68,\n        \"x2\": 4.09,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 4.09,\n        \"y1\": 0.68,\n        \"x2\": 4.12,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 4.12,\n        \"y1\": 0.68,\n        \"x2\": 4.15,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 4.15,\n        \"y1\": 0.68,\n        \"x2\": 4.18,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 4.18,\n        \"y1\": 0.68,\n        \"x2\": 4.21,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 4.21,\n        \"y1\": 0.68,\n        \"x2\": 4.24,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 4.24,\n        \"y1\": 0.68,\n        \"x2\": 4.27,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 4.27,\n        \"y1\": 0.68,\n        \"x2\": 4.3,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 4.3,\n        \"y1\": 0.68,\n        \"x2\": 4.33,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 4.33,\n        \"y1\": 0.68,\n        \"x2\": 4.36,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 4.36,\n        \"y1\": 0.68,\n        \"x2\": 4.39,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 4.39,\n        \"y1\": 0.68,\n        \"x2\": 4.42,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 4.42,\n        \"y1\": 0.68,\n        \"x2\": 4.45,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 4.45,\n        \"y1\": 0.68,\n        \"x2\": 4.48,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 4.48,\n        \"y1\": 0.68,\n        \"x2\": 4.51,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 4.51,\n        \"y1\": 0.68,\n        \"x2\": 4.54,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 4.54,\n        \"y1\": 0.68,\n        \"x2\": 4.57,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 4.57,\n        \"y1\": 0.68,\n        \"x2\": 4.6,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 4.6,\n        \"y1\": 0.68,\n        \"x2\": 4.63,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 4.63,\n        \"y1\": 0.68,\n        \"x2\": 4.66,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 4.66,\n        \"y1\": 0.68,\n        \"x2\": 4.69,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 4.69,\n        \"y1\": 0.68,\n        \"x2\": 4.72,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 4.72,\n        \"y1\": 0.68,\n        \"x2\": 4.75,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 4.75,\n        \"y1\": 0.68,\n        \"x2\": 4.78,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 4.78,\n        \"y1\": 0.68,\n        \"x2\": 4.81,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 4.81,\n        \"y1\": 0.68,\n        \"x2\": 4.84,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 4.84,\n        \"y1\": 0.68,\n        \"x2\": 4.87,\n        \"y2\": 0.72\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 4.8"
+          ]
+        },
+        {
+          "baseline_index": 21,
+          "rerun_index": 2,
+          "baseline_valid": false,
+          "rerun_valid": false,
+          "baseline_output_tokens": 4096,
+          "rerun_output_tokens": 8192,
+          "rerun_at_cap": true,
+          "baseline_seconds": 182.5107407500036,
+          "rerun_seconds": 388.60848224998335,
+          "prediction_changed": false,
+          "raw_prefix_preserved": true,
+          "baseline_raw_text": [
+            "```json\n{\n  \"detections\": [\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \""
+          ],
+          "rerun_raw_text": [
+            "```json\n{\n  \"detections\": [\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \"label\": \"person\",\n      \"box\": {\n        \"x1\": 0.0,\n        \"y1\": 0.0,\n        \"x2\": 0.5,\n        \"y2\": 0.5\n      }\n    },\n    {\n      \""
+          ]
+        }
+      ]
+    }
+  },
+  "completed_samples": 3,
+  "not_started_samples": 9
+}

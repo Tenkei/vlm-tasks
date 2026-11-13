@@ -1,0 +1,316 @@
+{
+  "task": "answer",
+  "dataset": "vqav2",
+  "model": "moonshotai.kimi-k3.1",
+  "inference_model_id": "global.moonshotai.kimi-k3.1",
+  "revision": null,
+  "device": "bedrock/ap-northeast-1",
+  "dtype": "provider-managed",
+  "backend": "bedrock",
+  "region": "ap-northeast-1",
+  "completed_at": "2026-11-12T07:28:03.907452+00:00",
+  "metrics": {
+    "samples": 100,
+    "failures": 0,
+    "failure_rate": 0.0,
+    "vqa_accuracy": 0.42700000000000005,
+    "unique_images": 19
+  },
+  "summary": [
+    {
+      "group_by": "answer_type",
+      "group": "yes/no",
+      "support": 40,
+      "vqa_accuracy": 0.3725
+    },
+    {
+      "group_by": "answer_type",
+      "group": "number",
+      "support": 17,
+      "vqa_accuracy": 0.7999999999999999
+    },
+    {
+      "group_by": "answer_type",
+      "group": "other",
+      "support": 43,
+      "vqa_accuracy": 0.3302325581395349
+    },
+    {
+      "group_by": "question_type",
+      "group": "are the",
+      "support": 2,
+      "vqa_accuracy": 0.0
+    },
+    {
+      "group_by": "question_type",
+      "group": "are there",
+      "support": 3,
+      "vqa_accuracy": 0.6666666666666666
+    },
+    {
+      "group_by": "question_type",
+      "group": "are there any",
+      "support": 1,
+      "vqa_accuracy": 0.0
+    },
+    {
+      "group_by": "question_type",
+      "group": "are these",
+      "support": 1,
+      "vqa_accuracy": 1.0
+    },
+    {
+      "group_by": "question_type",
+      "group": "can you",
+      "support": 2,
+      "vqa_accuracy": 0.0
+    },
+    {
+      "group_by": "question_type",
+      "group": "could",
+      "support": 2,
+      "vqa_accuracy": 0.0
+    },
+    {
+      "group_by": "question_type",
+      "group": "does the",
+      "support": 1,
+      "vqa_accuracy": 1.0
+    },
+    {
+      "group_by": "question_type",
+      "group": "does this",
+      "support": 1,
+      "vqa_accuracy": 1.0
+    },
+    {
+      "group_by": "question_type",
+      "group": "has",
+      "support": 1,
+      "vqa_accuracy": 1.0
+    },
+    {
+      "group_by": "question_type",
+      "group": "how many",
+      "support": 16,
+      "vqa_accuracy": 0.7875
+    },
+    {
+      "group_by": "question_type",
+      "group": "how many people are",
+      "support": 1,
+      "vqa_accuracy": 1.0
+    },
+    {
+      "group_by": "question_type",
+      "group": "is it",
+      "support": 2,
+      "vqa_accuracy": 0.5
+    },
+    {
+      "group_by": "question_type",
+      "group": "is that a",
+      "support": 1,
+      "vqa_accuracy": 0.0
+    },
+    {
+      "group_by": "question_type",
+      "group": "is the",
+      "support": 6,
+      "vqa_accuracy": 0.31666666666666665
+    },
+    {
+      "group_by": "question_type",
+      "group": "is there a",
+      "support": 6,
+      "vqa_accuracy": 0.5
+    },
+    {
+      "group_by": "question_type",
+      "group": "is this",
+      "support": 5,
+      "vqa_accuracy": 0.6
+    },
+    {
+      "group_by": "question_type",
+      "group": "is this a",
+      "support": 3,
+      "vqa_accuracy": 0.0
+    },
+    {
+      "group_by": "question_type",
+      "group": "is this an",
+      "support": 1,
+      "vqa_accuracy": 0.0
+    },
+    {
+      "group_by": "question_type",
+      "group": "is this person",
+      "support": 1,
+      "vqa_accuracy": 1.0
+    },
+    {
+      "group_by": "question_type",
+      "group": "none of the above",
+      "support": 4,
+      "vqa_accuracy": 0.0
+    },
+    {
+      "group_by": "question_type",
+      "group": "what",
+      "support": 2,
+      "vqa_accuracy": 0.5
+    },
+    {
+      "group_by": "question_type",
+      "group": "what are the",
+      "support": 1,
+      "vqa_accuracy": 0.0
+    },
+    {
+      "group_by": "question_type",
+      "group": "what color are the",
+      "support": 2,
+      "vqa_accuracy": 0.5
+    },
+    {
+      "group_by": "question_type",
+      "group": "what color is the",
+      "support": 9,
+      "vqa_accuracy": 0.5111111111111111
+    },
+    {
+      "group_by": "question_type",
+      "group": "what does the",
+      "support": 3,
+      "vqa_accuracy": 0.7666666666666666
+    },
+    {
+      "group_by": "question_type",
+      "group": "what is",
+      "support": 5,
+      "vqa_accuracy": 0.06
+    },
+    {
+      "group_by": "question_type",
+      "group": "what is on the",
+      "support": 1,
+      "vqa_accuracy": 1.0
+    },
+    {
+      "group_by": "question_type",
+      "group": "what is the",
+      "support": 3,
+      "vqa_accuracy": 0.3333333333333333
+    },
+    {
+      "group_by": "question_type",
+      "group": "what is the color of the",
+      "support": 1,
+      "vqa_accuracy": 1.0
+    },
+    {
+      "group_by": "question_type",
+      "group": "what is the man",
+      "support": 2,
+      "vqa_accuracy": 0.0
+    },
+    {
+      "group_by": "question_type",
+      "group": "what is this",
+      "support": 1,
+      "vqa_accuracy": 0.0
+    },
+    {
+      "group_by": "question_type",
+      "group": "what kind of",
+      "support": 3,
+      "vqa_accuracy": 0.0
+    },
+    {
+      "group_by": "question_type",
+      "group": "what type of",
+      "support": 1,
+      "vqa_accuracy": 1.0
+    },
+    {
+      "group_by": "question_type",
+      "group": "where is the",
+      "support": 1,
+      "vqa_accuracy": 0.0
+    },
+    {
+      "group_by": "question_type",
+      "group": "which",
+      "support": 1,
+      "vqa_accuracy": 0.0
+    },
+    {
+      "group_by": "question_type",
+      "group": "who is",
+      "support": 1,
+      "vqa_accuracy": 0.0
+    },
+    {
+      "group_by": "question_type",
+      "group": "why",
+      "support": 2,
+      "vqa_accuracy": 0.0
+    },
+    {
+      "group_by": "question_type",
+      "group": "why is the",
+      "support": 1,
+      "vqa_accuracy": 0.0
+    }
+  ],
+  "failures": [],
+  "dataset_counts": {
+    "evaluated_questions": 100,
+    "evaluated_images": 19,
+    "evaluated_samples": 100
+  },
+  "dataset_metadata": {
+    "dataset_name": "vqav2",
+    "config_name": "vqav2",
+    "version": "1.0.0",
+    "description": "VQA v2 labeled questions, preserving all ten annotator answer votes.",
+    "split": "val",
+    "protocol": "VQA v2 ten-answer leave-one-out consensus",
+    "normalization": "lmms-eval VQA v2 (always normalized)",
+    "scorer_version": 1,
+    "upstream_revision": "c7eaef373f4b1bd8a6b5f3e85c3391962c30068c",
+    "upstream_url": "https://github.com/EvolvingLMMs-Lab/lmms-eval"
+  },
+  "status_counts": {
+    "answered": 100,
+    "unanswerable": 0
+  },
+  "dataset_fingerprint_sha256": "12277054fd339be61ef82cab0899b0c75337ededafbb5543cf16f5e1646c3f65",
+  "speed_ms_per_sample": {
+    "load": 4.347800028335769,
+    "inference": 4610.768791330629,
+    "metrics": 0.5148471004213206
+  },
+  "elapsed_seconds": 461.5658422920096,
+  "wall_seconds": 461.56615337499534,
+  "usage": {
+    "attempted_requests": 100,
+    "measured_requests": 100,
+    "unmeasured_requests": 0,
+    "input_tokens": 76931,
+    "output_tokens": 27701,
+    "cache_read_tokens": 0,
+    "cache_write_tokens": 0,
+    "output_reasoning_tokens": 0,
+    "estimated_cost_usd": "0.861744",
+    "costed_requests": 100,
+    "estimated_cost_complete": true,
+    "reported_cost_usd": null,
+    "cost_note": "Estimate from recorded pricing sources; Bedrock does not return invoiced charges",
+    "cost_sources": [
+      "https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-moonshot-ai-kimi-k3-1-highspeed.html"
+    ],
+    "total_tokens": 104632
+  }
+}

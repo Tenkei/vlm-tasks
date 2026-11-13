@@ -1,0 +1,39 @@
+{
+  "generated_at": "2026-11-12T09:04:24.682835+00:00",
+  "summarizer_sha256": "af64ab1e7e097d9cfe6f441315f70e912991c0a915df1f61152b86cbb2538d2b",
+  "source_sha256": {
+    "benchmarks/src/generate_report.py": "af64ab1e7e097d9cfe6f441315f70e912991c0a915df1f61152b86cbb2538d2b",
+    "benchmarks/src/task_registry.py": "6560235c80797ac0f9f893408dccdd16fc843bd4f854c3ce627d95d726b31033",
+    "benchmarks/src/artifacts.py": "4719423a8260c04ecf9f56992f39af1c98c3cdb2531e9a15099052b1d084bab9"
+  },
+  "reports_sha256": {
+    "qwen3-vl-2b-20261112/classify.json": "d014576a177f107770dd04d95da99bc8f1114dfa8ab3fb22f4b5de9374db9ac7",
+    "gemma3-27b-bedrock-20261112/classify.json": "dc3ae033747cbc3722130ea88fc2e1ea846523c6fcf3bea3197b001f8e1d86d8",
+    "kimi-k3.1-bedrock-20261112/classify.json": "9fbaa366fefad21ccc614ddc178513d496ec61678600b4de0923dca4756baf32",
+    "qwen3-vl-235b-bedrock-20261112/classify.json": "9975961ce8a47ef8afa85aed41bd65b816e5e9eb3a29c1055a5c963e7bd22d9c",
+    "qwen3-vl-2b-20261112/detect.json": "af7856df09e5a1f82fcde6f91b69a72355b9de1daa3b8c5ef29e005f80090e4b",
+    "gemma3-27b-bedrock-20261112/detect.json": "175fd22c0c165f7524e26b836a057a91f250efda795ac96b781360347c5f93fd",
+    "kimi-k3.1-bedrock-20261112/detect.json": "b67b64d5b4647600c163b6ca908c4bd8d7e1c738b7b3a7d3d341b222d978f541",
+    "qwen3-vl-235b-bedrock-20261112/detect.json": "8ec28277e0f89519c8b2d4d822ae4bca6a528a874c5bb0a7327a09c7c2fbc418",
+    "qwen3-vl-2b-20261112/ground_box.json": "883721a556e8bdce5a8a14b278e173775d8e95aa235445a2df62e554444892fc",
+    "gemma3-27b-bedrock-20261112/ground_box.json": "9fd3f208338d57b0bf1aa7ef6489bb9fc1e0b38cca74309cb6b14a50f38fa76f",
+    "kimi-k3.1-bedrock-20261112/ground_box.json": "3a74a9e65cb369679f05cedd6596c4c1f5fa645b45ae15fe740c4f20ef8c2928",
+    "qwen3-vl-235b-bedrock-20261112/ground_box.json": "bcc203b395ee181046041b453dd02821477d3b9c68c790ee020cd23bf03eb28d",
+    "qwen3-vl-2b-20261112/ground_point.json": "a942ef992f1d550b7213d1308fab59e1900d81ed6204a79384235f81ee435d81",
+    "gemma3-27b-bedrock-20261112/ground_point.json": "5c9c9a18610c2bcc519c4e62006a0d9b56f74e4ba6a57450b767c85390721e99",
+    "kimi-k3.1-bedrock-20261112/ground_point.json": "e6fd43e1f6cc6524168d643629d343b84028fdba038ab5756c2cd41aa09cde51",
+    "qwen3-vl-235b-bedrock-20261112/ground_point.json": "5e5a84894d1b0f48fa16cbcf4fb3b71c242f11b38181fc0094b58111d58d89b4",
+    "qwen3-vl-2b-20261112/attributes.json": "a725a9259c10aa092fd3cb7a2a63028384ff7aca3526c32d79945256a613d0fc",
+    "gemma3-27b-bedrock-20261112/attributes.json": "13418dd3862752b9a8dcaa0f1847d2c281198b25794d2f5b3fa0ca3e5936518d",
+    "kimi-k3.1-bedrock-20261112/attributes.json": "cd2988b3c3196b8be1a93472f3e6e9ba4a1348affbb494c8a375be959b915191",
+    "qwen3-vl-235b-bedrock-20261112/attributes.json": "d15ff8a5d9899e35e83ac3c832fdf1c5591731085aeaba2885b87a8511e4689f",
+    "qwen3-vl-2b-20261112/answer.json": "2ca4de9c9a03176b65bc9c666aff9a1b0306dcc7403da0c99dd0e04f4dceb1d8",
+    "gemma3-27b-bedrock-20261112/answer.json": "0bfd10c06a6c0aa5b2c1b7638a05cb7b7ac8cf2ad4d3e63641984f50d40fce1d",
+    "kimi-k3.1-bedrock-20261112/answer.json": "48cc372ed7b0af50312ed5abb9ae1a8ced96f22c6b2fc56cbd0f1892a4a2de2e",
+    "qwen3-vl-235b-bedrock-20261112/answer.json": "ccd34767ebfb8c4c5e0d1114fa4ace894997d05f5078b3d7c4c94ba909ad9918",
+    "qwen3-vl-2b-20261112/describe.json": "4b14f3a5fd67396cca4863efeb7890bfe8fea43b917b708e4a7300351eb7eaaa",
+    "gemma3-27b-bedrock-20261112/describe.json": "4e80bfc013c9883380ca6dcf8dcef68464eb8c550f4bf85759f3730d61ffcbc3",
+    "kimi-k3.1-bedrock-20261112/describe.json": "e7b28b9e3d54d033d66379a6ee5c53a4fa217e193bf07a3454ad4aec0ebed91d",
+    "qwen3-vl-235b-bedrock-20261112/describe.json": "0e40f77e1867cc7bd95aa64a77cbdfc78cae4e72588d69614d58fd1c29898daf"
+  }
+}

@@ -108,6 +108,17 @@ print(metrics.results_dict)
 
 See the [validation](docs/validation.md) guide for details.
 
+### Model benchmarks
+
+See the [model comparison table](benchmarks/README.md) for task validation
+metrics and usage on fixed 100-sample subsets. The
+[methodology](benchmarks/methodology.md), [Transformers runner](benchmarks/src/run_transformers.py),
+and [Bedrock runner](benchmarks/src/run_bedrock.py) document how to reproduce the
+runs and add models.
+
+The [partial token-budget experiment](benchmarks/experiments/token-budget/qwen3-vl-2b-20261112-double-tokens/README.md)
+compares 4,096 and 8,192 tokens on three capped detection samples.
+
 ### Validate on your own data
 
 ```python

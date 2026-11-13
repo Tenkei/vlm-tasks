@@ -1,0 +1,128 @@
+{
+  "task": "classify",
+  "dataset": "cifar10",
+  "model": "moonshotai.kimi-k3.1",
+  "inference_model_id": "global.moonshotai.kimi-k3.1",
+  "revision": null,
+  "device": "bedrock/ap-northeast-1",
+  "dtype": "provider-managed",
+  "backend": "bedrock",
+  "region": "ap-northeast-1",
+  "completed_at": "2026-11-12T05:46:36.300891+00:00",
+  "metrics": {
+    "samples": 100,
+    "failures": 0,
+    "failure_rate": 0.0,
+    "accuracy_top1": 0.67
+  },
+  "summary": [
+    {
+      "class": "airplane",
+      "support": 10,
+      "precision": 0.7,
+      "recall": 0.7,
+      "f1": 0.7
+    },
+    {
+      "class": "automobile",
+      "support": 6,
+      "precision": 1.0,
+      "recall": 0.8333333333333334,
+      "f1": 0.9090909090909091
+    },
+    {
+      "class": "bird",
+      "support": 8,
+      "precision": 0.5555555555555556,
+      "recall": 0.625,
+      "f1": 0.5882352941176471
+    },
+    {
+      "class": "cat",
+      "support": 10,
+      "precision": 0.4166666666666667,
+      "recall": 0.5,
+      "f1": 0.45454545454545453
+    },
+    {
+      "class": "deer",
+      "support": 7,
+      "precision": 0.4444444444444444,
+      "recall": 0.5714285714285714,
+      "f1": 0.5
+    },
+    {
+      "class": "dog",
+      "support": 8,
+      "precision": 0.5,
+      "recall": 0.125,
+      "f1": 0.2
+    },
+    {
+      "class": "frog",
+      "support": 16,
+      "precision": 0.6875,
+      "recall": 0.6875,
+      "f1": 0.6875
+    },
+    {
+      "class": "horse",
+      "support": 11,
+      "precision": 0.6666666666666666,
+      "recall": 0.7272727272727273,
+      "f1": 0.6956521739130435
+    },
+    {
+      "class": "ship",
+      "support": 13,
+      "precision": 0.8461538461538461,
+      "recall": 0.8461538461538461,
+      "f1": 0.8461538461538461
+    },
+    {
+      "class": "truck",
+      "support": 11,
+      "precision": 0.8333333333333334,
+      "recall": 0.9090909090909091,
+      "f1": 0.8695652173913043
+    }
+  ],
+  "failures": [],
+  "dataset_counts": {
+    "evaluated_samples": 100
+  },
+  "dataset_metadata": {
+    "dataset_name": "cifar10",
+    "config_name": "plain_text",
+    "version": "0.0.0",
+    "split": "test"
+  },
+  "status_counts": {},
+  "dataset_fingerprint_sha256": "0f9065c9b5c6a57004358971243940585aab5bfbc85a8deb7ae369766b901163",
+  "speed_ms_per_sample": {
+    "load": 0.49203577742446214,
+    "inference": 7852.003534968535,
+    "metrics": 0.0172858196310699
+  },
+  "elapsed_seconds": 785.2541789579845,
+  "wall_seconds": 785.258100875013,
+  "usage": {
+    "attempted_requests": 100,
+    "measured_requests": 100,
+    "unmeasured_requests": 0,
+    "input_tokens": 36400,
+    "output_tokens": 74534,
+    "cache_read_tokens": 0,
+    "cache_write_tokens": 0,
+    "output_reasoning_tokens": 0,
+    "estimated_cost_usd": "1.636280",
+    "costed_requests": 100,
+    "estimated_cost_complete": true,
+    "reported_cost_usd": null,
+    "cost_note": "Estimate from recorded pricing sources; Bedrock does not return invoiced charges",
+    "cost_sources": [
+      "https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-moonshot-ai-kimi-k3-1-highspeed.html"
+    ],
+    "total_tokens": 110934
+  }
+}

@@ -1,0 +1,124 @@
+{
+  "task": "classify",
+  "dataset": "cifar10",
+  "model": "qwen.qwen3-vl-235b-a22b",
+  "revision": null,
+  "device": "bedrock/ap-northeast-1",
+  "dtype": "provider-managed",
+  "backend": "bedrock",
+  "region": "ap-northeast-1",
+  "completed_at": "2026-11-12T04:28:33.656103+00:00",
+  "metrics": {
+    "samples": 100,
+    "failures": 0,
+    "failure_rate": 0.0,
+    "accuracy_top1": 0.96
+  },
+  "summary": [
+    {
+      "class": "airplane",
+      "support": 10,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "class": "automobile",
+      "support": 6,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "class": "bird",
+      "support": 8,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "class": "cat",
+      "support": 10,
+      "precision": 1.0,
+      "recall": 0.9,
+      "f1": 0.9473684210526315
+    },
+    {
+      "class": "deer",
+      "support": 7,
+      "precision": 1.0,
+      "recall": 0.7142857142857143,
+      "f1": 0.8333333333333334
+    },
+    {
+      "class": "dog",
+      "support": 8,
+      "precision": 0.6666666666666666,
+      "recall": 1.0,
+      "f1": 0.8
+    },
+    {
+      "class": "frog",
+      "support": 16,
+      "precision": 1.0,
+      "recall": 0.9375,
+      "f1": 0.967741935483871
+    },
+    {
+      "class": "horse",
+      "support": 11,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "class": "ship",
+      "support": 13,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "class": "truck",
+      "support": 11,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    }
+  ],
+  "failures": [],
+  "dataset_counts": {
+    "evaluated_samples": 100
+  },
+  "dataset_metadata": {
+    "dataset_name": "cifar10",
+    "config_name": "plain_text",
+    "version": "0.0.0",
+    "split": "test"
+  },
+  "status_counts": {},
+  "dataset_fingerprint_sha256": "0f9065c9b5c6a57004358971243940585aab5bfbc85a8deb7ae369766b901163",
+  "speed_ms_per_sample": {
+    "load": 0.5489819604554214,
+    "inference": 518.5634392008069,
+    "metrics": 0.02131246932549402
+  },
+  "elapsed_seconds": 51.9175899590191,
+  "wall_seconds": 51.921540417009965,
+  "usage": {
+    "attempted_requests": 100,
+    "measured_requests": 100,
+    "unmeasured_requests": 0,
+    "input_tokens": 33200,
+    "output_tokens": 716,
+    "cache_read_tokens": 0,
+    "cache_write_tokens": 0,
+    "output_reasoning_tokens": 0,
+    "estimated_cost_usd": "0.01950056",
+    "costed_requests": 100,
+    "estimated_cost_complete": true,
+    "reported_cost_usd": null,
+    "cost_note": "Estimate from pinned genai-prices package; Bedrock does not return invoiced charges",
+    "total_tokens": 33916
+  }
+}

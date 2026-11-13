@@ -1,0 +1,487 @@
+{
+  "generated_at": "2026-11-12T09:04:24.587850+00:00",
+  "matplotlib_version": "3.11.2",
+  "numpy_version": "2.5.4",
+  "radial_range": [
+    0,
+    100
+  ],
+  "score_multiplier": 100,
+  "axes": [
+    {
+      "task": "classify",
+      "metric": "accuracy_top1",
+      "label": "Classification",
+      "metric_label": "Accuracy"
+    },
+    {
+      "task": "detect",
+      "metric": "f1",
+      "label": "Detection",
+      "metric_label": "F1@0.5"
+    },
+    {
+      "task": "ground_box",
+      "metric": "accuracy_iou_0.5",
+      "label": "Grounding (Box)",
+      "metric_label": "Acc@0.5"
+    },
+    {
+      "task": "ground_point",
+      "metric": "point_in_box_accuracy",
+      "label": "Grounding (Point)",
+      "metric_label": "Accuracy"
+    },
+    {
+      "task": "attributes",
+      "metric": "accuracy",
+      "label": "Attributes",
+      "metric_label": "Accuracy"
+    },
+    {
+      "task": "answer",
+      "metric": "vqa_accuracy",
+      "label": "VQA",
+      "metric_label": "Accuracy"
+    },
+    {
+      "task": "describe",
+      "metric": "rouge_l",
+      "label": "Captioning",
+      "metric_label": "ROUGE-L"
+    }
+  ],
+  "models": [
+    {
+      "run": "qwen3-vl-2b-20261112",
+      "model": "Qwen/Qwen3-VL-2B-Instruct",
+      "backend": "transformers",
+      "scores": [
+        0.93,
+        0.11235955056179775,
+        0.22,
+        0.35,
+        0.552665799739922,
+        0.65,
+        0.3017200104023414
+      ],
+      "figure": "model-profiles/qwen3-vl-2b-20261112",
+      "samples": {
+        "classify": 100,
+        "detect": 100,
+        "ground_box": 100,
+        "ground_point": 100,
+        "attributes": 100,
+        "answer": 100,
+        "describe": 100
+      }
+    },
+    {
+      "run": "gemma3-27b-bedrock-20261112",
+      "model": "google.gemma-3-27b-it",
+      "backend": "bedrock",
+      "scores": [
+        0.82,
+        0.082687338501292,
+        0.16,
+        0.53,
+        0.7022106631989596,
+        0.56,
+        0.42744712991746875
+      ],
+      "figure": "model-profiles/gemma3-27b-bedrock-20261112",
+      "samples": {
+        "classify": 100,
+        "detect": 100,
+        "ground_box": 100,
+        "ground_point": 100,
+        "attributes": 100,
+        "answer": 100,
+        "describe": 100
+      }
+    },
+    {
+      "run": "kimi-k3.1-bedrock-20261112",
+      "model": "moonshotai.kimi-k3.1",
+      "backend": "bedrock",
+      "scores": [
+        0.67,
+        0.6375092661230541,
+        0.92,
+        0.98,
+        0.7568270481144344,
+        0.42700000000000005,
+        0.3300951491666937
+      ],
+      "figure": "model-profiles/kimi-k3.1-bedrock-20261112",
+      "samples": {
+        "classify": 100,
+        "detect": 100,
+        "ground_box": 100,
+        "ground_point": 100,
+        "attributes": 100,
+        "answer": 100,
+        "describe": 100
+      }
+    },
+    {
+      "run": "qwen3-vl-235b-bedrock-20261112",
+      "model": "qwen.qwen3-vl-235b-a22b",
+      "backend": "bedrock",
+      "scores": [
+        0.96,
+        0.16666666666666666,
+        0.31,
+        0.41,
+        0.7386215864759428,
+        0.684,
+        0.3841172585954187
+      ],
+      "figure": "model-profiles/qwen3-vl-235b-bedrock-20261112",
+      "samples": {
+        "classify": 100,
+        "detect": 100,
+        "ground_box": 100,
+        "ground_point": 100,
+        "attributes": 100,
+        "answer": 100,
+        "describe": 100
+      }
+    }
+  ],
+  "task_comparisons": [
+    {
+      "task": "classify",
+      "title": "Classification",
+      "metric": "accuracy_top1",
+      "metric_label": "Accuracy",
+      "figure": "task-comparisons/classify",
+      "bar_range": [
+        0,
+        100
+      ],
+      "score_multiplier": 100,
+      "value_format": "percent",
+      "models": [
+        {
+          "run": "qwen3-vl-2b-20261112",
+          "model": "Qwen/Qwen3-VL-2B-Instruct",
+          "label": "Qwen3-VL-2B",
+          "score": 0.93
+        },
+        {
+          "run": "gemma3-27b-bedrock-20261112",
+          "model": "google.gemma-3-27b-it",
+          "label": "Gemma 3 27B",
+          "score": 0.82
+        },
+        {
+          "run": "kimi-k3.1-bedrock-20261112",
+          "model": "moonshotai.kimi-k3.1",
+          "label": "Kimi K3.1",
+          "score": 0.67
+        },
+        {
+          "run": "qwen3-vl-235b-bedrock-20261112",
+          "model": "qwen.qwen3-vl-235b-a22b",
+          "label": "Qwen3-VL-235B",
+          "score": 0.96
+        }
+      ]
+    },
+    {
+      "task": "detect",
+      "title": "Detection",
+      "metric": "f1",
+      "metric_label": "F1@0.5",
+      "figure": "task-comparisons/detect",
+      "bar_range": [
+        0,
+        100
+      ],
+      "score_multiplier": 100,
+      "value_format": "percent",
+      "models": [
+        {
+          "run": "qwen3-vl-2b-20261112",
+          "model": "Qwen/Qwen3-VL-2B-Instruct",
+          "label": "Qwen3-VL-2B",
+          "score": 0.11235955056179775
+        },
+        {
+          "run": "gemma3-27b-bedrock-20261112",
+          "model": "google.gemma-3-27b-it",
+          "label": "Gemma 3 27B",
+          "score": 0.082687338501292
+        },
+        {
+          "run": "kimi-k3.1-bedrock-20261112",
+          "model": "moonshotai.kimi-k3.1",
+          "label": "Kimi K3.1",
+          "score": 0.6375092661230541
+        },
+        {
+          "run": "qwen3-vl-235b-bedrock-20261112",
+          "model": "qwen.qwen3-vl-235b-a22b",
+          "label": "Qwen3-VL-235B",
+          "score": 0.16666666666666666
+        }
+      ]
+    },
+    {
+      "task": "ground_box",
+      "title": "Grounding (Box)",
+      "metric": "accuracy_iou_0.5",
+      "metric_label": "Acc@0.5",
+      "figure": "task-comparisons/ground_box",
+      "bar_range": [
+        0,
+        100
+      ],
+      "score_multiplier": 100,
+      "value_format": "percent",
+      "models": [
+        {
+          "run": "qwen3-vl-2b-20261112",
+          "model": "Qwen/Qwen3-VL-2B-Instruct",
+          "label": "Qwen3-VL-2B",
+          "score": 0.22
+        },
+        {
+          "run": "gemma3-27b-bedrock-20261112",
+          "model": "google.gemma-3-27b-it",
+          "label": "Gemma 3 27B",
+          "score": 0.16
+        },
+        {
+          "run": "kimi-k3.1-bedrock-20261112",
+          "model": "moonshotai.kimi-k3.1",
+          "label": "Kimi K3.1",
+          "score": 0.92
+        },
+        {
+          "run": "qwen3-vl-235b-bedrock-20261112",
+          "model": "qwen.qwen3-vl-235b-a22b",
+          "label": "Qwen3-VL-235B",
+          "score": 0.31
+        }
+      ]
+    },
+    {
+      "task": "ground_point",
+      "title": "Grounding (Point)",
+      "metric": "point_in_box_accuracy",
+      "metric_label": "Accuracy",
+      "figure": "task-comparisons/ground_point",
+      "bar_range": [
+        0,
+        100
+      ],
+      "score_multiplier": 100,
+      "value_format": "percent",
+      "models": [
+        {
+          "run": "qwen3-vl-2b-20261112",
+          "model": "Qwen/Qwen3-VL-2B-Instruct",
+          "label": "Qwen3-VL-2B",
+          "score": 0.35
+        },
+        {
+          "run": "gemma3-27b-bedrock-20261112",
+          "model": "google.gemma-3-27b-it",
+          "label": "Gemma 3 27B",
+          "score": 0.53
+        },
+        {
+          "run": "kimi-k3.1-bedrock-20261112",
+          "model": "moonshotai.kimi-k3.1",
+          "label": "Kimi K3.1",
+          "score": 0.98
+        },
+        {
+          "run": "qwen3-vl-235b-bedrock-20261112",
+          "model": "qwen.qwen3-vl-235b-a22b",
+          "label": "Qwen3-VL-235B",
+          "score": 0.41
+        }
+      ]
+    },
+    {
+      "task": "attributes",
+      "title": "Attributes",
+      "metric": "accuracy",
+      "metric_label": "Accuracy",
+      "figure": "task-comparisons/attributes",
+      "bar_range": [
+        0,
+        100
+      ],
+      "score_multiplier": 100,
+      "value_format": "percent",
+      "models": [
+        {
+          "run": "qwen3-vl-2b-20261112",
+          "model": "Qwen/Qwen3-VL-2B-Instruct",
+          "label": "Qwen3-VL-2B",
+          "score": 0.552665799739922
+        },
+        {
+          "run": "gemma3-27b-bedrock-20261112",
+          "model": "google.gemma-3-27b-it",
+          "label": "Gemma 3 27B",
+          "score": 0.7022106631989596
+        },
+        {
+          "run": "kimi-k3.1-bedrock-20261112",
+          "model": "moonshotai.kimi-k3.1",
+          "label": "Kimi K3.1",
+          "score": 0.7568270481144344
+        },
+        {
+          "run": "qwen3-vl-235b-bedrock-20261112",
+          "model": "qwen.qwen3-vl-235b-a22b",
+          "label": "Qwen3-VL-235B",
+          "score": 0.7386215864759428
+        }
+      ]
+    },
+    {
+      "task": "answer",
+      "title": "VQA",
+      "metric": "vqa_accuracy",
+      "metric_label": "Accuracy",
+      "figure": "task-comparisons/answer",
+      "bar_range": [
+        0,
+        100
+      ],
+      "score_multiplier": 100,
+      "value_format": "percent",
+      "models": [
+        {
+          "run": "qwen3-vl-2b-20261112",
+          "model": "Qwen/Qwen3-VL-2B-Instruct",
+          "label": "Qwen3-VL-2B",
+          "score": 0.65
+        },
+        {
+          "run": "gemma3-27b-bedrock-20261112",
+          "model": "google.gemma-3-27b-it",
+          "label": "Gemma 3 27B",
+          "score": 0.56
+        },
+        {
+          "run": "kimi-k3.1-bedrock-20261112",
+          "model": "moonshotai.kimi-k3.1",
+          "label": "Kimi K3.1",
+          "score": 0.42700000000000005
+        },
+        {
+          "run": "qwen3-vl-235b-bedrock-20261112",
+          "model": "qwen.qwen3-vl-235b-a22b",
+          "label": "Qwen3-VL-235B",
+          "score": 0.684
+        }
+      ]
+    },
+    {
+      "task": "describe",
+      "title": "Captioning",
+      "metric": "rouge_l",
+      "metric_label": "ROUGE-L",
+      "figure": "task-comparisons/describe",
+      "bar_range": [
+        0,
+        100
+      ],
+      "score_multiplier": 100,
+      "value_format": "native",
+      "models": [
+        {
+          "run": "qwen3-vl-2b-20261112",
+          "model": "Qwen/Qwen3-VL-2B-Instruct",
+          "label": "Qwen3-VL-2B",
+          "score": 0.3017200104023414
+        },
+        {
+          "run": "gemma3-27b-bedrock-20261112",
+          "model": "google.gemma-3-27b-it",
+          "label": "Gemma 3 27B",
+          "score": 0.42744712991746875
+        },
+        {
+          "run": "kimi-k3.1-bedrock-20261112",
+          "model": "moonshotai.kimi-k3.1",
+          "label": "Kimi K3.1",
+          "score": 0.3300951491666937
+        },
+        {
+          "run": "qwen3-vl-235b-bedrock-20261112",
+          "model": "qwen.qwen3-vl-235b-a22b",
+          "label": "Qwen3-VL-235B",
+          "score": 0.3841172585954187
+        }
+      ]
+    }
+  ],
+  "source_sha256": {
+    "benchmarks/src/generate_charts.py": "c90a4eaea2be16665a78dbbb9be1a20436d02f101dcc2821771fc42ee1425b99",
+    "benchmarks/src/generate_report.py": "af64ab1e7e097d9cfe6f441315f70e912991c0a915df1f61152b86cbb2538d2b",
+    "benchmarks/src/task_registry.py": "6560235c80797ac0f9f893408dccdd16fc843bd4f854c3ce627d95d726b31033",
+    "benchmarks/src/artifacts.py": "4719423a8260c04ecf9f56992f39af1c98c3cdb2531e9a15099052b1d084bab9"
+  },
+  "reports_sha256": {
+    "qwen3-vl-2b-20261112/classify.json": "d014576a177f107770dd04d95da99bc8f1114dfa8ab3fb22f4b5de9374db9ac7",
+    "gemma3-27b-bedrock-20261112/classify.json": "dc3ae033747cbc3722130ea88fc2e1ea846523c6fcf3bea3197b001f8e1d86d8",
+    "kimi-k3.1-bedrock-20261112/classify.json": "9fbaa366fefad21ccc614ddc178513d496ec61678600b4de0923dca4756baf32",
+    "qwen3-vl-235b-bedrock-20261112/classify.json": "9975961ce8a47ef8afa85aed41bd65b816e5e9eb3a29c1055a5c963e7bd22d9c",
+    "qwen3-vl-2b-20261112/detect.json": "af7856df09e5a1f82fcde6f91b69a72355b9de1daa3b8c5ef29e005f80090e4b",
+    "gemma3-27b-bedrock-20261112/detect.json": "175fd22c0c165f7524e26b836a057a91f250efda795ac96b781360347c5f93fd",
+    "kimi-k3.1-bedrock-20261112/detect.json": "b67b64d5b4647600c163b6ca908c4bd8d7e1c738b7b3a7d3d341b222d978f541",
+    "qwen3-vl-235b-bedrock-20261112/detect.json": "8ec28277e0f89519c8b2d4d822ae4bca6a528a874c5bb0a7327a09c7c2fbc418",
+    "qwen3-vl-2b-20261112/ground_box.json": "883721a556e8bdce5a8a14b278e173775d8e95aa235445a2df62e554444892fc",
+    "gemma3-27b-bedrock-20261112/ground_box.json": "9fd3f208338d57b0bf1aa7ef6489bb9fc1e0b38cca74309cb6b14a50f38fa76f",
+    "kimi-k3.1-bedrock-20261112/ground_box.json": "3a74a9e65cb369679f05cedd6596c4c1f5fa645b45ae15fe740c4f20ef8c2928",
+    "qwen3-vl-235b-bedrock-20261112/ground_box.json": "bcc203b395ee181046041b453dd02821477d3b9c68c790ee020cd23bf03eb28d",
+    "qwen3-vl-2b-20261112/ground_point.json": "a942ef992f1d550b7213d1308fab59e1900d81ed6204a79384235f81ee435d81",
+    "gemma3-27b-bedrock-20261112/ground_point.json": "5c9c9a18610c2bcc519c4e62006a0d9b56f74e4ba6a57450b767c85390721e99",
+    "kimi-k3.1-bedrock-20261112/ground_point.json": "e6fd43e1f6cc6524168d643629d343b84028fdba038ab5756c2cd41aa09cde51",
+    "qwen3-vl-235b-bedrock-20261112/ground_point.json": "5e5a84894d1b0f48fa16cbcf4fb3b71c242f11b38181fc0094b58111d58d89b4",
+    "qwen3-vl-2b-20261112/attributes.json": "a725a9259c10aa092fd3cb7a2a63028384ff7aca3526c32d79945256a613d0fc",
+    "gemma3-27b-bedrock-20261112/attributes.json": "13418dd3862752b9a8dcaa0f1847d2c281198b25794d2f5b3fa0ca3e5936518d",
+    "kimi-k3.1-bedrock-20261112/attributes.json": "cd2988b3c3196b8be1a93472f3e6e9ba4a1348affbb494c8a375be959b915191",
+    "qwen3-vl-235b-bedrock-20261112/attributes.json": "d15ff8a5d9899e35e83ac3c832fdf1c5591731085aeaba2885b87a8511e4689f",
+    "qwen3-vl-2b-20261112/answer.json": "2ca4de9c9a03176b65bc9c666aff9a1b0306dcc7403da0c99dd0e04f4dceb1d8",
+    "gemma3-27b-bedrock-20261112/answer.json": "0bfd10c06a6c0aa5b2c1b7638a05cb7b7ac8cf2ad4d3e63641984f50d40fce1d",
+    "kimi-k3.1-bedrock-20261112/answer.json": "48cc372ed7b0af50312ed5abb9ae1a8ced96f22c6b2fc56cbd0f1892a4a2de2e",
+    "qwen3-vl-235b-bedrock-20261112/answer.json": "ccd34767ebfb8c4c5e0d1114fa4ace894997d05f5078b3d7c4c94ba909ad9918",
+    "qwen3-vl-2b-20261112/describe.json": "4b14f3a5fd67396cca4863efeb7890bfe8fea43b917b708e4a7300351eb7eaaa",
+    "gemma3-27b-bedrock-20261112/describe.json": "4e80bfc013c9883380ca6dcf8dcef68464eb8c550f4bf85759f3730d61ffcbc3",
+    "kimi-k3.1-bedrock-20261112/describe.json": "e7b28b9e3d54d033d66379a6ee5c53a4fa217e193bf07a3454ad4aec0ebed91d",
+    "qwen3-vl-235b-bedrock-20261112/describe.json": "0e40f77e1867cc7bd95aa64a77cbdfc78cae4e72588d69614d58fd1c29898daf"
+  },
+  "figures_sha256": {
+    "model-profiles/qwen3-vl-2b-20261112.png": "a6ad3c5d872cc0887524205a1146693d18c572531d92a5d316cf9e1ebebfd515",
+    "model-profiles/qwen3-vl-2b-20261112.svg": "e77d7d88584c1d8d7ce74a98d1bdce4978aa036115aea7d7e4d340ec83e29ead",
+    "model-profiles/gemma3-27b-bedrock-20261112.png": "e13e7d661c46fe2272656018a0b00f7df07216e212411c6890139467c20e29fb",
+    "model-profiles/gemma3-27b-bedrock-20261112.svg": "46e72608c3dd80d66183f79542f34904501c69dd125bda85dce4d56b5967e0e1",
+    "model-profiles/kimi-k3.1-bedrock-20261112.png": "01040890cc0804bbebb739ec9981d5a54f901a12959980fa505e004668c2372d",
+    "model-profiles/kimi-k3.1-bedrock-20261112.svg": "c5e6334b42757a5e3f093debb9fa947bd112b7e8157a79c11f5051a0d82b8d90",
+    "model-profiles/qwen3-vl-235b-bedrock-20261112.png": "becb9e0432d1a6b5d9444f3c3358f09589aad0cdd5321e3214e1aceac919b6d8",
+    "model-profiles/qwen3-vl-235b-bedrock-20261112.svg": "bf9d4a7ec1b1f91d216491f9710260bbfb97ff90a4eef69ef096dd32464e1bf4",
+    "task-comparisons/classify.png": "dfd78a30bf1a56ab49dad172a07b90fd318336105b8825efd7de5ace77ae7c47",
+    "task-comparisons/classify.svg": "02cb3885ac4e9b871928167148c8e2e659b562b80e27f508e6c347deff02bcfb",
+    "task-comparisons/detect.png": "d233b77024098f5a35adc08c257483576bf277f03e3415d45c1c5b6bb38ff715",
+    "task-comparisons/detect.svg": "1e6859a79ea20f8325562062a03bd624b66245cdd72358f8488f61d23d003a3b",
+    "task-comparisons/ground_box.png": "09f27186a368f63bd6fdb228c715e07359a2633ad298e9f1e0f9f377d337c89b",
+    "task-comparisons/ground_box.svg": "6bb0b96146fd34269a5e8e53fd1287bc9a9ad5b5c39a322105c730d25b13f9f5",
+    "task-comparisons/ground_point.png": "01550f1a5e6eebf8eb6e8e6bf278e6215bf6b822effc9ea71985a2c0a8c0d487",
+    "task-comparisons/ground_point.svg": "512410303282ca85ef0452866b36cfa59f63713e7907a25d7468bd361ca79878",
+    "task-comparisons/attributes.png": "cfa69e38c98be6a05ee1a75fdb23f138627c13a5df8fb394e1ddfce07004abc9",
+    "task-comparisons/attributes.svg": "dc7edeb2eb8ff37b93655a81e95c63c8b4221f91112b3306b087be6d3d4a18d6",
+    "task-comparisons/answer.png": "c4fc0dac6f42a4ed1bb5d082ee4fbeb60481245a0b7ccf6337fc7aa8b81eb26f",
+    "task-comparisons/answer.svg": "b737f03355f04ace54185f8b35b1cb61f088e938c8e3fb5bcbeceebeb5b22728",
+    "task-comparisons/describe.png": "ad975ce4ee2ebeb3726dd3b0129daaa0f0c4c25d2c8f36568dff3448ad49d12f",
+    "task-comparisons/describe.svg": "b5077deef8a199346abc435a7cd49977c41c3ee1e932c0d88d09153a34fdd7a6"
+  }
+}

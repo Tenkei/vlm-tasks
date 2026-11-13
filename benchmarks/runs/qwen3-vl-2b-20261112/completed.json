@@ -1,0 +1,12 @@
+{
+  "completed_at": "2026-11-12T03:58:26.302595+00:00",
+  "tasks": [
+    "classify",
+    "detect",
+    "ground_box",
+    "ground_point",
+    "attributes",
+    "answer",
+    "describe"
+  ]
+}

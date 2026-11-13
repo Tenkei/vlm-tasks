@@ -1,0 +1,12 @@
+{
+  "status": "stopped_by_user",
+  "recorded_at": "2026-11-12T04:20:09.616150+00:00",
+  "baseline_limit": 4096,
+  "rerun_limit": 8192,
+  "selected_samples": 13,
+  "interrupted_requests": 1,
+  "note": "Scores and token totals cover completed reruns only; interrupted generation usage is unknown.",
+  "postprocessor_sha256": "7b26c50bd82816b4c198939d01dff003e4fabaef2c9e5cc2af6728defdfd070b",
+  "completed_samples": 3,
+  "not_started_samples": 9
+}

@@ -39,7 +39,7 @@ Changelog = "https://github.com/trained-by-humans/vlm-tasks/releases"
 
 [project.optional-dependencies]
 validation = ["datasets[vision]>=4,<5", "PyYAML>=6"]
-test = ["pytest>=8", "Pillow>=10"]
+test = ["pytest>=8", "Pillow>=10", "pydantic-ai-slim[bedrock]"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/ml_pipes"]
@@ -48,6 +48,8 @@ packages = ["src/ml_pipes"]
 include = [
     "/LICENSE", "/README.md", "/RELEASING.md", "/SECURITY.md",
     "/pyproject.toml", "/src/ml_pipes", "/docs", "/examples", "/tests",
+    "/benchmarks/__init__.py", "/benchmarks/src/*.py", "/benchmarks/configs/*.json",
+    "/benchmarks/methodology.md",
     "/.github/CONTRIBUTING.md",
 ]
 

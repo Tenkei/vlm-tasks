@@ -1,0 +1,7 @@
+{
+  "url": "https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-moonshot-ai-kimi-k3-1-highspeed.html",
+  "retrieved_at": "2026-11-12",
+  "sha256": "aa74f956b74938d44ad860061ce564ec998683d0e9b758b4982dc8ed59cac2bf",
+  "section": "Pricing: Global CRIS, Standard tier",
+  "model_id_confirmed_in_same_document": "moonshotai.kimi-k3.1"
+}

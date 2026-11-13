@@ -1,0 +1,12 @@
+{
+  "model": "qwen.qwen3-vl-235b-a22b",
+  "profile": "benchmark",
+  "region": "ap-northeast-1",
+  "temperature": 0.0,
+  "max_new_tokens": 4096,
+  "samples_per_task": 100,
+  "tasks": ["classify", "detect", "ground_box", "ground_point", "attributes", "answer", "describe"],
+  "tokenizer_version": "3.4.1",
+  "match_iou": 0.5,
+  "sdk_total_max_attempts": 1
+}

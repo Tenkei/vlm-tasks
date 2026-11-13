@@ -1,0 +1,70 @@
+{
+  "model_details": {
+    "modelArn": "arn:aws:bedrock:ap-northeast-1::foundation-model/moonshotai.kimi-k3.1",
+    "modelId": "moonshotai.kimi-k3.1",
+    "modelName": "Kimi K3.1",
+    "providerName": "Moonshot AI",
+    "inputModalities": [
+      "TEXT",
+      "IMAGE"
+    ],
+    "outputModalities": [
+      "TEXT"
+    ],
+    "responseStreamingSupported": true,
+    "customizationsSupported": [],
+    "inferenceTypesSupported": [
+      "INFERENCE_PROFILE"
+    ],
+    "modelLifecycle": {
+      "status": "ACTIVE",
+      "startOfLifeTime": "2026-11-06 23:59:59+00:00"
+    }
+  },
+  "endpoint": "https://bedrock-runtime.ap-northeast-1.amazonaws.com",
+  "inference_model_id": "global.moonshotai.kimi-k3.1",
+  "inference_profile": {
+    "inferenceProfileName": "Global Moonshot AI Kimi K3.1",
+    "description": "Routes requests to Kimi K3.1 globally across all supported AWS Regions.",
+    "createdAt": "2026-11-05 02:58:13.576000+00:00",
+    "updatedAt": "2026-11-05 02:58:13.576000+00:00",
+    "inferenceProfileArn": "arn:aws:bedrock:ap-northeast-1:381492192265:inference-profile/global.moonshotai.kimi-k3.1",
+    "models": [
+      {
+        "modelArn": "arn:aws:bedrock:::foundation-model/moonshotai.kimi-k3.1"
+      },
+      {
+        "modelArn": "arn:aws:bedrock:ap-northeast-1::foundation-model/moonshotai.kimi-k3.1"
+      }
+    ],
+    "inferenceProfileId": "global.moonshotai.kimi-k3.1",
+    "status": "ACTIVE",
+    "type": "SYSTEM_DEFINED"
+  },
+  "pricing": {
+    "source": "https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-moonshot-ai-kimi-k3-1-highspeed.html",
+    "source_section": "Pricing: Global CRIS, Standard tier",
+    "retrieved_at": "2026-11-12",
+    "rates_usd_per_million_tokens": {
+      "input": "4.00",
+      "output": "20.00",
+      "cache_read": "0.20",
+      "cache_write": "5.00"
+    }
+  },
+  "settings": {
+    "temperature": 0.0,
+    "max_tokens": 4096
+  },
+  "prompted_output_template": "Return a JSON object containing your prediction. Use the property names defined by the JSON schema below as the keys, and fill in their predicted values. Produce an instance of the schema. Do not return the schema itself or wrap your prediction in its 'properties' field. Return only the JSON object, without explanatory text or Markdown fences.\n\nJSON schema:\n{schema}",
+  "json_schema_transformer": null,
+  "output_mode": "prompted",
+  "retries": 0,
+  "sdk_total_max_attempts": 1,
+  "read_timeout_seconds": 600,
+  "checkpoint_revision": null,
+  "dtype": null,
+  "device": null,
+  "seed": null,
+  "note": "Bedrock manages checkpoint revision, hardware, dtype, image processing and sampling seed"
+}

@@ -1,0 +1,43 @@
+{
+  "model_details": {
+    "modelArn": "arn:aws:bedrock:us-east-1::foundation-model/google.gemma-3-27b-it",
+    "modelId": "google.gemma-3-27b-it",
+    "modelName": "Gemma 3 27B PT",
+    "providerName": "Google",
+    "inputModalities": [
+      "TEXT",
+      "IMAGE"
+    ],
+    "outputModalities": [
+      "TEXT"
+    ],
+    "responseStreamingSupported": true,
+    "customizationsSupported": [],
+    "inferenceTypesSupported": [
+      "ON_DEMAND"
+    ],
+    "modelLifecycle": {
+      "status": "ACTIVE",
+      "startOfLifeTime": "2025-12-02 00:00:00+00:00"
+    }
+  },
+  "endpoint": "https://bedrock-runtime.us-east-1.amazonaws.com",
+  "inference_model_id": "google.gemma-3-27b-it",
+  "inference_profile": null,
+  "pricing": null,
+  "settings": {
+    "temperature": 0.0,
+    "max_tokens": 4096
+  },
+  "prompted_output_template": "Return a JSON object containing your prediction. Use the property names defined by the JSON schema below as the keys, and fill in their predicted values. Produce an instance of the schema. Do not return the schema itself or wrap your prediction in its 'properties' field. Return only the JSON object, without explanatory text or Markdown fences.\n\nJSON schema:\n{schema}",
+  "json_schema_transformer": null,
+  "output_mode": "prompted",
+  "retries": 0,
+  "sdk_total_max_attempts": 1,
+  "read_timeout_seconds": 600,
+  "checkpoint_revision": null,
+  "dtype": null,
+  "device": null,
+  "seed": null,
+  "note": "Bedrock manages checkpoint revision, hardware, dtype, image processing and sampling seed"
+}

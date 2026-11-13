@@ -1,0 +1,1018 @@
+{
+  "task": "detect",
+  "dataset": "coco128",
+  "model": "qwen.qwen3-vl-235b-a22b",
+  "revision": null,
+  "device": "bedrock/ap-northeast-1",
+  "dtype": "provider-managed",
+  "backend": "bedrock",
+  "region": "ap-northeast-1",
+  "completed_at": "2026-11-12T04:33:25.606855+00:00",
+  "metrics": {
+    "samples": 100,
+    "failures": 26,
+    "failure_rate": 0.26,
+    "match_iou": 0.5,
+    "tp": 68,
+    "fp": 7,
+    "fn": 673,
+    "precision": 0.9066666666666666,
+    "recall": 0.09176788124156546,
+    "f1": 0.16666666666666666
+  },
+  "summary": [
+    {
+      "class": "person",
+      "support": 205,
+      "tp": 20,
+      "fp": 0,
+      "fn": 185,
+      "precision": 1.0,
+      "recall": 0.0975609756097561,
+      "f1": 0.17777777777777778
+    },
+    {
+      "class": "bicycle",
+      "support": 4,
+      "tp": 0,
+      "fp": 0,
+      "fn": 4,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    {
+      "class": "car",
+      "support": 32,
+      "tp": 2,
+      "fp": 1,
+      "fn": 30,
+      "precision": 0.6666666666666666,
+      "recall": 0.0625,
+      "f1": 0.11428571428571428
+    },
+    {
+      "class": "motorcycle",
+      "support": 4,
+      "tp": 2,
+      "fp": 0,
+      "fn": 2,
+      "precision": 1.0,
+      "recall": 0.5,
+      "f1": 0.6666666666666666
+    },
+    {
+      "class": "airplane",
+      "support": 4,
+      "tp": 1,
+      "fp": 1,
+      "fn": 3,
+      "precision": 0.5,
+      "recall": 0.25,
+      "f1": 0.3333333333333333
+    },
+    {
+      "class": "bus",
+      "support": 4,
+      "tp": 2,
+      "fp": 0,
+      "fn": 2,
+      "precision": 1.0,
+      "recall": 0.5,
+      "f1": 0.6666666666666666
+    },
+    {
+      "class": "train",
+      "support": 3,
+      "tp": 1,
+      "fp": 0,
+      "fn": 2,
+      "precision": 1.0,
+      "recall": 0.3333333333333333,
+      "f1": 0.5
+    },
+    {
+      "class": "truck",
+      "support": 9,
+      "tp": 1,
+      "fp": 0,
+      "fn": 8,
+      "precision": 1.0,
+      "recall": 0.1111111111111111,
+      "f1": 0.2
+    },
+    {
+      "class": "boat",
+      "support": 6,
+      "tp": 4,
+      "fp": 0,
+      "fn": 2,
+      "precision": 1.0,
+      "recall": 0.6666666666666666,
+      "f1": 0.8
+    },
+    {
+      "class": "traffic light",
+      "support": 13,
+      "tp": 0,
+      "fp": 0,
+      "fn": 13,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    {
+      "class": "fire hydrant",
+      "support": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    {
+      "class": "stop sign",
+      "support": 2,
+      "tp": 1,
+      "fp": 0,
+      "fn": 1,
+      "precision": 1.0,
+      "recall": 0.5,
+      "f1": 0.6666666666666666
+    },
+    {
+      "class": "parking meter",
+      "support": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    {
+      "class": "bench",
+      "support": 8,
+      "tp": 1,
+      "fp": 0,
+      "fn": 7,
+      "precision": 1.0,
+      "recall": 0.125,
+      "f1": 0.2222222222222222
+    },
+    {
+      "class": "bird",
+      "support": 16,
+      "tp": 0,
+      "fp": 0,
+      "fn": 16,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    {
+      "class": "cat",
+      "support": 1,
+      "tp": 0,
+      "fp": 0,
+      "fn": 1,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    {
+      "class": "dog",
+      "support": 8,
+      "tp": 5,
+      "fp": 0,
+      "fn": 3,
+      "precision": 1.0,
+      "recall": 0.625,
+      "f1": 0.7692307692307693
+    },
+    {
+      "class": "horse",
+      "support": 2,
+      "tp": 2,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "class": "sheep",
+      "support": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    {
+      "class": "cow",
+      "support": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    {
+      "class": "elephant",
+      "support": 10,
+      "tp": 0,
+      "fp": 0,
+      "fn": 10,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    {
+      "class": "bear",
+      "support": 1,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "class": "zebra",
+      "support": 4,
+      "tp": 1,
+      "fp": 0,
+      "fn": 3,
+      "precision": 1.0,
+      "recall": 0.25,
+      "f1": 0.4
+    },
+    {
+      "class": "giraffe",
+      "support": 9,
+      "tp": 4,
+      "fp": 0,
+      "fn": 5,
+      "precision": 1.0,
+      "recall": 0.4444444444444444,
+      "f1": 0.6153846153846154
+    },
+    {
+      "class": "backpack",
+      "support": 6,
+      "tp": 0,
+      "fp": 0,
+      "fn": 6,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    {
+      "class": "umbrella",
+      "support": 18,
+      "tp": 1,
+      "fp": 0,
+      "fn": 17,
+      "precision": 1.0,
+      "recall": 0.05555555555555555,
+      "f1": 0.10526315789473684
+    },
+    {
+      "class": "handbag",
+      "support": 16,
+      "tp": 0,
+      "fp": 0,
+      "fn": 16,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    {
+      "class": "tie",
+      "support": 6,
+      "tp": 2,
+      "fp": 0,
+      "fn": 4,
+      "precision": 1.0,
+      "recall": 0.3333333333333333,
+      "f1": 0.5
+    },
+    {
+      "class": "suitcase",
+      "support": 3,
+      "tp": 0,
+      "fp": 1,
+      "fn": 3,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    {
+      "class": "frisbee",
+      "support": 3,
+      "tp": 2,
+      "fp": 0,
+      "fn": 1,
+      "precision": 1.0,
+      "recall": 0.6666666666666666,
+      "f1": 0.8
+    },
+    {
+      "class": "skis",
+      "support": 1,
+      "tp": 0,
+      "fp": 0,
+      "fn": 1,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    {
+      "class": "snowboard",
+      "support": 7,
+      "tp": 1,
+      "fp": 0,
+      "fn": 6,
+      "precision": 1.0,
+      "recall": 0.14285714285714285,
+      "f1": 0.25
+    },
+    {
+      "class": "sports ball",
+      "support": 5,
+      "tp": 1,
+      "fp": 0,
+      "fn": 4,
+      "precision": 1.0,
+      "recall": 0.2,
+      "f1": 0.3333333333333333
+    },
+    {
+      "class": "kite",
+      "support": 6,
+      "tp": 0,
+      "fp": 0,
+      "fn": 6,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    {
+      "class": "baseball bat",
+      "support": 3,
+      "tp": 0,
+      "fp": 0,
+      "fn": 3,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    {
+      "class": "baseball glove",
+      "support": 6,
+      "tp": 0,
+      "fp": 0,
+      "fn": 6,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    {
+      "class": "skateboard",
+      "support": 4,
+      "tp": 0,
+      "fp": 0,
+      "fn": 4,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    {
+      "class": "surfboard",
+      "support": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    {
+      "class": "tennis racket",
+      "support": 6,
+      "tp": 2,
+      "fp": 0,
+      "fn": 4,
+      "precision": 1.0,
+      "recall": 0.3333333333333333,
+      "f1": 0.5
+    },
+    {
+      "class": "bottle",
+      "support": 16,
+      "tp": 0,
+      "fp": 1,
+      "fn": 16,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    {
+      "class": "wine glass",
+      "support": 16,
+      "tp": 1,
+      "fp": 0,
+      "fn": 15,
+      "precision": 1.0,
+      "recall": 0.0625,
+      "f1": 0.11764705882352941
+    },
+    {
+      "class": "cup",
+      "support": 33,
+      "tp": 0,
+      "fp": 0,
+      "fn": 33,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    {
+      "class": "fork",
+      "support": 6,
+      "tp": 1,
+      "fp": 0,
+      "fn": 5,
+      "precision": 1.0,
+      "recall": 0.16666666666666666,
+      "f1": 0.2857142857142857
+    },
+    {
+      "class": "knife",
+      "support": 16,
+      "tp": 0,
+      "fp": 0,
+      "fn": 16,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    {
+      "class": "spoon",
+      "support": 20,
+      "tp": 0,
+      "fp": 0,
+      "fn": 20,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    {
+      "class": "bowl",
+      "support": 25,
+      "tp": 0,
+      "fp": 0,
+      "fn": 25,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    {
+      "class": "banana",
+      "support": 1,
+      "tp": 0,
+      "fp": 0,
+      "fn": 1,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    {
+      "class": "apple",
+      "support": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    {
+      "class": "sandwich",
+      "support": 2,
+      "tp": 0,
+      "fp": 1,
+      "fn": 2,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    {
+      "class": "orange",
+      "support": 4,
+      "tp": 0,
+      "fp": 0,
+      "fn": 4,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    {
+      "class": "broccoli",
+      "support": 9,
+      "tp": 1,
+      "fp": 0,
+      "fn": 8,
+      "precision": 1.0,
+      "recall": 0.1111111111111111,
+      "f1": 0.2
+    },
+    {
+      "class": "carrot",
+      "support": 14,
+      "tp": 0,
+      "fp": 0,
+      "fn": 14,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    {
+      "class": "hot dog",
+      "support": 2,
+      "tp": 0,
+      "fp": 0,
+      "fn": 2,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    {
+      "class": "pizza",
+      "support": 4,
+      "tp": 3,
+      "fp": 0,
+      "fn": 1,
+      "precision": 1.0,
+      "recall": 0.75,
+      "f1": 0.8571428571428571
+    },
+    {
+      "class": "donut",
+      "support": 14,
+      "tp": 0,
+      "fp": 0,
+      "fn": 14,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    {
+      "class": "cake",
+      "support": 4,
+      "tp": 2,
+      "fp": 0,
+      "fn": 2,
+      "precision": 1.0,
+      "recall": 0.5,
+      "f1": 0.6666666666666666
+    },
+    {
+      "class": "chair",
+      "support": 21,
+      "tp": 0,
+      "fp": 1,
+      "fn": 21,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    {
+      "class": "couch",
+      "support": 5,
+      "tp": 0,
+      "fp": 0,
+      "fn": 5,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    {
+      "class": "potted plant",
+      "support": 12,
+      "tp": 1,
+      "fp": 0,
+      "fn": 11,
+      "precision": 1.0,
+      "recall": 0.08333333333333333,
+      "f1": 0.15384615384615385
+    },
+    {
+      "class": "bed",
+      "support": 2,
+      "tp": 1,
+      "fp": 0,
+      "fn": 1,
+      "precision": 1.0,
+      "recall": 0.5,
+      "f1": 0.6666666666666666
+    },
+    {
+      "class": "dining table",
+      "support": 12,
+      "tp": 0,
+      "fp": 0,
+      "fn": 12,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    {
+      "class": "toilet",
+      "support": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    {
+      "class": "tv",
+      "support": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    {
+      "class": "laptop",
+      "support": 3,
+      "tp": 0,
+      "fp": 0,
+      "fn": 3,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    {
+      "class": "mouse",
+      "support": 1,
+      "tp": 0,
+      "fp": 0,
+      "fn": 1,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    {
+      "class": "remote",
+      "support": 6,
+      "tp": 0,
+      "fp": 0,
+      "fn": 6,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    {
+      "class": "keyboard",
+      "support": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    {
+      "class": "cell phone",
+      "support": 7,
+      "tp": 0,
+      "fp": 0,
+      "fn": 7,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    {
+      "class": "microwave",
+      "support": 3,
+      "tp": 0,
+      "fp": 0,
+      "fn": 3,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    {
+      "class": "oven",
+      "support": 5,
+      "tp": 0,
+      "fp": 0,
+      "fn": 5,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    {
+      "class": "toaster",
+      "support": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    {
+      "class": "sink",
+      "support": 3,
+      "tp": 0,
+      "fp": 0,
+      "fn": 3,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    {
+      "class": "refrigerator",
+      "support": 4,
+      "tp": 0,
+      "fp": 0,
+      "fn": 4,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    {
+      "class": "book",
+      "support": 16,
+      "tp": 0,
+      "fp": 0,
+      "fn": 16,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    {
+      "class": "clock",
+      "support": 7,
+      "tp": 0,
+      "fp": 0,
+      "fn": 7,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    {
+      "class": "vase",
+      "support": 2,
+      "tp": 0,
+      "fp": 0,
+      "fn": 2,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    {
+      "class": "scissors",
+      "support": 1,
+      "tp": 0,
+      "fp": 0,
+      "fn": 1,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    {
+      "class": "teddy bear",
+      "support": 8,
+      "tp": 1,
+      "fp": 1,
+      "fn": 7,
+      "precision": 0.5,
+      "recall": 0.125,
+      "f1": 0.2
+    },
+    {
+      "class": "hair drier",
+      "support": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    {
+      "class": "toothbrush",
+      "support": 2,
+      "tp": 0,
+      "fp": 0,
+      "fn": 2,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    }
+  ],
+  "failures": [
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_people_cats_validation_20261103/coco128/images/train2017/000000000072.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 10
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_people_cats_validation_20261103/coco128/images/train2017/000000000074.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 12
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_people_cats_validation_20261103/coco128/images/train2017/000000000078.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 14
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_people_cats_validation_20261103/coco128/images/train2017/000000000110.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 21
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_people_cats_validation_20261103/coco128/images/train2017/000000000143.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 28
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_people_cats_validation_20261103/coco128/images/train2017/000000000144.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 29
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_people_cats_validation_20261103/coco128/images/train2017/000000000154.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 32
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_people_cats_validation_20261103/coco128/images/train2017/000000000241.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 40
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_people_cats_validation_20261103/coco128/images/train2017/000000000247.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 41
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_people_cats_validation_20261103/coco128/images/train2017/000000000263.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 45
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_people_cats_validation_20261103/coco128/images/train2017/000000000283.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 46
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_people_cats_validation_20261103/coco128/images/train2017/000000000294.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 47
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_people_cats_validation_20261103/coco128/images/train2017/000000000312.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 51
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_people_cats_validation_20261103/coco128/images/train2017/000000000322.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 54
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_people_cats_validation_20261103/coco128/images/train2017/000000000349.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 59
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_people_cats_validation_20261103/coco128/images/train2017/000000000368.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 63
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_people_cats_validation_20261103/coco128/images/train2017/000000000387.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 67
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_people_cats_validation_20261103/coco128/images/train2017/000000000389.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 68
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_people_cats_validation_20261103/coco128/images/train2017/000000000395.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 70
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_people_cats_validation_20261103/coco128/images/train2017/000000000443.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 80
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_people_cats_validation_20261103/coco128/images/train2017/000000000446.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 81
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_people_cats_validation_20261103/coco128/images/train2017/000000000474.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 86
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_people_cats_validation_20261103/coco128/images/train2017/000000000490.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 89
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_people_cats_validation_20261103/coco128/images/train2017/000000000529.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 96
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_people_cats_validation_20261103/coco128/images/train2017/000000000532.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 98
+    },
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_people_cats_validation_20261103/coco128/images/train2017/000000000536.jpg",
+      "type": "InvalidModelResponseError",
+      "message": "Exceeded maximum output retries (0)",
+      "sample_id": 99
+    }
+  ],
+  "dataset_counts": {
+    "evaluated_samples": 100
+  },
+  "dataset_metadata": {
+    "dataset_name": "yolo",
+    "config_name": "yolo",
+    "version": "1.0.0",
+    "description": "Local YOLO YAML/TXT annotations with original-image pixel xyxy boxes.",
+    "split": "val"
+  },
+  "status_counts": {},
+  "dataset_fingerprint_sha256": "e4e3a0d8d237a2a82a172e441416a035c3a22b42a64beadb7d698b92bb44ab15",
+  "speed_ms_per_sample": {
+    "load": 2.420967928483151,
+    "inference": 2915.4502216976834,
+    "metrics": 0.8547171307145618
+  },
+  "elapsed_seconds": 291.87727687499137,
+  "wall_seconds": 291.8773544159776,
+  "usage": {
+    "attempted_requests": 100,
+    "measured_requests": 100,
+    "unmeasured_requests": 0,
+    "input_tokens": 139354,
+    "output_tokens": 16185,
+    "cache_read_tokens": 0,
+    "cache_write_tokens": 0,
+    "output_reasoning_tokens": 0,
+    "estimated_cost_usd": "0.11690972",
+    "costed_requests": 100,
+    "estimated_cost_complete": true,
+    "reported_cost_usd": null,
+    "cost_note": "Estimate from pinned genai-prices package; Bedrock does not return invoiced charges",
+    "total_tokens": 155539
+  }
+}

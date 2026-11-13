@@ -1,0 +1,20 @@
+{
+  "model": "Qwen/Qwen3-VL-2B-Instruct",
+  "revision": "89644892e4d85e24eaac8bacfd4f463576704203",
+  "device": "mps",
+  "dtype": "float16",
+  "seed": 42,
+  "max_new_tokens": 4096,
+  "samples_per_task": 100,
+  "tasks": [
+    "classify",
+    "detect",
+    "ground_box",
+    "ground_point",
+    "attributes",
+    "answer",
+    "describe"
+  ],
+  "tokenizer_version": "3.4.1",
+  "match_iou": 0.5
+}
