@@ -18,15 +18,8 @@ MODEL_LABELS = {
 }
 
 
-def generate_charts(directory):
-    import matplotlib
-
-    matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
-    import numpy as np
-
-    directory = Path(directory)
-    reports = load_task_reports(directory)
+def build_profiles(reports):
+    """Validate and collect the task scores used by every radar chart."""
     grouped = {}
     for path, report in reports:
         grouped.setdefault(path.parent.name, {})[report["task"]] = report
@@ -48,47 +41,73 @@ def generate_charts(directory):
     if not profiles:
         raise ValueError("No task reports found")
 
-    output = directory.parent / "reports/charts"
-    (output / "model-profiles").mkdir(parents=True, exist_ok=True)
-    (output / "task-comparisons").mkdir(parents=True, exist_ok=True)
-    angles = np.linspace(0, 2 * np.pi, len(AXES), endpoint=False)
-    closed_angles = np.append(angles, angles[0])
+    return profiles
+
+
+def configure_plotting():
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
     plt.rcParams.update({
         "font.family": "DejaVu Sans", "font.size": 11,
         "svg.fonttype": "none", "svg.hashsalt": "vlm-task-profiles",
         "figure.facecolor": "#ffffff", "savefig.facecolor": "#ffffff",
     })
+    return plt
 
-    def draw(ax, profile, index):
-        color = COLORS[index % len(COLORS)]
-        values = np.array(profile["scores"]) * 100
-        closed = np.append(values, values[0])
-        ax.set_theta_offset(np.pi / 2)
-        ax.set_theta_direction(-1)
-        ax.set_ylim(0, 100)
-        ax.set_yticks([20, 40, 60, 80, 100])
-        ax.set_yticklabels([])
-        ax.set_facecolor("#f8fafc")
-        ax.grid(color="#d3dbe4", linewidth=.8)
-        ax.spines["polar"].set_color("#c4cdd8")
-        labels = [r"$\mathbf{" + label.replace(" ", r"\ ") + "}$\n"
-                  + f"{metric} {format_number(value, 1)}"
-                  for (_, _, label, metric), value in zip(AXES, values)]
-        ax.set_thetagrids(np.degrees(angles), labels)
-        ax.tick_params(axis="x", pad=17, labelsize=10)
-        for label, angle in zip(ax.get_xticklabels(), angles):
-            label.set_horizontalalignment(
-                "center" if abs(np.sin(angle)) < .01 else "left" if np.sin(angle) > 0 else "right"
-            )
-            label.set_color("#243244")
-        ax.plot(closed_angles, closed, color=color, linewidth=2.5, zorder=3)
-        ax.fill(closed_angles, closed, color=color, alpha=.15, zorder=2)
-        ax.scatter(angles, values, color=color, s=30, edgecolor="white", linewidth=.8, zorder=4)
+
+def draw_profile(ax, profile, index, *, comparison=False):
+    import numpy as np
+
+    angles = np.linspace(0, 2 * np.pi, len(AXES), endpoint=False)
+    closed_angles = np.append(angles, angles[0])
+    color = COLORS[index % len(COLORS)]
+    values = np.array(profile["scores"]) * 100
+    closed = np.append(values, values[0])
+    ax.set_theta_offset(np.pi / 2)
+    ax.set_theta_direction(-1)
+    ax.set_ylim(0, 100)
+    ax.set_yticks([20, 40, 60, 80, 100])
+    ax.set_yticklabels([])
+    ax.set_facecolor("#f8fafc")
+    ax.grid(color="#d3dbe4", linewidth=.8)
+    ax.spines["polar"].set_color("#c4cdd8")
+    labels = [r"$\mathbf{" + label.replace(" ", r"\ ") + "}$\n"
+              + (metric if comparison else f"{metric} {format_number(value, 1)}")
+              for (_, _, label, metric), value in zip(AXES, values)]
+    ax.set_thetagrids(np.degrees(angles), labels)
+    ax.tick_params(axis="x", pad=17, labelsize=10)
+    for label, angle in zip(ax.get_xticklabels(), angles):
+        label.set_horizontalalignment(
+            "center" if abs(np.sin(angle)) < .01 else "left" if np.sin(angle) > 0 else "right"
+        )
+        label.set_color("#243244")
+    ax.plot(closed_angles, closed, color=color, linewidth=2.5, zorder=3,
+            label=MODEL_LABELS.get(profile["model"], profile["model"]))
+    ax.fill(closed_angles, closed, color=color, alpha=.10 if comparison else .15, zorder=2)
+    ax.scatter(angles, values, color=color, s=30, edgecolor="white", linewidth=.8, zorder=4)
+
+
+def generate_charts(directory):
+    import matplotlib
+    import numpy as np
+
+    plt = configure_plotting()
+
+    directory = Path(directory)
+    reports = load_task_reports(directory)
+    profiles = build_profiles(reports)
+
+    output = directory.parent / "reports/charts"
+    (output / "model-profiles").mkdir(parents=True, exist_ok=True)
+    (output / "task-comparisons").mkdir(parents=True, exist_ok=True)
 
     def save(profile, index):
         fig, ax = plt.subplots(figsize=(8, 8), subplot_kw={"projection": "polar"})
         fig.subplots_adjust(left=.23, right=.77, bottom=.15, top=.77)
-        draw(ax, profile, index)
+        draw_profile(ax, profile, index)
         title = profile["model"].removeprefix("Qwen/").removeprefix("qwen.")
         fig.suptitle(title, y=.96, fontsize=21, fontweight="bold", color=COLORS[index % len(COLORS)])
         fig.text(.5, .055, "Higher is better · Failures included",

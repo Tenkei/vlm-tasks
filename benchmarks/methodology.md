@@ -17,6 +17,7 @@ benchmarks/
 ├── reports/
 │   ├── metrics.csv
 │   ├── report-manifest.json
+│   ├── model-comparisons/      # On-demand local reports (gitignored)
 │   └── charts/
 │       ├── model-profiles/    # One radar profile per model
 │       └── task-comparisons/  # One bar chart per task
@@ -174,12 +175,50 @@ uv pip install --python .venv/bin/python 'matplotlib==3.11.2'
 ```
 
 The chart generator reads task reports, validates that all seven metrics are present
-and bounded, writes one PNG and SVG per model/run and per task, and
-refreshes the README's four-column model profile grid and task sections. It performs no inference. `reports/charts/manifest.json`
+and bounded, writes one PNG and SVG per model/run and task, and
+refreshes the README's chart grids and detail sections. It performs no inference. `reports/charts/manifest.json`
 records metric choices, exact scores, sample counts, Matplotlib/NumPy versions,
 and source, report and figure hashes. Use those package versions to reproduce
 the rendering. The report generator embeds charts only when their report hashes
 match the current comparison; regenerate the charts after adding or changing runs.
+
+### Compare two models locally
+
+Generate a dedicated report for two models by passing the names shown in the
+benchmark charts. Run from the repository root, using the same Matplotlib setup
+as above:
+
+```bash
+.venv/bin/python -m benchmarks.src.generate_comparison "Qwen3-VL-2B" "Qwen3-VL-235B"
+```
+
+The command reads saved results and writes only the selected pair's report to
+`benchmarks/reports/model-comparisons/<run>--vs--<run>/`. Open its `README.md`
+for an overlaid radar chart and a table of validation metrics, failures, tokens
+per sample, estimated cost per 1,000 samples and mean latency. PNG and SVG
+images and a provenance manifest are saved alongside it. These local outputs
+are gitignored; the main benchmark README and charts are unchanged, and no
+model inference is performed.
+
+Use `--output /path/to/comparison` to choose another output directory, or
+`--runs /path/to/runs` to read another set of recorded runs. Repeating a command
+refreshes that pair's report. List the available names and run IDs with:
+
+```bash
+.venv/bin/python -m benchmarks.src.generate_comparison --list-models
+```
+
+Names are case-insensitive. Full model identifiers and individual profile chart
+titles are also accepted. If a model has multiple recorded runs, pass an exact
+run ID from the list to choose one. Unknown, ambiguous and duplicate selections
+are rejected before report generation.
+
+Overlays use the individual profiles' axis order, fixed scale, recorded scores
+and colors, without normalization between models. Both lines are solid and a
+legend identifies each model. Polygon area is not an overall score. The table
+uses the same formatting and usage accounting as the main report, with links
+back to the selected source results. The manifest records selected runs, original
+scores, rendering versions, source and input hashes, and generated file hashes.
 
 ### Task comparison charts
 
@@ -458,6 +497,7 @@ artifacts are retained as evidence of their execution environment.
 | `benchmarks/src/run_transformers.py` | Local model setup, inference and task reports |
 | `benchmarks/src/generate_report.py` | Comparison table and wide CSV generation |
 | `benchmarks/src/generate_charts.py` | Model radar profiles and task comparison charts from saved reports |
+| `benchmarks/src/generate_comparison.py` | On-demand local report for two selected model runs |
 | `benchmarks/src/run_token_budget.py` | Paired 2×-budget reruns of capped samples |
 | `benchmarks/src/report_token_budget.py` | Report completed token-budget records after stopping inference |
 | `runs/<run>/manifest.json` | Dataset identities, targets and image hashes |
@@ -471,6 +511,7 @@ artifacts are retained as evidence of their execution environment.
 | `reports/metrics.csv`, `benchmarks/README.md` | Generated comparison views |
 | `reports/report-manifest.json` | Report generator and input task-report hashes for the generated comparison |
 | `reports/charts/model-profiles/<run>.png`, `*.svg` | One radar profile per model/run |
+| `reports/model-comparisons/<run>--vs--<run>/` | Local README, overlay PNG/SVG and provenance for one selected pair (gitignored) |
 | `reports/charts/task-comparisons/<task>.png`, `*.svg` | One bar chart comparing models per task |
 | `reports/charts/manifest.json` | Chart metric choices, values, versions and provenance hashes |
 | `benchmarks/failed-runs/<attempt>/` | Startup or infrastructure failures retained outside scored benchmark results |

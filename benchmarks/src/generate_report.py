@@ -115,7 +115,9 @@ def model_sections(model_rows, charts):
         "## Model profiles", "",
         "**Model view:** each radar chart summarizes one model across the benchmark tasks, "
         "showing its strengths and weaknesses. Select a chart or expand a model below "
-        "for full metrics, usage, cost and latency.", "",
+        "for full metrics, usage, cost and latency. "
+        "[Compare two models locally](methodology.md#compare-two-models-locally) "
+        "to generate a dedicated report with an overlaid chart and table.", "",
     ]
     lines += chart_grid([(model["figure"], labels.get(model["run"], model["model"]),
                           f"Model profile for {model['model']}") for model in models],
@@ -182,6 +184,57 @@ def task_sections(table_rows, charts):
     return lines
 
 
+def summarize_task_report(path, report, report_link):
+    """Share metric formatting and usage accounting across benchmark reports."""
+    task, m, usage = report["task"], report["metrics"], report["usage"]
+    config = json.loads((path.parent / "config.json").read_text())
+    calls_path = path.with_suffix(".jsonl")
+    at_cap = None
+    if calls_path.is_file():
+        calls = [json.loads(line) for line in calls_path.read_text().splitlines()]
+        at_cap = sum(g["output_tokens"] >= config["max_new_tokens"]
+                     for call in calls for g in call["generations"])
+    scores = []
+    for key, label in METRICS[task]:
+        if key in m:
+            value = format_number(m[key], 4) if task == "describe" else f"{format_number(100 * m[key], 2)}%"
+            scores.append(f"{label} {value}")
+    latency = report["speed_ms_per_sample"]["inference"] / 1000
+    samples = m["samples"]
+    failure_rate = m["failures"] / samples if samples else None
+    cap_rate = at_cap / samples if at_cap is not None and samples else None
+    input_per_sample = usage["input_tokens"] / samples if samples else None
+    output_per_sample = usage["output_tokens"] / samples if samples else None
+    cost = usage.get("estimated_cost_usd")
+    cost_per_sample = float(cost) / samples if cost is not None and samples else None
+    cost_per_1k_samples = cost_per_sample * 1000 if cost_per_sample is not None else None
+    cost_text = format_number(cost_per_1k_samples, 3) if cost_per_1k_samples is not None else "—"
+    if cost is not None and usage.get("estimated_cost_complete") is False:
+        cost_text += " (partial)"
+    failure_text = f"{format_number(100 * failure_rate, 2)}%" if failure_rate is not None else "—"
+    cap_text = f"{format_number(100 * cap_rate, 2)}%" if cap_rate is not None else "unknown"
+    input_text = f"{input_per_sample:,.0f}" if input_per_sample is not None else "—"
+    output_text = f"{output_per_sample:,.0f}" if output_per_sample is not None else "—"
+    table_row = (
+        f"| {report['model']} | [{task} / {report['dataset']}]({report_link}) | "
+        f"{samples} | {'; '.join(scores)} | {failure_text} ({cap_text}) | "
+        f"{input_text} | {output_text} | {cost_text} | {format_number(latency, 3)} |")
+    row = {"run": path.parent.name, "model": report["model"], "revision": report["revision"],
+           "task": task, "dataset": report["dataset"], "device": report["device"], "dtype": report["dtype"],
+           "backend": report.get("backend", "transformers"), "region": report.get("region"),
+           **m, **{f"usage_{k}": v for k, v in usage.items()},
+           "failure_rate": failure_rate,
+           "max_new_tokens": config["max_new_tokens"], "responses_at_token_cap": at_cap,
+           "responses_at_token_cap_per_sample": cap_rate,
+           "usage_input_tokens_per_sample": input_per_sample,
+           "usage_output_tokens_per_sample": output_per_sample,
+           "usage_estimated_cost_usd_per_sample": cost_per_sample,
+           "usage_estimated_cost_usd_per_1k_samples": cost_per_1k_samples,
+           "inference_seconds_per_sample": latency, "elapsed_seconds": report["elapsed_seconds"],
+           "dataset_fingerprint_sha256": report["dataset_fingerprint_sha256"]}
+    return row, table_row
+
+
 def generate_report(directory):
     """Build the benchmark overview and report artifacts from saved task reports."""
     directory = Path(directory)
@@ -235,55 +288,10 @@ def generate_report(directory):
     table_rows = {}
     model_rows = {}
     for path, report in reports:
-        task, m, usage = report["task"], report["metrics"], report["usage"]
-        config = json.loads((path.parent / "config.json").read_text())
-        calls_path = path.with_suffix(".jsonl")
-        at_cap = None
-        if calls_path.is_file():
-            calls = [json.loads(line) for line in calls_path.read_text().splitlines()]
-            at_cap = sum(g["output_tokens"] >= config["max_new_tokens"]
-                         for call in calls for g in call["generations"])
-        scores = []
-        for key, label in METRICS[task]:
-            if key in m:
-                value = format_number(m[key], 4) if task == "describe" else f"{format_number(100 * m[key], 2)}%"
-                scores.append(f"{label} {value}")
-        latency = report["speed_ms_per_sample"]["inference"] / 1000
-        relative = path.relative_to(directory).as_posix()
-        samples = m["samples"]
-        failure_rate = m["failures"] / samples if samples else None
-        cap_rate = at_cap / samples if at_cap is not None and samples else None
-        input_per_sample = usage["input_tokens"] / samples if samples else None
-        output_per_sample = usage["output_tokens"] / samples if samples else None
-        cost = usage.get("estimated_cost_usd")
-        cost_per_sample = float(cost) / samples if cost is not None and samples else None
-        cost_per_1k_samples = cost_per_sample * 1000 if cost_per_sample is not None else None
-        cost_text = format_number(cost_per_1k_samples, 3) if cost_per_1k_samples is not None else "—"
-        if cost is not None and usage.get("estimated_cost_complete") is False:
-            cost_text += " (partial)"
-        failure_text = f"{format_number(100 * failure_rate, 2)}%" if failure_rate is not None else "—"
-        cap_text = f"{format_number(100 * cap_rate, 2)}%" if cap_rate is not None else "unknown"
-        input_text = f"{input_per_sample:,.0f}" if input_per_sample is not None else "—"
-        output_text = f"{output_per_sample:,.0f}" if output_per_sample is not None else "—"
-        table_row = (
-            f"| {report['model']} | [{task} / {report['dataset']}](runs/{relative}) | "
-            f"{samples} | {'; '.join(scores)} | {failure_text} ({cap_text}) | "
-            f"{input_text} | {output_text} | {cost_text} | {format_number(latency, 3)} |")
-        table_rows.setdefault(task, []).append(table_row)
+        row, table_row = summarize_task_report(
+            path, report, f"runs/{path.relative_to(directory).as_posix()}")
+        table_rows.setdefault(report["task"], []).append(table_row)
         model_rows.setdefault(path.parent.name, []).append(table_row)
-        row = {"run": path.parent.name, "model": report["model"], "revision": report["revision"],
-               "task": task, "dataset": report["dataset"], "device": report["device"], "dtype": report["dtype"],
-               "backend": report.get("backend", "transformers"), "region": report.get("region"),
-               **m, **{f"usage_{k}": v for k, v in usage.items()},
-               "failure_rate": failure_rate,
-               "max_new_tokens": config["max_new_tokens"], "responses_at_token_cap": at_cap,
-               "responses_at_token_cap_per_sample": cap_rate,
-               "usage_input_tokens_per_sample": input_per_sample,
-               "usage_output_tokens_per_sample": output_per_sample,
-               "usage_estimated_cost_usd_per_sample": cost_per_sample,
-               "usage_estimated_cost_usd_per_1k_samples": cost_per_1k_samples,
-               "inference_seconds_per_sample": latency, "elapsed_seconds": report["elapsed_seconds"],
-               "dataset_fingerprint_sha256": report["dataset_fingerprint_sha256"]}
         rows.append(row)
     report_hashes = {str(path.relative_to(directory)): digest(path.read_bytes()) for path, _ in reports}
     chart_manifest = output / "charts" / "manifest.json"

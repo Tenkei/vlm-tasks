@@ -154,6 +154,8 @@ Explore the results from two views:
 
 - [Model profiles](benchmarks/README.md#model-profiles) show each model's
   strengths and weaknesses across tasks.
+  [Compare two models locally](benchmarks/methodology.md#compare-two-models-locally)
+  to generate a dedicated report with an overlaid chart and table.
 - [Task comparisons](benchmarks/README.md#task-comparisons) compare models
   within each task.
 

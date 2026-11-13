@@ -279,3 +279,121 @@ def test_token_budget_report_accepts_a_relocated_baseline(tmp_path):
                  "--interrupted-requests", "0"]) == 0
     assert json.loads((experiment / "status.json").read_text())["completed_samples"] == 0
     assert "# Token budget experiment (partial)" in (experiment / "README.md").read_text()
+
+
+@pytest.fixture
+def comparison_runs(tmp_path):
+    from benchmarks.src.artifacts import write_json
+    from benchmarks.src.task_registry import TASKS
+
+    runs = tmp_path / "runs"
+    for index, (run, model) in enumerate([
+        ("small", "Qwen/Qwen3-VL-2B-Instruct"),
+        ("gemma", "google.gemma-3-27b-it"),
+        ("large", "qwen.qwen3-vl-235b-a22b"),
+    ]):
+        write_json(runs / run / "config.json", {"tasks": list(TASKS), "max_new_tokens": 4096})
+        for axis, (task, spec) in enumerate(TASKS.items()):
+            write_json(runs / run / f"{task}.json", {
+                "task": task, "dataset": spec.dataset, "model": model, "revision": "pinned",
+                "device": "cpu", "dtype": "float32",
+                "metrics": {"samples": 2, "failures": 1 if index == 0 else 0,
+                            spec.primary_metric: .1 + index * .2 + axis * .01},
+                "usage": {"input_tokens": 20, "output_tokens": 4101,
+                          "estimated_cost_usd": None if index == 0 else "0.004"},
+                "speed_ms_per_sample": {"inference": 1000}, "elapsed_seconds": 2,
+                "dataset_fingerprint_sha256": "frozen",
+            })
+            (runs / run / f"{task}.jsonl").write_text(
+                json.dumps({"generations": [{"output_tokens": 4096}]}) + "\n" +
+                json.dumps({"generations": [{"output_tokens": 5}]}) + "\n")
+    return runs
+
+
+def test_local_comparison_selects_only_two_models_and_preserves_overview(comparison_runs, tmp_path):
+    pytest.importorskip("matplotlib")
+    import re
+    from urllib.parse import unquote
+
+    from benchmarks.src.artifacts import digest
+    from benchmarks.src.generate_comparison import main
+    from benchmarks.src.task_registry import TASKS
+
+    overview = tmp_path / "README.md"
+    overview.write_text("Existing benchmark overview")
+    # Unrelated incomplete runs must not prevent comparing the requested pair.
+    (comparison_runs / "gemma/describe.json").unlink()
+    before = {path: path.read_bytes() for path in comparison_runs.rglob("*") if path.is_file()}
+    output = tmp_path / "local comparison"
+    assert main(["qwen3-vl-235b", "Qwen3-VL-2B-Instruct", "--runs", str(comparison_runs),
+                 "--output", str(output)]) == 0
+    page = (output / "README.md").read_text()
+    assert page.startswith("# Qwen3-VL-235B vs Qwen3-VL-2B")
+    assert "Gemma" not in page
+    rows = [line for line in page.splitlines() if line.startswith(("| Qwen/", "| qwen."))]
+    assert len(rows) == 2 * len(TASKS)
+    assert "| 2 | Top-1 Acc 10% | 50% (50%) | 10 | 2,050 | — | 1 |" in page
+    assert "| 2 | Top-1 Acc 50% | 0% (50%) | 10 | 2,050 | 2 | 1 |" in page
+    assert overview.read_text() == "Existing benchmark overview"
+    assert all(path.read_bytes() == content for path, content in before.items())
+    assert not (tmp_path / "reports/charts").exists()
+    for target in re.findall(r"\]\(([^)]+)\)", page):
+        assert (output / unquote(target.split("#", 1)[0])).exists(), target
+    manifest = json.loads((output / "manifest.json").read_text())
+    assert [model["run"] for model in manifest["models"]] == ["large", "small"]
+    for model, index in zip(manifest["models"], (2, 0)):
+        assert model["scores"] == pytest.approx([.1 + index * .2 + axis * .01 for axis in range(len(TASKS))])
+    assert {key.split("/")[0] for key in manifest["inputs_sha256"]} == {"large", "small"}
+    for name, expected in manifest["inputs_sha256"].items():
+        assert digest((comparison_runs / name).read_bytes()) == expected
+    for name, expected in manifest["artifacts_sha256"].items():
+        assert digest((output / name).read_bytes()) == expected
+    svg = (output / "comparison.svg").read_text()
+    assert "Qwen3-VL-2B" in svg and "Qwen3-VL-235B" in svg
+
+
+@pytest.mark.parametrize("names, message", [
+    (["Unknown", "Qwen3-VL-235B"], "Unknown model"),
+    (["Qwen3-VL-2B", "Qwen/Qwen3-VL-2B-Instruct"], "two different model runs"),
+    (["Qwen3-VL-2B"], "exactly two model names"),
+    (["Qwen3-VL-2B", "Qwen3-VL-235B", "Gemma 3 27B"], "exactly two model names"),
+])
+def test_local_comparison_rejects_invalid_selections_before_writing(comparison_runs, tmp_path, names, message):
+    from benchmarks.src.generate_comparison import generate_comparison
+
+    output = tmp_path / "comparison"
+    with pytest.raises(ValueError, match=message):
+        generate_comparison(comparison_runs, names, output)
+    assert not output.exists()
+
+
+def test_local_comparison_requires_run_id_when_model_is_ambiguous():
+    from benchmarks.src.generate_comparison import select_runs
+
+    catalog = {"small-first": "Qwen/Qwen3-VL-2B-Instruct", "small-second": "Qwen/Qwen3-VL-2B-Instruct",
+               "large": "qwen.qwen3-vl-235b-a22b"}
+    with pytest.raises(ValueError, match="matches multiple runs.*small-first, small-second"):
+        select_runs(catalog, ["Qwen3-VL-2B", "Qwen3-VL-235B"])
+    assert select_runs(catalog, ["small-second", "large"]) == ["small-second", "large"]
+
+
+def test_local_comparison_lists_available_names_without_generating_reports(comparison_runs, tmp_path, capsys):
+    from benchmarks.src.generate_comparison import main
+
+    assert main(["--list-models", "--runs", str(comparison_runs)]) == 0
+    listing = capsys.readouterr().out
+    assert "Qwen3-VL-2B  [small]" in listing and "Qwen3-VL-235B  [large]" in listing
+    assert not (tmp_path / "reports").exists()
+
+
+def test_standard_charts_do_not_generate_pairwise_reports(comparison_runs, tmp_path):
+    pytest.importorskip("matplotlib")
+    from benchmarks.src.generate_charts import generate_charts
+
+    generate_charts(comparison_runs)
+    manifest = json.loads((tmp_path / "reports/charts/manifest.json").read_text())
+    assert len(manifest["models"]) == 3
+    assert "model_comparisons" not in manifest
+    assert not (tmp_path / "reports/charts/model-comparisons").exists()
+    assert not (tmp_path / "reports/model-comparisons").exists()
+    assert "## Model comparisons" not in (tmp_path / "README.md").read_text()

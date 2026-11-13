@@ -16,7 +16,9 @@ Main validation metric per task; **best observed values** are bold. Failures are
 
 ## Model profiles
 
-**Model view:** each radar chart summarizes one model across the benchmark tasks, showing its strengths and weaknesses. Select a chart or expand a model below for full metrics, usage, cost and latency.
+**Model view:** each radar chart summarizes one model across the benchmark tasks, showing its strengths and weaknesses.
+Select a chart or expand a model below for full metrics, usage, cost and latency.
+[Compare two models locally](methodology.md#compare-two-models-locally) to generate a dedicated report with an overlaid chart and table.
 
 <table>
   <tr>
