@@ -6,6 +6,7 @@ import csv
 from html import escape
 import json
 from pathlib import Path
+import re
 
 from .artifacts import digest, utc_now, write_json
 from .task_registry import DATASETS, METRICS, TASK_SECTIONS
@@ -21,6 +22,21 @@ TABLE_HEADER = [
 def format_number(value, decimal_places):
     text = f"{value:.{decimal_places}f}"
     return text.rstrip("0").rstrip(".") if "." in text else text
+
+
+def model_anchors(models):
+    """Match GitHub's heading fragments, including repeated model names."""
+    anchors, used = {}, set()
+    for model in models:
+        label = model.get("label") or model["model"]
+        slug = re.sub(r"[^\w -]", "", label.lower()).replace(" ", "-")
+        anchor, suffix = slug, 0
+        while anchor in used:
+            suffix += 1
+            anchor = f"{slug}-{suffix}"
+        used.add(anchor)
+        anchors[model["run"]] = anchor
+    return anchors
 
 
 def load_task_reports(directory):
@@ -44,13 +60,14 @@ def chart_grid(figures, links=None):
     for start in range(0, len(figures), 4):
         lines += ["  <tr>"]
         group = figures[start:start + 4]
-        for name, description in group:
+        for name, title, description in group:
             image = escape(f"reports/charts/{name}.png", quote=True)
             vector = escape(f"reports/charts/{name}.svg", quote=True)
             alt = escape(description, quote=True)
             target = escape(links[name], quote=True) if links else image
             lines += [
                 '    <td width="25%" align="center">',
+                f'      <a href="{target}"><strong>{escape(title)}</strong></a><br>',
                 f'      <a href="{target}"><img src="{image}" alt="{alt}" width="220"></a><br>',
                 f'      <a href="{image}">PNG</a> · <a href="{vector}">SVG</a>',
                 "    </td>",
@@ -62,12 +79,13 @@ def chart_grid(figures, links=None):
 
 def comparison_table(comparisons):
     models = comparisons[0]["models"]
+    anchors = model_anchors(models)
     lines = [
         "Main validation metric per task; **best observed values** are bold. "
         "Failures are included. Caption ROUGE-L uses its native scale; other values are percentages. "
         "Select a model or task name for detailed metrics and usage.", "",
         "| Task | Main metric | " + " | ".join(
-            f"[{model['label']}](#model-{model['run']})" for model in models) + " |",
+            f"[{model['label']}](#{anchors[model['run']]})" for model in models) + " |",
         "|---|---|" + "---:|" * len(models),
     ]
     for comparison in comparisons:
@@ -91,14 +109,17 @@ def model_sections(model_rows, charts):
         return []
     labels = {model["run"]: model["label"]
               for task in charts.get("task_comparisons", []) for model in task["models"]}
+    anchors = model_anchors([{**model, "label": labels.get(model["run"], model["model"])}
+                             for model in models])
     lines = [
         "## Model profiles", "",
         "**Model view:** each radar chart summarizes one model across the benchmark tasks, "
         "showing its strengths and weaknesses. Select a chart or expand a model below "
         "for full metrics, usage, cost and latency.", "",
     ]
-    lines += chart_grid([(model["figure"], f"Model profile for {model['model']}") for model in models],
-                        links={model["figure"]: f"#model-{model['run']}" for model in models})
+    lines += chart_grid([(model["figure"], labels.get(model["run"], model["model"]),
+                          f"Model profile for {model['model']}") for model in models],
+                        links={model["figure"]: f"#{anchors[model['run']]}" for model in models})
     lines += [
         "All profiles use the same axes and scale; higher is better. Failures are included. "
         "Polygon area is not an overall score. "
@@ -110,8 +131,9 @@ def model_sections(model_rows, charts):
         image = escape(f"reports/charts/{model['figure']}.png", quote=True)
         alt = escape(f"Model profile for {model['model']}", quote=True)
         lines += [
-            "<details>", f"<summary><strong>{label}</strong></summary>", "",
             f'<a id="{escape(f"model-{run}", quote=True)}"></a>', "",
+            f"### {label}", "",
+            "<details>", "<summary>View chart, metrics and usage</summary>", "",
             f'<a href="{image}"><img src="{image}" alt="{alt}" width="720"></a>', "",
         ]
         lines += TABLE_HEADER + model_rows[run] + ["", "</details>", ""]
@@ -128,7 +150,7 @@ def task_sections(table_rows, charts):
             "usage, cost and latency.", "",
         ]
         lines += chart_grid([
-            (comparison["figure"], f"Model comparison: {comparison['title']}")
+            (comparison["figure"], comparison["title"], f"Model comparison: {comparison['title']}")
             for comparison in comparisons.values()
         ], links={comparison["figure"]: f"#{TASK_ANCHORS[comparison['task']]}"
                   for comparison in comparisons.values()})
@@ -137,13 +159,15 @@ def task_sections(table_rows, charts):
     for title, variations in TASK_SECTIONS:
         if not any(table_rows.get(task) for task, _ in variations):
             continue
-        lines += ["<details>", f"<summary><strong>{escape(title)}</strong></summary>", ""]
+        has_variations = any(variation for _, variation in variations)
+        summary = "View variations" if has_variations else "View chart, metrics and usage"
+        lines += [f"### {title}", "", "<details>", f"<summary>{summary}</summary>", ""]
         for task, variation in variations:
             if not table_rows.get(task):
                 continue
             if variation:
-                lines += ["<details>", f"<summary><strong>{escape(variation)}</strong></summary>", ""]
-            lines += [f'<a id="{TASK_ANCHORS[task]}"></a>', ""]
+                lines += [f"#### {variation}", "", "<details>",
+                          "<summary>View chart, metrics and usage</summary>", ""]
             if task in comparisons:
                 comparison = comparisons[task]
                 image = escape(f"reports/charts/{comparison['figure']}.png", quote=True)

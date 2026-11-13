@@ -213,12 +213,13 @@ def test_report_repeats_the_same_observations_in_model_and_task_views(tmp_path):
     comparisons = [{"task": name, "title": spec.chart_title, "metric": spec.primary_metric,
                     "figure": f"task-comparisons/{name}", "value_format": "native" if name == "describe" else "percent",
                     "models": []} for name, spec in TASKS.items()]
+    labels = {"first": "Kimi K3.1", "second": "Qwen3-VL-2B"}
     for index, run in enumerate(("first", "second")):
         write_json(runs / run / "config.json", {"tasks": list(TASKS), "max_new_tokens": 4096})
         profiles.append({"run": run, "model": run, "figure": f"model-profiles/{run}"})
         for comparison, (name, spec) in zip(comparisons, TASKS.items()):
             score = .5 + index * .1
-            comparison["models"].append({"run": run, "label": run, "score": score})
+            comparison["models"].append({"run": run, "label": labels[run], "score": score})
             path = runs / run / f"{name}.json"
             write_json(path, {
                 "task": name, "dataset": spec.dataset, "model": run, "revision": "pinned",
@@ -241,8 +242,18 @@ def test_report_repeats_the_same_observations_in_model_and_task_views(tmp_path):
     assert all(detail_rows.count(row) == 2 for row in detail_rows)
     assert page.count("<details>") == page.count("</details>") == 10
     assert page.count("<img ") == 18  # Nine overview thumbnails and nine detail charts.
-    anchors = set(re.findall(r'<a id="([^"]+)"', page))
+    anchors = set(re.findall(r'<a id="([^"]+)"', page)) | {
+        "kimi-k31", "qwen3-vl-2b", "classification", "detection", "grounding",
+        "box", "point", "attributes", "vqa", "captioning",
+    }
     assert set(re.findall(r'href="#([^"]+)"', page)) <= anchors
+    assert "[Kimi K3.1](#kimi-k31)" in page
+    assert "[Qwen3-VL-2B](#qwen3-vl-2b)" in page
+    assert "### Kimi K3.1\n\n<details>\n<summary>View chart, metrics and usage</summary>" in page
+    assert "### Classification\n\n<details>\n<summary>View chart, metrics and usage</summary>" in page
+    assert "### Grounding\n\n<details>\n<summary>View variations</summary>" in page
+    assert "#### Box\n\n<details>\n<summary>View chart, metrics and usage</summary>" in page
+    assert "#### Point\n\n<details>\n<summary>View chart, metrics and usage</summary>" in page
     assert page.rfind("## Table field guide") > page.rfind("</details>")
     metadata = json.loads((tmp_path / "reports/report-manifest.json").read_text())
     assert "benchmarks/src/task_registry.py" in metadata["source_sha256"]

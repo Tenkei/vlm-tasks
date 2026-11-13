@@ -133,9 +133,11 @@ concurrency, cold downloads, peak memory and energy are not measured.
 The [radar charts](README.md#model-profiles) show one profile per
 model/run, with identical axis order and a fixed radial range of 0–100. Every
 plotted value is its recorded metric multiplied by 100; higher is better.
-This model view begins with a four-column overview grid. Each thumbnail links
-to a collapsed model section with the full radar chart and a table of that
-model's task metrics and usage. Download links appear in the grid only.
+This model view begins with a four-column overview grid. Each thumbnail has
+the model name above it; both the name and image link
+to a model's Markdown heading, followed by a collapsed block containing its full
+radar chart and task metrics and usage table. These headings provide GitHub's
+native section permalinks and outline entries. Download links appear in the grid only.
 Radial tick numbers, the scale subtitle and the sample-count subtitle are hidden.
 Task titles are bold, with metric labels and values in regular weight.
 There is no normalization to the best observed model or to sample count.
@@ -187,12 +189,15 @@ model labels and filenames. A models-by-tasks matrix near the top of the
 comparison README shows the main metrics with the best observed values in
 bold. Its column and row labels link to the corresponding model and task details.
 Task comparisons then begin with a four-column thumbnail grid presenting the
-task view: all models compared on each task. Chart thumbnails link to the
+task view: all models compared on each task. Each thumbnail has its task name
+above it; both the name and image link to the
 matching details; PNG/SVG downloads appear in the overview grids only.
-Each task is collapsed by default and pairs its chart with the full validation
-and usage table. Grounding nests collapsible Box and Point variations using
-the same chart-then-table layout. Fragment anchors sit inside the disclosures
-so browsers can reveal the linked details. The tables retain additional validation metrics, failures, tokens per
+Each task has a level-three Markdown heading above a collapsed block pairing
+its chart with the full validation and usage table. Grounding nests Box and
+Point variations with level-four headings above their own collapsed blocks,
+using the same chart-then-table layout. Overview links target the native heading
+fragments; the previous model anchors remain as aliases above the headings.
+The tables retain additional validation metrics, failures, tokens per
 sample, cost per 1,000 samples and mean latency; charts compare task quality only.
 Shared column definitions and interpretation notes appear in the README's
 final [Table field guide](README.md#table-field-guide), with

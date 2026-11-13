@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-11-12T09:04:24.682835+00:00",
-  "summarizer_sha256": "af64ab1e7e097d9cfe6f441315f70e912991c0a915df1f61152b86cbb2538d2b",
+  "generated_at": "2026-11-13T04:01:26.223236+00:00",
+  "summarizer_sha256": "6597730fd7d5b17be5821aeab6174f1501e27c592f18a0311bcb57709572b749",
   "source_sha256": {
-    "benchmarks/src/generate_report.py": "af64ab1e7e097d9cfe6f441315f70e912991c0a915df1f61152b86cbb2538d2b",
+    "benchmarks/src/generate_report.py": "6597730fd7d5b17be5821aeab6174f1501e27c592f18a0311bcb57709572b749",
     "benchmarks/src/task_registry.py": "6560235c80797ac0f9f893408dccdd16fc843bd4f854c3ce627d95d726b31033",
     "benchmarks/src/artifacts.py": "4719423a8260c04ecf9f56992f39af1c98c3cdb2531e9a15099052b1d084bab9"
   },
