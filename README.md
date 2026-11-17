@@ -15,6 +15,27 @@ detection, grounding and attribute prediction.
 **VLM tasks focuses on vision tasks.** For general LLM tasks such as chat,
 text generation and agent workflows, see other popular projects.
 
+## What's new
+
+<table>
+  <tr>
+    <td width="34%" align="center" valign="top">
+      <p><a href="benchmarks/README.md#qwen3-vl-235b-2-retries"><img src="benchmarks/reports/charts/model-profiles/qwen3-vl-235b-bedrock-retries-2-20261117.png" alt="Qwen3-VL-235B with two retries: performance across vision tasks" width="240"></a></p>
+    </td>
+    <td width="66%" valign="top">
+      <p><strong>Qwen3-VL-235B on AWS Bedrock · 2026-11-17</strong><br>
+      100 samples per task variant, with up to two correction retries.</p>
+      <ul>
+        <li><strong>Grounding:</strong> 81% Acc@0.5 for boxes and 85% Point-in-box Acc.</li>
+        <li><strong>Task performance:</strong> 96% classification Top-1 Acc and 78.02% attribute Acc; detection remains challenging at 28.45% F1@0.5.</li>
+        <li><strong>Response reliability:</strong> zero final failures across 700 samples, averaging about 1.2 requests per sample, including the initial request.</li>
+      </ul>
+      <p>See the <a href="benchmarks/README.md#qwen3-vl-235b-2-retries">full results and usage breakdown</a>
+      and <a href="benchmarks/methodology.md#correction-retry-runs">retry methodology</a>.</p>
+    </td>
+  </tr>
+</table>
+
 ## Why VLM tasks
 
 Choose a task, provide the minimum information it needs, such as labels or a
