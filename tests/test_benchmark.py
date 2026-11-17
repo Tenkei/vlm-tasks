@@ -10,7 +10,10 @@ from pydantic_ai.usage import RequestUsage
 import pytest
 
 from benchmarks.src.evaluation import RecordingBackend, RecordingModel, ReplayBackend, usage_summary
-from ml_pipes.vlm import Classify, InvalidModelResponseError, PydanticAIBackend, TransformersModel
+from ml_pipes.vlm import (
+    Classify, InvalidModelResponseError, PydanticAIBackend, ResponseConstraintError,
+    ResponseSchemaError, ResponseSyntaxError, TransformersModel,
+)
 
 
 def test_provenance_finds_repository_sources_after_layout_change(monkeypatch):
@@ -34,8 +37,13 @@ def test_provenance_finds_repository_sources_after_layout_change(monkeypatch):
         assert artifacts.digest((root / filename).read_bytes()) == expected
 
 
-def test_benchmark_retains_usage_and_raw_text_for_invalid_predictions(monkeypatch):
-    responses = iter(["not JSON", '{"labels": ["cat"]}'])
+@pytest.mark.parametrize(("raw_text", "error_type"), [
+    ("not JSON", ResponseSyntaxError),
+    ("{}", ResponseSchemaError),
+    ('{"labels": ["unknown"]}', ResponseConstraintError),
+])
+def test_benchmark_retains_usage_and_raw_text_for_invalid_predictions(monkeypatch, raw_text, error_type):
+    responses = iter([raw_text, '{"labels": ["cat"]}'])
 
     def generate(self, messages, info):
         return ModelResponse(parts=[TextPart(next(responses))],
@@ -49,12 +57,12 @@ def test_benchmark_retains_usage_and_raw_text_for_invalid_predictions(monkeypatc
     backend = RecordingBackend(PydanticAIBackend(model, retries=0), stream)
     task = Classify(backend, labels=["cat", "dog"])
     image = np.zeros((2, 3, 3), dtype=np.uint8)
-    with pytest.raises(InvalidModelResponseError):
+    with pytest.raises(error_type):
         task(image)
     assert task(image).labels == ("cat",)
     records = [json.loads(line) for line in stream.getvalue().splitlines()]
-    assert records[0]["error"]["type"] == "InvalidModelResponseError"
-    assert records[0]["generations"][0]["raw_text"] == "not JSON"
+    assert records[0]["error"]["type"] == error_type.__name__
+    assert records[0]["generations"][0]["raw_text"] == raw_text
     assert records[1]["prediction"] == {"labels": ["cat"]}
     usage = usage_summary(model.generations, backend.index)
     assert usage["input_tokens"] == 22
@@ -63,9 +71,17 @@ def test_benchmark_retains_usage_and_raw_text_for_invalid_predictions(monkeypatc
     assert usage["unmeasured_requests"] == 0
     assert usage["estimated_cost_usd"] is None
     replay = Classify(ReplayBackend(records), labels=["cat", "dog"])
-    with pytest.raises(InvalidModelResponseError):
+    with pytest.raises(error_type):
         replay(image)
     assert replay(image).labels == ("cat",)
+    # Original benchmark journals keep their historical base exception type.
+    records[0]["error"]["type"] = "InvalidModelResponseError"
+    with pytest.raises(InvalidModelResponseError):
+        Classify(ReplayBackend(records), labels=["cat", "dog"])(image)
+    if error_type is ResponseConstraintError:
+        records[0]["error"]["type"] = "ResponseContentError"
+        with pytest.raises(ResponseConstraintError):
+            Classify(ReplayBackend(records), labels=["cat", "dog"])(image)
 
 
 def test_benchmark_marks_generation_errors_unmeasured(monkeypatch):
@@ -83,6 +99,70 @@ def test_benchmark_marks_generation_errors_unmeasured(monkeypatch):
         Classify(backend, labels=["cat"])(np.zeros((2, 3, 3), dtype=np.uint8))
     assert json.loads(stream.getvalue())["generations"] == []
     assert usage_summary(model.generations, backend.index)["unmeasured_requests"] == 1
+
+
+@pytest.mark.parametrize("succeeds", [True, False])
+def test_local_benchmark_counts_every_correction_request(monkeypatch, succeeds):
+    outputs = iter(["not JSON", '{"labels":["unknown"]}',
+                    '{"labels":["cat"]}' if succeeds else "not JSON"])
+
+    def generate(self, messages, info):
+        return ModelResponse(parts=[TextPart(next(outputs))],
+                             usage=RequestUsage(input_tokens=11, output_tokens=7))
+
+    monkeypatch.setattr(TransformersModel, "_generate", generate)
+    weights = SimpleNamespace(config=SimpleNamespace(is_encoder_decoder=False))
+    weights.eval = lambda: weights
+    model = RecordingModel(weights, None, model_name="test")
+    stream = StringIO()
+    backend = RecordingBackend(PydanticAIBackend(model, retries=2), stream)
+    task = Classify(backend, labels=["cat"])
+    image = np.zeros((2, 3, 3), dtype=np.uint8)
+    if succeeds:
+        assert task(image).labels == ("cat",)
+    else:
+        with pytest.raises(ResponseSyntaxError):
+            task(image)
+    record = json.loads(stream.getvalue())
+    usage = usage_summary(model.generations, backend.attempted_requests)
+    assert backend.index == 1
+    assert record["attempted_requests"] == usage["attempted_requests"] == 3
+    assert len(record["generations"]) == usage["measured_requests"] == 3
+    assert usage["unmeasured_requests"] == 0
+    assert usage["input_tokens"] == 33 and usage["output_tokens"] == 21
+
+
+def test_local_benchmark_counts_unmeasured_correction_attempt(monkeypatch):
+    from ml_pipes.vlm import ModelExecutionError
+
+    outputs = iter(["not JSON", RuntimeError("generation interrupted")])
+
+    def generate(self, messages, info):
+        output = next(outputs)
+        if isinstance(output, Exception):
+            raise output
+        return ModelResponse(parts=[TextPart(output)], usage=RequestUsage(input_tokens=11, output_tokens=7))
+
+    monkeypatch.setattr(TransformersModel, "_generate", generate)
+    weights = SimpleNamespace(config=SimpleNamespace(is_encoder_decoder=False))
+    weights.eval = lambda: weights
+    model = RecordingModel(weights, None, model_name="test")
+    backend = RecordingBackend(PydanticAIBackend(model, retries=2), StringIO())
+    with pytest.raises(ModelExecutionError):
+        Classify(backend, labels=["cat"])(np.zeros((2, 3, 3), dtype=np.uint8))
+    usage = usage_summary(model.generations, backend.attempted_requests)
+    assert usage["attempted_requests"] == 2
+    assert usage["measured_requests"] == usage["unmeasured_requests"] == 1
+
+
+@pytest.mark.parametrize("value", [-1, True, 1.5, "2"])
+def test_benchmark_rejects_invalid_retry_configs(value):
+    from benchmarks.src.evaluation import max_retries
+
+    assert max_retries({}) == 0
+    assert max_retries({"retries": 2}) == 2
+    with pytest.raises(ValueError, match="nonnegative integer"):
+        max_retries({"retries": value})
 
 
 @pytest.mark.parametrize("sample_scale", [1, 3])

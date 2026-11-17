@@ -95,6 +95,14 @@ incorrect for every known target; failed answer calls score zero. Failed samples
 and their targets remain in the evaluation and relevant score denominators.
 Data, setup, and programming errors stop the run.
 
+Response failures retain their specific exception name in each failure record:
+`ResponseSyntaxError` for JSON parsing, `ResponseSchemaError` for structure/types,
+and `ResponseConstraintError` for value constraints. All are subclasses of
+`InvalidModelResponseError` and follow the same scoring policy. Aggregate
+failure counts and rates combine all categories. See the
+[response error guide](model-backends.md#response-errors) for category rules
+and handling, and the [API reference](reference.md#errors) for error types.
+
 Grounding `not_found` and `ambiguous` responses score zero against a positive
 target. Each referring expression is evaluated independently, even when several
 expressions use the same image.

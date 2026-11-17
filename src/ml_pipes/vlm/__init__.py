@@ -1,6 +1,9 @@
 """Structured vision-language task operators."""
 from .backend import PydanticAIBackend
-from .errors import InvalidModelResponseError, ModelExecutionError
+from .errors import (
+    InvalidModelResponseError, ModelExecutionError, ResponseConstraintError,
+    ResponseSchemaError, ResponseSyntaxError,
+)
 from .ops import Answer, Attributes, Classify, ClassifyMultiLabel, Describe, Detect, Ground
 from .transformer import TransformersModel
 from .types import (
@@ -15,5 +18,6 @@ __all__ = [
     "PydanticAIBackend", "TransformersModel", "BoundingBox", "Point", "ClassificationResult", "Detection",
     "DetectionResult", "GroundingResult", "AttributePredictionResult", "DescriptionResult", "AnswerResult",
     "ModelBackend", "ModelRequest", "ModelResponse", "ResponseSpec", "Usage",
-    "InvalidModelResponseError", "ModelExecutionError",
+    "InvalidModelResponseError", "ResponseSyntaxError", "ResponseSchemaError",
+    "ResponseConstraintError", "ModelExecutionError",
 ]

@@ -1,7 +1,9 @@
 # Benchmark methodology
 
-This protocol compares configured VLM task pipelines using **100 samples per
-task**. Results live in the [dedicated comparison table](README.md).
+This protocol compares configured VLM task pipelines on frozen validation
+samples. Results live in the [benchmark report](README.md); its
+[Table field guide](README.md#table-field-guide) explains metric labels,
+reported columns, units and normalization.
 Python code lives in [`src/`](src/) and model configurations in
 [`configs/`](configs/), alongside the results and this method. The code calls
 the library's public `.val()` method and does not implement alternative task
@@ -28,106 +30,189 @@ benchmarks/
 ```
 
 Python modules use `snake_case` and describe their action or responsibility.
-Model configs use `<model>-<backend>.json`, including model size where relevant.
+Model configs use `<model>-<backend>.json`, including model size where relevant;
+retry variants append `-retries-<limit>`.
 Report folders match the overview's **Model profiles** and **Task comparisons**
 sections. Recorded run IDs, task IDs and original metadata retain their identity
 when directories move. Prepared datasets are cached in
 `.cache/prepared-datasets-100/`; the suffix identifies the configured sample count.
 
+## Benchmark parameters
+
+Each run uses a JSON configuration from [`configs/`](configs/). The sample
+count, output budget and retry allowance are configurable; the values below
+describe the published runs rather than requirements of the protocol.
+
+| Parameter | Behavior | Published configurations |
+|---|---|---|
+| `model` and backend settings | Select the model and execution environment; record revisions, hardware or provider routing where available | Local Transformers and AWS Bedrock; see each config |
+| `tasks` | Select task variants to evaluate | Seven variants across six vision tasks |
+| `samples_per_task` | Positive sample count, frozen during preparation; the run must match its prepared manifest | 100 per variant |
+| `max_new_tokens` | Maximum generated tokens per request, including each correction attempt | 4,096 |
+| `retries` | Nonnegative maximum correction attempts after the initial request; defaults to `0` when omitted | `0` |
+| Generation settings | Control decoding where the backend supports it; record differences such as provider-controlled sampling | Local greedy decoding with seed 42; hosted settings vary by model |
+| `match_iou`, `tokenizer_version` | Fix detection matching and caption tokenization for scoring | `0.5` and Stanford PTBTokenizer `3.4.1` |
+
+Both runners currently use prompted JSON output. The library also supports
+native and tool output where the provider allows them; these are described in
+[output modes and retries](../docs/model-backends.md#output-modes-and-retries)
+and are not exposed as benchmark config parameters. Actual generation
+configuration, processor or provider settings, output instructions and retry
+allowance are saved in each run's `model.json`.
+
+For a model comparison, keep the prepared data, task instructions, response
+schemas, scoring, token budget and retry allowance the same, and record any
+differences. To study a parameter such as retries or token budget, change that
+parameter in a separate config and save a separate run. These comparisons
+evaluate different inference budgets as well as task quality.
+
+A fixed output cap bounds repetitive generation, but can truncate valid long
+answers. Increasing it is a separate experiment; see
+[token-budget reproduction](#double-the-budget-for-capped-responses).
+Correction retries keep the same cap and usually do not resolve cap failures;
+see [Correction retry runs](#correction-retry-runs) for when they are useful.
+
 ## Fixed protocol
 
-The first model is `Qwen/Qwen3-VL-2B-Instruct` from Hugging Face, revision
-`89644892e4d85e24eaac8bacfd4f463576704203`. Its configuration is
-[`qwen3-vl-2b-transformers.json`](configs/qwen3-vl-2b-transformers.json). Run locally with Transformers, Apple
-MPS, float16, greedy decoding (`do_sample=False`), seed 42, a maximum of 4,096
-new tokens per request, prompted JSON output, and zero correction retries.
-The generation configuration, processor settings, chat template, and output
-instructions are saved in each run's `model.json`. Calls have independent
-conversation history. The model is loaded once and tasks run sequentially in
-configuration order. There is no separate warmup; the first call is included.
-The baseline host is an Apple M1 Pro with 32 GiB unified memory, running macOS
-15.5. Exact Python and package versions are saved with the run.
+Select the first `samples_per_task` eligible rows in each default loader's
+source order, with no shuffle or prediction-based filtering. The local seed
+controls model setup; selection is an ordered prefix and has no sampling seed.
+Both grounding modes use exactly the same expressions. The published runs
+use 100 samples for each of seven variants, or 700 evaluated task samples per
+run, with repeated images possible within and across tasks.
 
-Select the first 100 eligible rows in each default loader's source order, with
-no shuffle or prediction-based filtering. The seed controls model setup; it is
-not a sampling seed because selection is an ordered prefix. Both grounding
-modes use exactly the same expressions. This is 700 evaluated task samples,
-with repeated images possible within and across tasks.
-
-| Task | Dataset and selection unit | Split | Aggregate validation metrics |
-|---|---|---|---|
-| Classify | CIFAR-10, images; pinned dataset revision `0b2714987fa478483af9968de7c934580d0bb9a2` | `val` aliases test | Top-1 accuracy; per-class precision/recall/F1 in JSON |
-| Detect | COCO128, images; all 80 labels | `val` uses the same training images as `train` | Pooled precision/recall/F1 at inclusive IoU 0.5; TP/FP/FN |
-| Ground, box | RefCOCOg UMD, referring expressions | val | Accuracy at IoU ≥0.5/0.75/0.9; mean IoU |
-| Ground, point | Same RefCOCOg expressions | val | Point inside target box, including edges |
-| Attributes | OVAD, eligible object crops; all 22 categorical groups | `val` aliases benchmark | Accuracy across known decisions; mean group accuracy; macro F1 |
-| Answer | VQA v2, questions with all ten answer votes | val | Mean normalized leave-one-annotator-out consensus accuracy |
-| Describe | COCO Captions 2017, images with all reference captions | val | CIDEr, corpus BLEU-1/2/3/4, ROUGE-L |
+| Task | Dataset and selection unit | Split |
+|---|---|---|
+| Classify | CIFAR-10, images; pinned dataset revision `0b2714987fa478483af9968de7c934580d0bb9a2` | `val` aliases test |
+| Detect | COCO128, images; all 80 labels | `val` uses the same training images as `train` |
+| Ground, box | RefCOCOg UMD, referring expressions | val |
+| Ground, point | Same RefCOCOg expressions | val |
+| Attributes | OVAD, eligible object crops; all 22 categorical groups | `val` aliases benchmark |
+| Answer | VQA v2, questions with all ten answer votes | val |
+| Describe | COCO Captions 2017, images with all reference captions | val |
 
 Task settings use library defaults and no extra context. Dataset vocabularies
 provide classification/detection labels and attribute choices. Grounding
 receives each expression, and Answer receives each question. Caption scoring
 uses Stanford PTBTokenizer 3.4.1 with its pinned SHA-256; CIDEr document
-frequencies are computed over the selected 100 images. Detailed metric and
+frequencies are computed over the selected images. Detailed metric and
 dataset adaptation rules are in [validation](../docs/validation.md).
 
 `ClassifyMultiLabel` has no built-in validation dataset and is excluded. Planned
 tasks such as ReadText are excluded.
 
+Each sample starts a fresh conversation. The local model is loaded once, and
+each run executes its configured tasks and samples sequentially. There is no
+separate warmup; the first inference call is included in timing.
+
 ## Failures and usage
 
-Inference and parsing failures remain in all applicable denominators; validation
-uses its existing failure policy. Grounding abstentions score zero against
-positive targets; VQA abstentions score zero. Failed captions use empty text
-with references retained. Detection failures produce no boxes, so they add false
-negatives for targets but no false positives. Data/setup/programming errors stop
-the run and do not produce a completed task report.
+Model response failures remain in all applicable denominators; validation
+uses its existing failure policy after any correction attempts are exhausted.
+Grounding abstentions score zero against positive targets; VQA abstentions
+score zero. Failed captions use empty text with references retained.
+Detection failures produce no boxes, so they add false negatives for targets
+but no false positives. Data/setup/programming errors stop the run and do
+not produce a completed task report. The Bedrock runner also stops on
+infrastructure failures, retaining its journal for investigation.
 
-The runner observes the existing Transformers adapter **before** PydanticAI
-parsing. Every returned generation is saved, including invalid JSON and
-schema-invalid responses. Token totals therefore include generated responses
-that fail validation. Input counts come from processed `input_ids` and include
-schema, instructions, and expanded visual tokens. Output counts include all
-generated token IDs, including generated special tokens. These tokenizer counts
-are specific to each model; raw token counts are not interchangeable across
-model families.
+Both runners record model responses **before** PydanticAI parsing. Every
+returned generation is saved, including invalid responses. The local runner
+measures input from processed `input_ids` and output from generated token IDs,
+including generated special tokens. The Bedrock runner records the provider's
+usage counters, stop reasons and request IDs.
 
-Each report records attempted, measured, and unmeasured requests. A generation
+Each report records attempted, measured and unmeasured requests. A generation
 error that prevents the adapter from returning usage is marked unmeasured;
-partial token consumption cannot be recovered. With retries fixed to zero,
-there is one attempted model call per evaluated sample. Local monetary cost is
+partial token consumption cannot be recovered. Every initial and correction
+attempt is counted, including attempts that fail. Local monetary cost is
 `null`, since hardware and electricity costs are not measured.
 
-The comparison table reports mean input and output tokens **per evaluated sample**,
-rounded to the nearest whole token. Estimated cost is **USD per 1,000 samples**:
-each task's total estimated cost divided by its evaluated sample count (N),
-including failed samples, then multiplied by 1,000. This is a projection using
-observed usage and pricing; it does not assume batching or batch discounts.
-Failure and token-cap rates also use N; latency is a per-sample mean.
-N is shown separately. Task reports retain usage totals, and the CSV includes
-totals, precise per-sample values and cost per 1,000 samples. This keeps
-usage comparisons independent of sample count, although a different sample mix
-can change the averages. Unmeasured requests are included in N; incomplete usage
-or cost coverage means the corresponding averages are partial.
+Usage, estimated cost and inference duration include all correction attempts
+and the conversation history sent with each one. Failed samples and samples
+with unmeasured requests remain in the evaluation denominator; incomplete usage
+or cost coverage makes the corresponding aggregates partial. Task reports
+retain usage totals and the CSV retains precise values. The
+[Table field guide](README.md#table-field-guide) defines the report's metric
+labels, denominators, cap counting, units and formatting.
 
-Table and chart labels omit unnecessary trailing zeros; stored values retain
-their original precision.
+The validator times the whole task call, including image encoding,
+preprocessing, generation, correction attempts and parsing. Dataset loading
+and metric calculation have separate timings. Dataset preparation and shared
+model load time are recorded separately. Hosted timing includes network and
+service time. Batching, concurrency, cold downloads, peak memory and energy
+are not measured.
 
-The **Failure rate (at cap)** column shows the overall failure rate followed
-by the rate of responses at the output token cap in parentheses, for example
-`21% (13%)`. Both rates use N; cap hits can include valid responses and are
-not necessarily a subset of failures. The cap rate flags
-possible truncation; inspect raw text to distinguish an incomplete response
-from one finishing exactly at the limit. A fixed, generous budget makes
-quality and usage comparable while bounding repetitive generation. It can
-still truncate valid long answers, so cap hits must accompany accuracy scores.
-A different budget is a separate benchmark configuration and run.
+## Correction retry runs
 
-Inference latency is the validator's mean task-call time, including image
-encoding, preprocessing, generation and parsing. Dataset loading and metric
-calculation have separate timings. Dataset preparation and shared model load
-time are recorded separately. These are sequential local timings; batching,
-concurrency, cold downloads, peak memory and energy are not measured.
+Set `retries` in any Transformers or Bedrock benchmark config to allow
+PydanticAI response correction. It is a nonnegative integer and defaults to
+`0`: one initial request, with no correction attempts. A value of `2` permits
+up to two additional attempts, or three model requests per sample. Retries can
+help with invalid responses, but usually do not resolve output-token-limit
+failures because **every attempt retains the same output cap**.
+
+### How correction works
+
+When parsing or response validation fails, the backend sends validation
+feedback to the model in the same sample's conversation. The original image,
+instructions and response schema remain available alongside previous outputs
+and feedback. The first response that passes validation is scored and ends
+the sample's correction loop; unused retries make no requests. A new sample
+starts with a fresh conversation. The benchmark applies no additional JSON
+repair, coordinate inference or schema relaxation.
+
+If all attempts fail, the sample follows the ordinary validation failure
+policy. The terminal exception describes the final failed attempt, as
+documented in the [response error guide](../docs/model-backends.md#response-errors). The journal
+retains every returned generation and the attempted-request count, including
+failed attempts. Usage and timing cover the whole conversation; see the
+[Table field guide](README.md#table-field-guide) for reporting definitions.
+The [backend guide](../docs/model-backends.md#output-modes-and-retries)
+describes the underlying retry API.
+
+### When to use retries
+
+Retries are most useful for occasional format or constraint violations that
+the model can correct from specific validation feedback. Inspect saved failed
+responses before choosing an allowance. The
+[response error guide](../docs/model-backends.md#response-errors) explains the categories; their
+implications for retries are:
+
+- **`ResponseSyntaxError`**: a model can regenerate malformed JSON. Check for
+  truncation or repetitive generation first, since those usually persist at
+  the same token cap.
+- **`ResponseSchemaError`**: feedback can help a model follow the required
+  fields, nesting, types and item counts. The next response must satisfy the
+  original schema; the benchmark does not reinterpret arrays as coordinates
+  or infer missing fields.
+- **`ResponseConstraintError`**: feedback can identify violations such as
+  unsupported labels, out-of-range coordinates or inconsistent status/value
+  combinations. A corrected response still needs to be scored for task
+  quality; satisfying constraints does not establish that a prediction is
+  correct.
+
+A valid but incorrect label, answer or location does not trigger correction.
+Valid abstentions also remain ordinary scored predictions. Ground-truth
+targets and validation scores are never supplied as correction feedback.
+
+For persistent truncation or token loops, investigate prompts, model behavior
+or a separate token-budget configuration. A local Qwen3-VL-2B retry trial
+showed little improvement while increasing token usage and latency; most
+capped responses remained invalid after correction attempts.
+
+Response correction is separate from SDK transport retries. Authentication,
+connection and other execution failures are not response-validation errors;
+the Bedrock benchmark stops on infrastructure failures and retains its
+journal. SDK attempts are configured independently and fixed to one in the
+published Bedrock configs.
+
+Store a retry configuration as a separate full run using the same frozen
+samples, first-attempt prompts, schemas and scoring. Changing the retry
+allowance changes the inference budget. Hosted first-attempt outputs can
+vary even at temperature zero, so differences from an earlier baseline may
+also include initial-response variation. Inspect attempts within each saved
+sample to see what correction changed.
 
 ## Model profile charts
 
@@ -264,6 +349,16 @@ installed versions for the baseline. Use a suitable PyTorch/torchvision pair
 for other hardware and record that difference. Java must be on `PATH` for
 caption scoring. See the [Transformers setup](../docs/huggingface-transformers.md).
 
+### Local Qwen3 baseline
+
+The first published model is `Qwen/Qwen3-VL-2B-Instruct` from Hugging Face,
+revision `89644892e4d85e24eaac8bacfd4f463576704203`. Its configuration is
+[`qwen3-vl-2b-transformers.json`](configs/qwen3-vl-2b-transformers.json):
+Transformers, Apple MPS, float16, greedy decoding (`do_sample=False`), seed 42,
+4,096 new tokens per request and zero correction retries. The baseline host
+is an Apple M1 Pro with 32 GiB unified memory running macOS 15.5. Exact
+Python and package versions are saved with the run.
+
 Prepare data independently of inference. This downloads source annotations,
 the selected images, and the caption tokenizer into the benchmark cache:
 
@@ -277,10 +372,9 @@ python -m benchmarks.src.generate_report
 ```
 
 Both preparation and inference require a new output directory to prevent
-overwriting an existing run. `--offline` on the inference command requires
-already cached weights and processor files. If interrupted, complete remaining
-tasks with `--tasks TASK ...` in a new output directory; keep artifacts from
-both invocations. Existing results are never silently reused as fresh inference.
+overwriting an existing run. For an interrupted run, see
+[offline loading and resuming](#offline-loading-and-resuming). Existing
+results are never silently reused as fresh inference.
 
 For cached local source files, pass `--sources path/to/sources.json` to
 preparation. The JSON maps dataset names to keyword arguments of the public
@@ -313,6 +407,28 @@ Task definitions, validation metric labels and chart axes are shared in
 validation dispatch, frozen-data checks and response recording in
 [`evaluation.py`](src/evaluation.py). The command modules handle model setup and
 artifact writing. Reporting reads saved results and makes no model calls.
+
+### Offline loading and resuming
+
+`--offline` on `run_transformers` restricts checkpoint and processor loading
+to cached files. Caption scoring also uses a checksum-verified Stanford
+tokenizer. The pinned datasets library checks its remote metadata even when
+the JAR is cached, so `HF_HUB_OFFLINE` and `HF_DATASETS_OFFLINE` must remain
+unset or zero for that step. Local model loading can still use `--offline`.
+
+Both runners support `--resume` at a task boundary: rerun the original
+inference command with the same config, prepared data and output directory,
+adding `--resume`. They verify the saved configuration, dataset manifest,
+completed sample indices and model settings. Complete tasks are retained;
+nonempty journals for unfinished tasks prevent automatic resumption, so a
+partly evaluated task is never silently repeated.
+
+Original metadata is retained. `continuations/<timestamp>/` records the
+continuation's environment, source hashes, model metadata and selected tasks,
+and new task reports reference that environment. Scorer setup interruptions
+before inference add no model requests or scored failures. The local runner
+also supports `--tasks TASK ...` for a selected-task run in a fresh output
+directory; retain artifacts from both invocations if using this alternative.
 
 ### Larger Qwen3 on AWS Bedrock
 
@@ -352,8 +468,8 @@ problems into an entire task's accuracy failures.
 USD estimates use the recorded `genai-prices` package and each model response's
 usage, including responses that fail parsing. They are separate from provider
 invoices, which the Converse API does not return. Reports record cost coverage
-and unmeasured usage. The comparison table orders models within each task and
-includes estimated USD per 1,000 samples, whole tokens per sample and mean latency.
+and unmeasured usage; display conventions are defined in the
+[Table field guide](README.md#table-field-guide).
 
 ### Gemma 3 27B and Kimi K3.1 on AWS Bedrock
 
@@ -405,13 +521,8 @@ HF_HUB_OFFLINE=0 HF_DATASETS_OFFLINE=0 .venv/bin/python -m benchmarks.src.run_be
   --output benchmarks/runs/kimi-k3.1-bedrock-20261112 --resume
 ```
 
-`--resume` verifies the saved config, prepared manifest, completed sample
-indices and model settings. It skips complete tasks and refuses to repeat a
-task with a nonempty interrupted request journal. Original metadata remains
-unchanged; `continuations/<timestamp>/` records the continuation's environment,
-source hashes, model metadata and selected tasks. New task reports reference
-their execution environment. The tokenizer setup interruption adds no model
-calls or scored failures.
+These commands follow the shared [resume procedure](#offline-loading-and-resuming).
+The tokenizer setup interruptions added no model calls or scored failures.
 
 Kimi K3.1 reasons by default at the provider's `max` effort. These runs leave
 model-specific reasoning defaults unchanged; raw reasoning text and total
@@ -500,6 +611,7 @@ artifacts are retained as evidence of their execution environment.
 | `benchmarks/src/generate_comparison.py` | On-demand local report for two selected model runs |
 | `benchmarks/src/run_token_budget.py` | Paired 2×-budget reruns of capped samples |
 | `benchmarks/src/report_token_budget.py` | Report completed token-budget records after stopping inference |
+| `runs/<run>/config.json` | Requested task, model, sample-count, token-budget and retry settings; omitted retries default to zero |
 | `runs/<run>/manifest.json` | Dataset identities, targets and image hashes |
 | `runs/<run>/environment.json`, `requirements.txt` | Python/platform/package versions, git revision and source hashes |
 | `runs/<run>/model.json` | Actual model/processor/generation configuration |

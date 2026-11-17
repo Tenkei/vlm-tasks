@@ -216,7 +216,7 @@ def test_failures_and_abstentions_keep_denominators_and_statuses(tmp_path):
     assert metrics.failure_rate == pytest.approx(2 / 3)
     assert metrics.status_counts == {"answered": 0, "unanswerable": 1}
     assert [failure["sample_id"] for failure in metrics.failures] == [7, 440]
-    assert [failure["type"] for failure in metrics.failures] == ["ModelExecutionError", "InvalidModelResponseError"]
+    assert [failure["type"] for failure in metrics.failures] == ["ModelExecutionError", "ResponseConstraintError"]
     assert [row["support"] for row in metrics.summary()[:3]] == [1, 1, 1]
 
 

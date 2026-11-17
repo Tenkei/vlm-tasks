@@ -71,10 +71,70 @@ adapter supports prompted output only.
 invalid response, preserving the image, prior response, and validation feedback
 within that request. SDK transport retries are configured separately on the
 provider client. Validation adds no further correction retry policy.
+Retries can help correct invalid responses, but usually do not resolve
+output-token-limit failures: each attempt still has the configured token cap.
+
+See [response errors](#response-errors) for validation categories and handling
+after correction attempts are exhausted.
 
 Calls are synchronous; run them outside an active asyncio event loop.
 `PydanticAIBackend` encodes each image as lossless PNG without resizing it.
 For accepted image types, see the [task guide](tasks.md#images).
+
+## Response errors
+
+Response failures fall into three categories, all inheriting from
+`InvalidModelResponseError` (`ValueError`). Import the exceptions from
+`ml_pipes.vlm`; the [API reference](reference.md#errors) lists all error types.
+
+| Exception | Category | Examples |
+|---|---|---|
+| `ResponseSyntaxError` | JSON syntax | Malformed JSON, missing delimiters |
+| `ResponseSchemaError` | Fields, structure and types | Missing or extra fields, array instead of scalar/object, numeric strings, wrong list length |
+| `ResponseConstraintError` | Value and consistency constraints | Unsupported string label/status, coordinates outside [0, 1], non-finite coordinates, degenerate/reversed boxes, duplicate selected labels, blank text, status/value mismatch |
+
+An unsupported string enum value is a constraint error; a non-string supplied
+for that enum is a schema/type error. If validation finds both schema and
+constraint violations, `ResponseSchemaError` takes precedence and the message
+retains all reported violations. Error categorization uses validator error
+codes, without inferring intended values or repairing the response. A valid
+but incorrect prediction is scored normally and does not trigger correction.
+
+`PydanticAIBackend` raises the specific error after its configured correction
+attempts are exhausted, preserving the final validation details in its message
+and the original exception chain in `__cause__`. The category describes the
+final failed attempt. Unexpected output without a known parsing/validation
+cause, such as an empty response, uses `InvalidModelResponseError` without
+guessing a category. Task schemas apply the same structure and constraint
+categories to custom backends.
+
+Catch specific exceptions to handle categories separately:
+
+```python
+from ml_pipes.vlm import (
+    InvalidModelResponseError, ModelExecutionError,
+    ResponseConstraintError, ResponseSchemaError, ResponseSyntaxError,
+)
+
+try:
+    result = task(image)
+except ResponseSyntaxError as exc:
+    print("JSON syntax:", exc)
+except ResponseSchemaError as exc:
+    print("Response structure:", exc)
+except ResponseConstraintError as exc:
+    print("Response constraints:", exc)
+except InvalidModelResponseError as exc:
+    print("Other invalid response:", exc)
+except ModelExecutionError as exc:
+    print("Execution failed:", exc)
+```
+
+Catch only `InvalidModelResponseError` if all response categories need the
+same handling. Execution failures raise the separate `ModelExecutionError`
+(`RuntimeError`), with the original exception retained in `__cause__`;
+response correction does not handle transport or authentication failures.
+SDK transport retries are configured separately on the provider client.
 
 ## Hosted models
 
@@ -168,4 +228,4 @@ provide correction feedback. The backend handles the shared request/response
 contract; it does not need separate logic for each task.
 
 See the [backend API](reference.md#model-integration) for types and signatures,
-and [errors](reference.md#errors) for execution and response failures.
+and [response errors](#response-errors) for execution and response failures.

@@ -264,10 +264,19 @@ See [metric definitions](validation.md#metric-definitions-and-failures) and
 
 ## Errors
 
+Import from `ml_pipes.vlm`. `ResponseSyntaxError`, `ResponseSchemaError` and
+`ResponseConstraintError` inherit from `InvalidModelResponseError`.
+
 | Exception | Meaning |
 |---|---|
 | `FileNotFoundError` | Missing image or dataset file |
 | `TypeError` | Invalid backend/model type |
 | `ValueError` | Invalid task configuration, image, or dataset input |
-| `InvalidModelResponseError` (`ValueError`) | Malformed or task-invalid model output after allowed correction attempts |
-| `ModelExecutionError` (`RuntimeError`) | Model execution failure; original exception retained as `__cause__` |
+| `InvalidModelResponseError` (`ValueError`) | Common base for invalid model responses |
+| `ResponseSyntaxError` | Invalid JSON syntax |
+| `ResponseSchemaError` | Invalid fields, structure or types |
+| `ResponseConstraintError` | Invalid values or consistency constraints |
+| `ModelExecutionError` (`RuntimeError`) | Model execution failure |
+
+See [response error handling](model-backends.md#response-errors) for category
+rules, retry behavior and examples.

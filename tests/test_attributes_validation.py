@@ -226,7 +226,7 @@ def test_all_failed_runs_and_repeated_resets(tmp_path):
     for metrics in (first, second):
         assert metrics.seen == 3 and metrics.attribute_decisions == 4
         assert metrics.failure_rate == 1 and metrics.accuracy == metrics.macro_f1 == 0
-        assert metrics.failures[0]["type"] == "InvalidModelResponseError"
+        assert metrics.failures[0]["type"] == "ResponseConstraintError"
         assert all(matrix[:, -1].sum() == 2 for matrix in metrics.confusion_matrices.values())
 
 

@@ -9,7 +9,7 @@ from pydantic import (
     field_validator, model_validator,
 )
 
-from .errors import InvalidModelResponseError
+from ._response_errors import validation_error
 from .types import ResponseSpec
 
 
@@ -97,7 +97,7 @@ def _spec(model: type[BaseModel]) -> ResponseSpec:
         try:
             value = model.model_validate(data)
         except ValidationError as exc:
-            raise InvalidModelResponseError(str(exc)) from exc
+            raise validation_error(exc) from exc
         return value.model_dump(mode="json", by_alias=True)
 
     return ResponseSpec(schema=model.model_json_schema(), validate=validate)

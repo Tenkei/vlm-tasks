@@ -151,7 +151,7 @@ def test_constructor_only_labels_are_invalid_validation_predictions(tmp_path):
     assert metrics.names == ("cat", "dog")
     assert metrics.top1 == 0
     assert len(metrics.failures) == 2
-    assert all(failure["type"] == "InvalidModelResponseError" for failure in metrics.failures)
+    assert all(failure["type"] == "ResponseConstraintError" for failure in metrics.failures)
 
 
 @pytest.mark.parametrize("task_kind", ["classify", "detect"])

@@ -16,7 +16,7 @@ from ml_pipes import vlm
 from ml_pipes.vlm.transformer import _PROMPTED_OUTPUT_TEMPLATE
 
 from .artifacts import provenance, utc_now, write_json
-from .evaluation import RecordingBackend, evaluate, load_prepared
+from .evaluation import RecordingBackend, evaluate, load_prepared, max_retries, remaining_tasks
 from .task_registry import DATASETS
 
 
@@ -25,10 +25,12 @@ class RecordingBedrockModel(BedrockConverseModel):
 
     def __init__(self, *args, pricing=None, **kwargs):
         self.generations = []
+        self.attempted_requests = 0
         self.pricing = pricing
         super().__init__(*args, **kwargs)
 
     async def request(self, messages, model_settings, model_request_parameters):
+        self.attempted_requests += 1
         started = perf_counter()
         response = await super().request(messages, model_settings, model_request_parameters)
         if self.pricing is not None:
@@ -117,35 +119,6 @@ def inference_target(client, config, details):
     return profile_id, json.loads(json.dumps(profile, default=str))
 
 
-def remaining_tasks(output, config, manifest):
-    """Resume at a task boundary; never repeat a possibly billed request."""
-    if (output / "completed.json").exists():
-        raise ValueError("This benchmark is already complete")
-    if json.loads((output / "config.json").read_text()) != config:
-        raise ValueError("Resume configuration differs from the saved run")
-    if json.loads((output / "manifest.json").read_text()) != manifest:
-        raise ValueError("Resume prepared data differs from the saved run")
-    pending = []
-    for task in config["tasks"]:
-        report_path = output / f"{task}.json"
-        journal = output / f"{task}.jsonl"
-        if report_path.exists():
-            report = json.loads(report_path.read_text())
-            calls = [json.loads(line) for line in journal.read_text().splitlines()]
-            if (pending or report["model"] != config["model"]
-                    or report["task"] != task
-                    or report["metrics"]["samples"] != config["samples_per_task"]
-                    or len(calls) != config["samples_per_task"]
-                    or [call["index"] for call in calls] != list(range(config["samples_per_task"]))
-                    or report["dataset_fingerprint_sha256"] != manifest["datasets"][DATASETS[task]]["fingerprint_sha256"]):
-                raise ValueError(f"Cannot verify completed task: {task}")
-        else:
-            if journal.exists() and journal.stat().st_size:
-                raise ValueError(f"Task {task} has an interrupted request journal; preserve and inspect it before resuming")
-            pending.append(task)
-    return pending
-
-
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", type=Path, default=Path("benchmarks/configs/qwen3-vl-235b-a22b-bedrock.json"))
@@ -154,6 +127,7 @@ def main(argv=None):
     parser.add_argument("--resume", action="store_true", help="Continue untouched tasks after a task-boundary interruption")
     args = parser.parse_args(argv)
     config = json.loads(args.config.read_text())
+    retries = max_retries(config)
     if args.output.exists() and not args.resume:
         raise FileExistsError(f"Use a new run directory: {args.output}")
     import boto3
@@ -199,7 +173,7 @@ def main(argv=None):
         "inference_model_id": target, "inference_profile": inference_profile,
         "pricing": config.get("pricing"),
         "settings": model.settings, "prompted_output_template": _PROMPTED_OUTPUT_TEMPLATE,
-        "json_schema_transformer": None, "output_mode": "prompted", "retries": 0,
+        "json_schema_transformer": None, "output_mode": "prompted", "retries": retries,
         "sdk_total_max_attempts": config["sdk_total_max_attempts"], "read_timeout_seconds": 600,
         "checkpoint_revision": None, "dtype": None, "device": None, "seed": None,
         "note": "Bedrock manages checkpoint revision, hardware, dtype, image processing and sampling seed",
@@ -215,7 +189,7 @@ def main(argv=None):
         print(f"Running {task_name}: {config['samples_per_task']} frozen samples on {config['model']}", flush=True)
         before = len(model.generations)
         with (args.output / f"{task_name}.jsonl").open("w") as stream:
-            backend = InfrastructureCheckedBackend(vlm.PydanticAIBackend(model, retries=0), stream)
+            backend = InfrastructureCheckedBackend(vlm.PydanticAIBackend(model, retries=retries), stream)
             started = perf_counter()
             metrics = evaluate(task_name, backend, loaded[DATASETS[task_name]], config, args.prepared.parent / "downloads")
             wall_seconds = perf_counter() - started
@@ -224,6 +198,7 @@ def main(argv=None):
         report = {
             "task": task_name, "dataset": DATASETS[task_name], "model": config["model"],
             "inference_model_id": target,
+            "retries": retries,
             "revision": None, "device": f"bedrock/{config['region']}", "dtype": "provider-managed",
             "backend": "bedrock", "region": config["region"], "completed_at": utc_now(),
             "execution_environment": str((metadata_output / "environment.json").relative_to(args.output)),
@@ -232,7 +207,7 @@ def main(argv=None):
             "status_counts": getattr(metrics, "status_counts", {}),
             "dataset_fingerprint_sha256": manifest["datasets"][DATASETS[task_name]]["fingerprint_sha256"],
             "speed_ms_per_sample": metrics.speed, "elapsed_seconds": metrics.elapsed_seconds,
-            "wall_seconds": wall_seconds, "usage": usage_summary(model.generations[before:], backend.index),
+            "wall_seconds": wall_seconds, "usage": usage_summary(model.generations[before:], backend.attempted_requests),
         }
         write_json(args.output / f"{task_name}.json", report)
         from .generate_report import generate_report

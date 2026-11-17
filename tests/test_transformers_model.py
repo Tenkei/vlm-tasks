@@ -213,7 +213,7 @@ def test_cli_continues_after_invalid_task_and_saves_causes(adapter, tmp_path, mo
     report = json.loads(output.read_text())
     assert status == 1
     assert len(loads) == 1
-    assert report["results"]["classify"]["error"]["type"] == "InvalidModelResponseError"
+    assert report["results"]["classify"]["error"]["type"] == "ResponseConstraintError"
     assert report["results"]["classify"]["error"]["causes"]
     assert report["results"]["ground"]["prediction"]["status"] == "not_found"
     assert len(processor.chats) == 2

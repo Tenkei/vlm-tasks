@@ -25,7 +25,7 @@ from ml_pipes.vlm import (
     ClassificationResult, Classify, ClassifyMultiLabel, Describe, DescriptionResult,
     Detect, DetectionResult, Ground, GroundingResult,
     InvalidModelResponseError, ModelExecutionError, ModelResponse,
-    PydanticAIBackend, Usage,
+    PydanticAIBackend, ResponseConstraintError, ResponseSchemaError, ResponseSyntaxError, Usage,
 )
 from ml_pipes.vlm._images import ImageInput
 from ml_pipes.vlm.ops import AttributeChoices, LabelChoices
@@ -162,7 +162,8 @@ def test_public_exports():
         "PydanticAIBackend", "TransformersModel", "BoundingBox", "Point", "ClassificationResult", "Detection",
         "DetectionResult", "GroundingResult", "AttributePredictionResult", "DescriptionResult", "AnswerResult",
         "ModelBackend", "ModelRequest", "ModelResponse", "ResponseSpec", "Usage",
-        "InvalidModelResponseError", "ModelExecutionError",
+        "InvalidModelResponseError", "ResponseSyntaxError", "ResponseSchemaError",
+        "ResponseConstraintError", "ModelExecutionError",
     }
     assert set(vlm.__all__) == expected
     assert all(getattr(vlm, name) is not None for name in expected)
@@ -687,6 +688,80 @@ def test_malformed_output_is_an_invalid_response(image):
     with pytest.raises(InvalidModelResponseError):
         Classify(backend, ["clean"])(image)
     assert len(calls) == 1
+
+
+@pytest.mark.parametrize("mode", ["prompted", "native", "tool"])
+def test_syntax_errors_preserve_parse_details(image, mode):
+    backend, _ = backend_for('{"labels":[', output_mode=mode)
+    with pytest.raises(ResponseSyntaxError, match="Invalid JSON") as caught:
+        Classify(backend, ["clean"])(image)
+    assert isinstance(caught.value, InvalidModelResponseError)
+    assert caught.value.__cause__ is not None
+
+
+@pytest.mark.parametrize("mode", ["custom", "prompted", "native", "tool"])
+@pytest.mark.parametrize(("make_task", "payload", "error_type", "detail"), [
+    (lambda b: Classify(b, ["clean"]), ["clean"], ResponseSchemaError, "Input should"),
+    (lambda b: Classify(b, ["clean"]), {}, ResponseSchemaError, "labels"),
+    (lambda b: Classify(b, ["clean"]), {"labels": "clean"}, ResponseSchemaError, "list"),
+    (lambda b: Classify(b, ["clean"]), {"labels": [1]}, ResponseSchemaError, "labels.0"),
+    (lambda b: Classify(b, ["clean"]), {"labels": []}, ResponseSchemaError, "at least 1"),
+    (lambda b: Classify(b, ["clean"]), {"labels": ["clean", "clean"]}, ResponseSchemaError, "at most 1"),
+    (lambda b: Classify(b, ["clean"]), {"labels": ["clean"], "extra": True}, ResponseSchemaError, "extra"),
+    (lambda b: Classify(b, ["clean"]), {"labels": ["unknown"]}, ResponseConstraintError, "labels.0"),
+    (lambda b: ClassifyMultiLabel(b, ["clean", "dirty"]), {"labels": ["clean", "clean"]}, ResponseConstraintError, "unique"),
+    (lambda b: Ground(b, "chair", geometry="point"),
+     {"status": "found", "point": {"x": [0.55, 0.24]}}, ResponseSchemaError, "point.x"),
+    (lambda b: Ground(b, "chair", geometry="point"),
+     {"status": "found", "point": {"x": "0.5", "y": 0.5}}, ResponseSchemaError, "point.x"),
+    (lambda b: Ground(b, "chair", geometry="point"),
+     {"status": "found", "point": {"x": 2, "y": 0.5}}, ResponseConstraintError, "point.x"),
+    (lambda b: Ground(b, "chair"),
+     {"status": "found", "box": {"x1": 0, "y1": 0, "x2": 0, "y2": 0}}, ResponseConstraintError, "Boxes require"),
+    (lambda b: Describe(b), {"description": " \n"}, ResponseConstraintError, "nonempty"),
+    (lambda b: Describe(b), {"description": ""}, ResponseConstraintError, "at least 1"),
+    (lambda b: Answer(b, "What color?"), {"status": "answered", "answer": None}, ResponseConstraintError, "required"),
+])
+def test_response_errors_distinguish_structure_from_values(image, mode, make_task, payload, error_type, detail):
+    if mode == "custom":
+        backend = lambda request: ModelResponse(payload)
+    else:
+        # Tool-call arguments are a dict or raw JSON string in the SDK.
+        backend, _ = backend_for(json.dumps(payload) if isinstance(payload, list) else payload, output_mode=mode)
+    with pytest.raises(error_type, match=detail) as caught:
+        make_task(backend)(image)
+    assert type(caught.value) is error_type
+    assert isinstance(caught.value, InvalidModelResponseError)
+    assert caught.value.__cause__ is not None
+
+
+def test_mixed_schema_and_constraint_errors_retain_both_details(image):
+    backend, _ = backend_for({"labels": ["unknown"], "extra": True})
+    with pytest.raises(ResponseSchemaError) as caught:
+        Classify(backend, ["clean"])(image)
+    assert "labels.0" in str(caught.value)
+    assert "extra" in str(caught.value)
+
+
+@pytest.mark.parametrize("mode", ["prompted", "native", "tool"])
+@pytest.mark.parametrize(("first", "last", "error_type"), [
+    ({"labels": ["unknown"]}, '{"labels":[', ResponseSyntaxError),
+    ('{"labels":[', {"labels": ["unknown"]}, ResponseConstraintError),
+    ({"labels": ["unknown"]}, {}, ResponseSchemaError),
+    ({"labels": ["unknown"]}, AIResponse(parts=[]), InvalidModelResponseError),
+])
+def test_error_category_follows_final_attempt(image, mode, first, last, error_type):
+    backend, calls = backend_for(first, last, retries=1, output_mode=mode)
+    with pytest.raises(error_type) as caught:
+        Classify(backend, ["clean"])(image)
+    assert type(caught.value) is error_type
+    assert len(calls) == 2
+    # All original causes remain inspectable, without a circular cause chain.
+    cause, seen = caught.value, set()
+    while cause is not None:
+        assert id(cause) not in seen
+        seen.add(id(cause))
+        cause = cause.__cause__
 
 
 def test_execution_error_preserves_cause(image):

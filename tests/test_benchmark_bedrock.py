@@ -83,6 +83,43 @@ def test_bedrock_benchmark_aborts_on_infrastructure_errors():
     assert usage_summary(model.generations, backend.index)["unmeasured_requests"] == 1
 
 
+@pytest.mark.parametrize("succeeds", [True, False])
+def test_bedrock_correction_requests_include_all_usage_and_history(succeeds):
+    client = boto3.client("bedrock-runtime", region_name="ap-northeast-1",
+                          aws_access_key_id="test", aws_secret_access_key="test")
+    stubber = Stubber(client)
+    for text in ("not JSON", '{"labels":["unknown"]}',
+                 '{"labels":["cat"]}' if succeeds else "not JSON"):
+        stubber.add_response("converse", {
+            "output": {"message": {"role": "assistant", "content": [{"text": text}]}},
+            "stopReason": "end_turn", "usage": {"inputTokens": 100, "outputTokens": 10, "totalTokens": 110},
+            "metrics": {"latencyMs": 5},
+        })
+    requests = []
+    client.meta.events.register("before-parameter-build.bedrock-runtime.Converse",
+                                lambda params, **kwargs: requests.append(params))
+    model = RecordingBedrockModel("qwen.qwen3-vl-235b-a22b", provider=BedrockProvider(bedrock_client=client),
+                                  settings={"max_tokens": 4096})
+    stream = StringIO()
+    backend = InfrastructureCheckedBackend(PydanticAIBackend(model, retries=2), stream)
+    with stubber:
+        task = Classify(backend, labels=["cat"])
+        if succeeds:
+            assert task(np.zeros((2, 3, 3), dtype=np.uint8)).labels == ("cat",)
+        else:
+            with pytest.raises(InvalidModelResponseError):
+                task(np.zeros((2, 3, 3), dtype=np.uint8))
+    record = json.loads(stream.getvalue())
+    usage = usage_summary(model.generations, backend.attempted_requests)
+    assert backend.index == 1
+    assert record["attempted_requests"] == usage["attempted_requests"] == 3
+    assert len(record["generations"]) == usage["measured_requests"] == 3
+    assert usage["unmeasured_requests"] == 0
+    assert usage["input_tokens"] == 300 and usage["output_tokens"] == 30
+    assert usage["estimated_cost_complete"]
+    assert [len(request["messages"]) for request in requests] == [1, 3, 5]
+
+
 def test_bedrock_profile_preserves_model_identity():
     from types import SimpleNamespace
 

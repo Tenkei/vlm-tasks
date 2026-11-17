@@ -10,6 +10,7 @@ from pydantic_ai.exceptions import UnexpectedModelBehavior
 from pydantic_ai.models import Model
 
 from ._images import encode_image
+from ._response_errors import response_error
 from .errors import InvalidModelResponseError, ModelExecutionError
 from .types import ModelRequest, ModelResponse, Usage
 
@@ -58,7 +59,7 @@ class PydanticAIBackend:
         try:
             result = agent.run_sync([request.instruction, image])
         except UnexpectedModelBehavior as exc:
-            raise InvalidModelResponseError(str(exc)) from exc
+            raise response_error(exc) from exc
         except Exception as exc:
             raise ModelExecutionError(str(exc)) from exc
         usage = result.usage
