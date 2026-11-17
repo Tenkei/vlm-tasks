@@ -1,8 +1,12 @@
-# VLM tasks
+<p align="center">
+  <img src="assets/tasks-grid.png" alt="VLM-TASKS: Classify, Detect, Ground, Attributes, Describe, and Answer" width="1200">
+</p>
 
-[![Python: 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
-[![ml-pipes-core and ml-pipes-vision: >=0.1.3,<0.2.0](https://img.shields.io/badge/ml--pipes-%3E%3D0.1.3%2C%3C0.2.0-blue)](pyproject.toml)
-[![License: Apache 2.0](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
+<p align="center">
+  <a href="pyproject.toml"><img src="https://img.shields.io/badge/Python-3.11%2B-2377C8?style=flat-square&amp;logo=python&amp;logoColor=white" alt="Python 3.11 or newer"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache--2.0-287C35?style=flat-square" alt="Apache 2.0 license"></a>
+  <a href="pyproject.toml"><img src="https://img.shields.io/badge/ml--pipes-%3E%3D0.1.3%2C%20%3C0.2.0-7E46B6?style=flat-square" alt="ml-pipes-core and ml-pipes-vision &gt;=0.1.3, &lt;0.2.0"></a>
+</p>
 
 VLM tasks is a thin interface that coerces **vision-language models
 (VLMs)** into producing structured results for tasks such as classification,

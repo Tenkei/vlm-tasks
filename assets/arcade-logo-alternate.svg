@@ -1,0 +1,630 @@
+<svg xmlns="http://www.w3.org/2000/svg" focusable="false" class="stacked-text__svg" viewBox="-18.96875 -83 372.921875 130.57883832489" width="372.921875" height="130.57883832488648" preserveAspectRatio="xMidYMid meet" style="" role="img" aria-labelledby="vlm-title vlm-description">
+  <title id="vlm-title">VLM-TASKS</title>
+  <desc id="vlm-description">Multicolor VLM-TASKS lettering, including a pink hyphen, with matching darker colored shadows extending toward the bottom left on a transparent background.</desc>
+  <metadata>{
+  "generator": "mkdocs-pixel-lab/stacked-text.js",
+  "generator_commit": "6ecf0038d81aa2d4eef62dddf30761450389b461",
+  "settings": {
+    "text": "VLM-TASKS",
+    "tilt_angle": 0,
+    "shadow_angle": 120,
+    "shadow_thickness": 6,
+    "shadow_spacing": 3,
+    "shadow_layers": 4,
+    "font_family": "Impact",
+    "font_size": 80,
+    "font_weight": 400,
+    "text_color": "#FFD166",
+    "shadow_colors_set": [
+      "#526887",
+      "#3F506D",
+      "#2D3D56",
+      "#1E2B43"
+    ]
+  },
+  "export": "Lettering converted to paths for consistent rendering without installed fonts.",
+  "face_letter_colors": [
+    "#FFD166",
+    "#FF8B78",
+    "#B9A0FF",
+    "#F78CC7",
+    "#9CFFE0",
+    "#FFA3CD",
+    "#65E5FF",
+    "#FFD36A",
+    "#D9F467"
+  ],
+  "shadow_letter_colors_by_layer": {
+    "3": [
+      "#765200",
+      "#7C1100",
+      "#240089",
+      "#7C0446",
+      "#17494F",
+      "#4E234E",
+      "#172B50",
+      "#762E45",
+      "#1D4A38"
+    ],
+    "2": [
+      "#AB7800",
+      "#B41900",
+      "#3400C7",
+      "#B40666",
+      "#137275",
+      "#8C2C72",
+      "#194A7D",
+      "#C3473C",
+      "#327A41"
+    ],
+    "1": [
+      "#E8A200",
+      "#F42200",
+      "#4E0FFF",
+      "#F4088A",
+      "#1DA799",
+      "#CB3D90",
+      "#127CB4",
+      "#F1783D",
+      "#63AB38"
+    ],
+    "0": [
+      "#FFBE26",
+      "#FF5134",
+      "#8255FF",
+      "#F944A8",
+      "#4DDBBF",
+      "#F266A4",
+      "#26BDE2",
+      "#FFAB45",
+      "#A8D631"
+    ]
+  },
+  "shadow_style": "Four progressively darker shades of each character face color.",
+  "character_palette_sources": {
+    "6": "classify",
+    "7": "answer",
+    "8": "describe",
+    "4": "ground",
+    "5": "attributes"
+  },
+  "palette_adjustments": {
+    "TASKS": "Alternate mapping: T=Ground, A=Attributes, first S=Classify, K=Answer, final S=Describe; exact keyword face and shadow colors."
+  }
+}</metadata>
+  <defs>
+    <path id="vlm-tasks-lettering" d="M42.3438 -63.2422 33.9844 0H9.0234L-0.4688 -63.2422H16.875Q19.8828 -37.1094 21.1719 -19.0625Q22.4609 -37.3047 23.8672 -51.4844L25 -63.2422ZM61.5862 -63.2422V-12.6562H71.5862V0H45.1409V-63.2422ZM126.3051 -63.2422V0H111.9301V-42.6953L106.1879 0H95.9926L89.9379 -41.7188V0H75.5629V-63.2422H96.852Q97.7895 -57.5391 98.8441 -49.8047L101.1098 -33.7109L104.8598 -63.2422ZM151.7742 -31.3672V-20.4688H131.032V-31.3672ZM189.579 -63.2422V-50.5859H179.8133V0H163.368V-50.5859H153.6415V-63.2422ZM220.1182 -63.2422 229.5323 0H212.6964L211.876 -11.3672H205.9776L205.001 0H187.9698L196.3292 -63.2422ZM211.4073 -22.5781Q210.1573 -33.3203 208.9073 -49.1016Q206.4073 -30.9766 205.7823 -22.5781ZM265.595 -44.1016H250.3216V-48.7891Q250.3216 -52.0703 249.7356 -52.9688Q249.1497 -53.8672 247.7825 -53.8672Q246.2981 -53.8672 245.5364 -52.6562Q244.7747 -51.4453 244.7747 -48.9844Q244.7747 -45.8203 245.6341 -44.2188Q246.4544 -42.6172 250.2825 -40.3516Q261.2591 -33.8281 264.1106 -29.6484Q266.9622 -25.4688 266.9622 -16.1719Q266.9622 -9.4141 265.3802 -6.2109Q263.7981 -3.0078 259.2669 -0.8398Q254.7356 1.3281 248.72 1.3281Q242.1184 1.3281 237.4505 -1.1719Q232.7825 -3.6719 231.3372 -7.5391Q229.8919 -11.4062 229.8919 -18.5156V-22.6562H245.1653V-14.9609Q245.1653 -11.4062 245.8098 -10.3906Q246.4544 -9.375 248.095 -9.375Q249.7356 -9.375 250.5364 -10.6641Q251.3372 -11.9531 251.3372 -14.4922Q251.3372 -20.0781 249.8138 -21.7969Q248.2513 -23.5156 242.1184 -27.5391Q235.9856 -31.6016 233.9934 -33.4375Q232.0013 -35.2734 230.6927 -38.5156Q229.3841 -41.7578 229.3841 -46.7969Q229.3841 -54.0625 231.2395 -57.4219Q233.095 -60.7812 237.2356 -62.6758Q241.3763 -64.5703 247.2356 -64.5703Q253.6419 -64.5703 258.1536 -62.5Q262.6653 -60.4297 264.1302 -57.2852Q265.595 -54.1406 265.595 -46.6016ZM311.2905 -63.2422 301.8765 -34.6875 312.189 0H295.1968L288.5562 -27.1094V0H272.1108V-63.2422H288.5562V-38.6719L295.8608 -63.2422ZM349.2673 -44.1016H333.9939V-48.7891Q333.9939 -52.0703 333.408 -52.9688Q332.822 -53.8672 331.4548 -53.8672Q329.9705 -53.8672 329.2087 -52.6562Q328.447 -51.4453 328.447 -48.9844Q328.447 -45.8203 329.3064 -44.2188Q330.1267 -42.6172 333.9548 -40.3516Q344.9314 -33.8281 347.783 -29.6484Q350.6345 -25.4688 350.6345 -16.1719Q350.6345 -9.4141 349.0525 -6.2109Q347.4705 -3.0078 342.9392 -0.8398Q338.408 1.3281 332.3923 1.3281Q325.7908 1.3281 321.1228 -1.1719Q316.4548 -3.6719 315.0095 -7.5391Q313.5642 -11.4062 313.5642 -18.5156V-22.6562H328.8376V-14.9609Q328.8376 -11.4062 329.4822 -10.3906Q330.1267 -9.375 331.7673 -9.375Q333.408 -9.375 334.2087 -10.6641Q335.0095 -11.9531 335.0095 -14.4922Q335.0095 -20.0781 333.4861 -21.7969Q331.9236 -23.5156 325.7908 -27.5391Q319.658 -31.6016 317.6658 -33.4375Q315.6736 -35.2734 314.365 -38.5156Q313.0564 -41.7578 313.0564 -46.7969Q313.0564 -54.0625 314.9119 -57.4219Q316.7673 -60.7812 320.908 -62.6758Q325.0486 -64.5703 330.908 -64.5703Q337.3142 -64.5703 341.8259 -62.5Q346.3376 -60.4297 347.8025 -57.2852Q349.2673 -54.1406 349.2673 -46.6016Z" />
+    <path id="arcade-letter-0" d="M42.3438 -63.2422 33.9844 0H9.0234L-0.4688 -63.2422H16.875Q19.8828 -37.1094 21.1719 -19.0625Q22.4609 -37.3047 23.8672 -51.4844L25 -63.2422Z" />
+    <path id="arcade-letter-1" d="M61.5862 -63.2422V-12.6562H71.5862V0H45.1409V-63.2422Z" />
+    <path id="arcade-letter-2" d="M126.3051 -63.2422V0H111.9301V-42.6953L106.1879 0H95.9926L89.9379 -41.7188V0H75.5629V-63.2422H96.852Q97.7895 -57.5391 98.8441 -49.8047L101.1098 -33.7109L104.8598 -63.2422Z" />
+    <path id="arcade-letter-3" d="M151.7742 -31.3672V-20.4688H131.032V-31.3672Z" />
+    <path id="arcade-letter-4" d="M189.579 -63.2422V-50.5859H179.8133V0H163.368V-50.5859H153.6415V-63.2422Z" />
+    <path id="arcade-letter-5" d="M220.1182 -63.2422 229.5323 0H212.6964L211.876 -11.3672H205.9776L205.001 0H187.9698L196.3292 -63.2422ZM211.4073 -22.5781Q210.1573 -33.3203 208.9073 -49.1016Q206.4073 -30.9766 205.7823 -22.5781Z" />
+    <path id="arcade-letter-6" d="M265.595 -44.1016H250.3216V-48.7891Q250.3216 -52.0703 249.7356 -52.9688Q249.1497 -53.8672 247.7825 -53.8672Q246.2981 -53.8672 245.5364 -52.6562Q244.7747 -51.4453 244.7747 -48.9844Q244.7747 -45.8203 245.6341 -44.2188Q246.4544 -42.6172 250.2825 -40.3516Q261.2591 -33.8281 264.1106 -29.6484Q266.9622 -25.4688 266.9622 -16.1719Q266.9622 -9.4141 265.3802 -6.2109Q263.7981 -3.0078 259.2669 -0.8398Q254.7356 1.3281 248.72 1.3281Q242.1184 1.3281 237.4505 -1.1719Q232.7825 -3.6719 231.3372 -7.5391Q229.8919 -11.4062 229.8919 -18.5156V-22.6562H245.1653V-14.9609Q245.1653 -11.4062 245.8098 -10.3906Q246.4544 -9.375 248.095 -9.375Q249.7356 -9.375 250.5364 -10.6641Q251.3372 -11.9531 251.3372 -14.4922Q251.3372 -20.0781 249.8138 -21.7969Q248.2513 -23.5156 242.1184 -27.5391Q235.9856 -31.6016 233.9934 -33.4375Q232.0013 -35.2734 230.6927 -38.5156Q229.3841 -41.7578 229.3841 -46.7969Q229.3841 -54.0625 231.2395 -57.4219Q233.095 -60.7812 237.2356 -62.6758Q241.3763 -64.5703 247.2356 -64.5703Q253.6419 -64.5703 258.1536 -62.5Q262.6653 -60.4297 264.1302 -57.2852Q265.595 -54.1406 265.595 -46.6016Z" />
+    <path id="arcade-letter-7" d="M311.2905 -63.2422 301.8765 -34.6875 312.189 0H295.1968L288.5562 -27.1094V0H272.1108V-63.2422H288.5562V-38.6719L295.8608 -63.2422Z" />
+    <path id="arcade-letter-8" d="M349.2673 -44.1016H333.9939V-48.7891Q333.9939 -52.0703 333.408 -52.9688Q332.822 -53.8672 331.4548 -53.8672Q329.9705 -53.8672 329.2087 -52.6562Q328.447 -51.4453 328.447 -48.9844Q328.447 -45.8203 329.3064 -44.2188Q330.1267 -42.6172 333.9548 -40.3516Q344.9314 -33.8281 347.783 -29.6484Q350.6345 -25.4688 350.6345 -16.1719Q350.6345 -9.4141 349.0525 -6.2109Q347.4705 -3.0078 342.9392 -0.8398Q338.408 1.3281 332.3923 1.3281Q325.7908 1.3281 321.1228 -1.1719Q316.4548 -3.6719 315.0095 -7.5391Q313.5642 -11.4062 313.5642 -18.5156V-22.6562H328.8376V-14.9609Q328.8376 -11.4062 329.4822 -10.3906Q330.1267 -9.375 331.7673 -9.375Q333.408 -9.375 334.2087 -10.6641Q335.0095 -11.9531 335.0095 -14.4922Q335.0095 -20.0781 333.4861 -21.7969Q331.9236 -23.5156 325.7908 -27.5391Q319.658 -31.6016 317.6658 -33.4375Q315.6736 -35.2734 314.365 -38.5156Q313.0564 -41.7578 313.0564 -46.7969Q313.0564 -54.0625 314.9119 -57.4219Q316.7673 -60.7812 320.908 -62.6758Q325.0486 -64.5703 330.908 -64.5703Q337.3142 -64.5703 341.8259 -62.5Q346.3376 -60.4297 347.8025 -57.2852Q349.2673 -54.1406 349.2673 -46.6016Z" />
+  </defs>
+  <g class="stacked-text__band" data-layer="3">
+    <g fill="#765200" data-character="0">
+      <use href="#arcade-letter-0" transform="translate(-16.5 28.578838324886) rotate(0)" />
+      <use href="#arcade-letter-0" transform="translate(-16.25 28.145825622994) rotate(0)" />
+      <use href="#arcade-letter-0" transform="translate(-16 27.712812921102) rotate(0)" />
+      <use href="#arcade-letter-0" transform="translate(-15.75 27.27980021921) rotate(0)" />
+      <use href="#arcade-letter-0" transform="translate(-15.5 26.846787517318) rotate(0)" />
+      <use href="#arcade-letter-0" transform="translate(-15.25 26.413774815425) rotate(0)" />
+      <use href="#arcade-letter-0" transform="translate(-15 25.980762113533) rotate(0)" />
+      <use href="#arcade-letter-0" transform="translate(-14.75 25.547749411641) rotate(0)" />
+      <use href="#arcade-letter-0" transform="translate(-14.5 25.114736709749) rotate(0)" />
+      <use href="#arcade-letter-0" transform="translate(-14.25 24.681724007857) rotate(0)" />
+      <use href="#arcade-letter-0" transform="translate(-14 24.248711305964) rotate(0)" />
+      <use href="#arcade-letter-0" transform="translate(-13.75 23.815698604072) rotate(0)" />
+    </g>
+    <g fill="#7C1100" data-character="1">
+      <use href="#arcade-letter-1" transform="translate(-16.5 28.578838324886) rotate(0)" />
+      <use href="#arcade-letter-1" transform="translate(-16.25 28.145825622994) rotate(0)" />
+      <use href="#arcade-letter-1" transform="translate(-16 27.712812921102) rotate(0)" />
+      <use href="#arcade-letter-1" transform="translate(-15.75 27.27980021921) rotate(0)" />
+      <use href="#arcade-letter-1" transform="translate(-15.5 26.846787517318) rotate(0)" />
+      <use href="#arcade-letter-1" transform="translate(-15.25 26.413774815425) rotate(0)" />
+      <use href="#arcade-letter-1" transform="translate(-15 25.980762113533) rotate(0)" />
+      <use href="#arcade-letter-1" transform="translate(-14.75 25.547749411641) rotate(0)" />
+      <use href="#arcade-letter-1" transform="translate(-14.5 25.114736709749) rotate(0)" />
+      <use href="#arcade-letter-1" transform="translate(-14.25 24.681724007857) rotate(0)" />
+      <use href="#arcade-letter-1" transform="translate(-14 24.248711305964) rotate(0)" />
+      <use href="#arcade-letter-1" transform="translate(-13.75 23.815698604072) rotate(0)" />
+    </g>
+    <g fill="#240089" data-character="2">
+      <use href="#arcade-letter-2" transform="translate(-16.5 28.578838324886) rotate(0)" />
+      <use href="#arcade-letter-2" transform="translate(-16.25 28.145825622994) rotate(0)" />
+      <use href="#arcade-letter-2" transform="translate(-16 27.712812921102) rotate(0)" />
+      <use href="#arcade-letter-2" transform="translate(-15.75 27.27980021921) rotate(0)" />
+      <use href="#arcade-letter-2" transform="translate(-15.5 26.846787517318) rotate(0)" />
+      <use href="#arcade-letter-2" transform="translate(-15.25 26.413774815425) rotate(0)" />
+      <use href="#arcade-letter-2" transform="translate(-15 25.980762113533) rotate(0)" />
+      <use href="#arcade-letter-2" transform="translate(-14.75 25.547749411641) rotate(0)" />
+      <use href="#arcade-letter-2" transform="translate(-14.5 25.114736709749) rotate(0)" />
+      <use href="#arcade-letter-2" transform="translate(-14.25 24.681724007857) rotate(0)" />
+      <use href="#arcade-letter-2" transform="translate(-14 24.248711305964) rotate(0)" />
+      <use href="#arcade-letter-2" transform="translate(-13.75 23.815698604072) rotate(0)" />
+    </g>
+    <g fill="#7C0446" data-character="3">
+      <use href="#arcade-letter-3" transform="translate(-16.5 28.578838324886) rotate(0)" />
+      <use href="#arcade-letter-3" transform="translate(-16.25 28.145825622994) rotate(0)" />
+      <use href="#arcade-letter-3" transform="translate(-16 27.712812921102) rotate(0)" />
+      <use href="#arcade-letter-3" transform="translate(-15.75 27.27980021921) rotate(0)" />
+      <use href="#arcade-letter-3" transform="translate(-15.5 26.846787517318) rotate(0)" />
+      <use href="#arcade-letter-3" transform="translate(-15.25 26.413774815425) rotate(0)" />
+      <use href="#arcade-letter-3" transform="translate(-15 25.980762113533) rotate(0)" />
+      <use href="#arcade-letter-3" transform="translate(-14.75 25.547749411641) rotate(0)" />
+      <use href="#arcade-letter-3" transform="translate(-14.5 25.114736709749) rotate(0)" />
+      <use href="#arcade-letter-3" transform="translate(-14.25 24.681724007857) rotate(0)" />
+      <use href="#arcade-letter-3" transform="translate(-14 24.248711305964) rotate(0)" />
+      <use href="#arcade-letter-3" transform="translate(-13.75 23.815698604072) rotate(0)" />
+    </g>
+    <g fill="#17494F" data-character="4">
+      <use href="#arcade-letter-4" transform="translate(-16.5 28.578838324886) rotate(0)" />
+      <use href="#arcade-letter-4" transform="translate(-16.25 28.145825622994) rotate(0)" />
+      <use href="#arcade-letter-4" transform="translate(-16 27.712812921102) rotate(0)" />
+      <use href="#arcade-letter-4" transform="translate(-15.75 27.27980021921) rotate(0)" />
+      <use href="#arcade-letter-4" transform="translate(-15.5 26.846787517318) rotate(0)" />
+      <use href="#arcade-letter-4" transform="translate(-15.25 26.413774815425) rotate(0)" />
+      <use href="#arcade-letter-4" transform="translate(-15 25.980762113533) rotate(0)" />
+      <use href="#arcade-letter-4" transform="translate(-14.75 25.547749411641) rotate(0)" />
+      <use href="#arcade-letter-4" transform="translate(-14.5 25.114736709749) rotate(0)" />
+      <use href="#arcade-letter-4" transform="translate(-14.25 24.681724007857) rotate(0)" />
+      <use href="#arcade-letter-4" transform="translate(-14 24.248711305964) rotate(0)" />
+      <use href="#arcade-letter-4" transform="translate(-13.75 23.815698604072) rotate(0)" />
+    </g>
+    <g fill="#4E234E" data-character="5">
+      <use href="#arcade-letter-5" transform="translate(-16.5 28.578838324886) rotate(0)" />
+      <use href="#arcade-letter-5" transform="translate(-16.25 28.145825622994) rotate(0)" />
+      <use href="#arcade-letter-5" transform="translate(-16 27.712812921102) rotate(0)" />
+      <use href="#arcade-letter-5" transform="translate(-15.75 27.27980021921) rotate(0)" />
+      <use href="#arcade-letter-5" transform="translate(-15.5 26.846787517318) rotate(0)" />
+      <use href="#arcade-letter-5" transform="translate(-15.25 26.413774815425) rotate(0)" />
+      <use href="#arcade-letter-5" transform="translate(-15 25.980762113533) rotate(0)" />
+      <use href="#arcade-letter-5" transform="translate(-14.75 25.547749411641) rotate(0)" />
+      <use href="#arcade-letter-5" transform="translate(-14.5 25.114736709749) rotate(0)" />
+      <use href="#arcade-letter-5" transform="translate(-14.25 24.681724007857) rotate(0)" />
+      <use href="#arcade-letter-5" transform="translate(-14 24.248711305964) rotate(0)" />
+      <use href="#arcade-letter-5" transform="translate(-13.75 23.815698604072) rotate(0)" />
+    </g>
+    <g fill="#172B50" data-character="6">
+      <use href="#arcade-letter-6" transform="translate(-16.5 28.578838324886) rotate(0)" />
+      <use href="#arcade-letter-6" transform="translate(-16.25 28.145825622994) rotate(0)" />
+      <use href="#arcade-letter-6" transform="translate(-16 27.712812921102) rotate(0)" />
+      <use href="#arcade-letter-6" transform="translate(-15.75 27.27980021921) rotate(0)" />
+      <use href="#arcade-letter-6" transform="translate(-15.5 26.846787517318) rotate(0)" />
+      <use href="#arcade-letter-6" transform="translate(-15.25 26.413774815425) rotate(0)" />
+      <use href="#arcade-letter-6" transform="translate(-15 25.980762113533) rotate(0)" />
+      <use href="#arcade-letter-6" transform="translate(-14.75 25.547749411641) rotate(0)" />
+      <use href="#arcade-letter-6" transform="translate(-14.5 25.114736709749) rotate(0)" />
+      <use href="#arcade-letter-6" transform="translate(-14.25 24.681724007857) rotate(0)" />
+      <use href="#arcade-letter-6" transform="translate(-14 24.248711305964) rotate(0)" />
+      <use href="#arcade-letter-6" transform="translate(-13.75 23.815698604072) rotate(0)" />
+    </g>
+    <g fill="#762E45" data-character="7">
+      <use href="#arcade-letter-7" transform="translate(-16.5 28.578838324886) rotate(0)" />
+      <use href="#arcade-letter-7" transform="translate(-16.25 28.145825622994) rotate(0)" />
+      <use href="#arcade-letter-7" transform="translate(-16 27.712812921102) rotate(0)" />
+      <use href="#arcade-letter-7" transform="translate(-15.75 27.27980021921) rotate(0)" />
+      <use href="#arcade-letter-7" transform="translate(-15.5 26.846787517318) rotate(0)" />
+      <use href="#arcade-letter-7" transform="translate(-15.25 26.413774815425) rotate(0)" />
+      <use href="#arcade-letter-7" transform="translate(-15 25.980762113533) rotate(0)" />
+      <use href="#arcade-letter-7" transform="translate(-14.75 25.547749411641) rotate(0)" />
+      <use href="#arcade-letter-7" transform="translate(-14.5 25.114736709749) rotate(0)" />
+      <use href="#arcade-letter-7" transform="translate(-14.25 24.681724007857) rotate(0)" />
+      <use href="#arcade-letter-7" transform="translate(-14 24.248711305964) rotate(0)" />
+      <use href="#arcade-letter-7" transform="translate(-13.75 23.815698604072) rotate(0)" />
+    </g>
+    <g fill="#1D4A38" data-character="8">
+      <use href="#arcade-letter-8" transform="translate(-16.5 28.578838324886) rotate(0)" />
+      <use href="#arcade-letter-8" transform="translate(-16.25 28.145825622994) rotate(0)" />
+      <use href="#arcade-letter-8" transform="translate(-16 27.712812921102) rotate(0)" />
+      <use href="#arcade-letter-8" transform="translate(-15.75 27.27980021921) rotate(0)" />
+      <use href="#arcade-letter-8" transform="translate(-15.5 26.846787517318) rotate(0)" />
+      <use href="#arcade-letter-8" transform="translate(-15.25 26.413774815425) rotate(0)" />
+      <use href="#arcade-letter-8" transform="translate(-15 25.980762113533) rotate(0)" />
+      <use href="#arcade-letter-8" transform="translate(-14.75 25.547749411641) rotate(0)" />
+      <use href="#arcade-letter-8" transform="translate(-14.5 25.114736709749) rotate(0)" />
+      <use href="#arcade-letter-8" transform="translate(-14.25 24.681724007857) rotate(0)" />
+      <use href="#arcade-letter-8" transform="translate(-14 24.248711305964) rotate(0)" />
+      <use href="#arcade-letter-8" transform="translate(-13.75 23.815698604072) rotate(0)" />
+    </g>
+  </g>
+  <g class="stacked-text__band" data-layer="2">
+    <g fill="#AB7800" data-character="0">
+      <use href="#arcade-letter-0" transform="translate(-12 20.784609690827) rotate(0)" />
+      <use href="#arcade-letter-0" transform="translate(-11.75 20.351596988934) rotate(0)" />
+      <use href="#arcade-letter-0" transform="translate(-11.5 19.918584287042) rotate(0)" />
+      <use href="#arcade-letter-0" transform="translate(-11.25 19.48557158515) rotate(0)" />
+      <use href="#arcade-letter-0" transform="translate(-11 19.052558883258) rotate(0)" />
+      <use href="#arcade-letter-0" transform="translate(-10.75 18.619546181365) rotate(0)" />
+      <use href="#arcade-letter-0" transform="translate(-10.5 18.186533479473) rotate(0)" />
+      <use href="#arcade-letter-0" transform="translate(-10.25 17.753520777581) rotate(0)" />
+      <use href="#arcade-letter-0" transform="translate(-10 17.320508075689) rotate(0)" />
+      <use href="#arcade-letter-0" transform="translate(-9.75 16.887495373797) rotate(0)" />
+      <use href="#arcade-letter-0" transform="translate(-9.5 16.454482671904) rotate(0)" />
+      <use href="#arcade-letter-0" transform="translate(-9.25 16.021469970012) rotate(0)" />
+    </g>
+    <g fill="#B41900" data-character="1">
+      <use href="#arcade-letter-1" transform="translate(-12 20.784609690827) rotate(0)" />
+      <use href="#arcade-letter-1" transform="translate(-11.75 20.351596988934) rotate(0)" />
+      <use href="#arcade-letter-1" transform="translate(-11.5 19.918584287042) rotate(0)" />
+      <use href="#arcade-letter-1" transform="translate(-11.25 19.48557158515) rotate(0)" />
+      <use href="#arcade-letter-1" transform="translate(-11 19.052558883258) rotate(0)" />
+      <use href="#arcade-letter-1" transform="translate(-10.75 18.619546181365) rotate(0)" />
+      <use href="#arcade-letter-1" transform="translate(-10.5 18.186533479473) rotate(0)" />
+      <use href="#arcade-letter-1" transform="translate(-10.25 17.753520777581) rotate(0)" />
+      <use href="#arcade-letter-1" transform="translate(-10 17.320508075689) rotate(0)" />
+      <use href="#arcade-letter-1" transform="translate(-9.75 16.887495373797) rotate(0)" />
+      <use href="#arcade-letter-1" transform="translate(-9.5 16.454482671904) rotate(0)" />
+      <use href="#arcade-letter-1" transform="translate(-9.25 16.021469970012) rotate(0)" />
+    </g>
+    <g fill="#3400C7" data-character="2">
+      <use href="#arcade-letter-2" transform="translate(-12 20.784609690827) rotate(0)" />
+      <use href="#arcade-letter-2" transform="translate(-11.75 20.351596988934) rotate(0)" />
+      <use href="#arcade-letter-2" transform="translate(-11.5 19.918584287042) rotate(0)" />
+      <use href="#arcade-letter-2" transform="translate(-11.25 19.48557158515) rotate(0)" />
+      <use href="#arcade-letter-2" transform="translate(-11 19.052558883258) rotate(0)" />
+      <use href="#arcade-letter-2" transform="translate(-10.75 18.619546181365) rotate(0)" />
+      <use href="#arcade-letter-2" transform="translate(-10.5 18.186533479473) rotate(0)" />
+      <use href="#arcade-letter-2" transform="translate(-10.25 17.753520777581) rotate(0)" />
+      <use href="#arcade-letter-2" transform="translate(-10 17.320508075689) rotate(0)" />
+      <use href="#arcade-letter-2" transform="translate(-9.75 16.887495373797) rotate(0)" />
+      <use href="#arcade-letter-2" transform="translate(-9.5 16.454482671904) rotate(0)" />
+      <use href="#arcade-letter-2" transform="translate(-9.25 16.021469970012) rotate(0)" />
+    </g>
+    <g fill="#B40666" data-character="3">
+      <use href="#arcade-letter-3" transform="translate(-12 20.784609690827) rotate(0)" />
+      <use href="#arcade-letter-3" transform="translate(-11.75 20.351596988934) rotate(0)" />
+      <use href="#arcade-letter-3" transform="translate(-11.5 19.918584287042) rotate(0)" />
+      <use href="#arcade-letter-3" transform="translate(-11.25 19.48557158515) rotate(0)" />
+      <use href="#arcade-letter-3" transform="translate(-11 19.052558883258) rotate(0)" />
+      <use href="#arcade-letter-3" transform="translate(-10.75 18.619546181365) rotate(0)" />
+      <use href="#arcade-letter-3" transform="translate(-10.5 18.186533479473) rotate(0)" />
+      <use href="#arcade-letter-3" transform="translate(-10.25 17.753520777581) rotate(0)" />
+      <use href="#arcade-letter-3" transform="translate(-10 17.320508075689) rotate(0)" />
+      <use href="#arcade-letter-3" transform="translate(-9.75 16.887495373797) rotate(0)" />
+      <use href="#arcade-letter-3" transform="translate(-9.5 16.454482671904) rotate(0)" />
+      <use href="#arcade-letter-3" transform="translate(-9.25 16.021469970012) rotate(0)" />
+    </g>
+    <g fill="#137275" data-character="4">
+      <use href="#arcade-letter-4" transform="translate(-12 20.784609690827) rotate(0)" />
+      <use href="#arcade-letter-4" transform="translate(-11.75 20.351596988934) rotate(0)" />
+      <use href="#arcade-letter-4" transform="translate(-11.5 19.918584287042) rotate(0)" />
+      <use href="#arcade-letter-4" transform="translate(-11.25 19.48557158515) rotate(0)" />
+      <use href="#arcade-letter-4" transform="translate(-11 19.052558883258) rotate(0)" />
+      <use href="#arcade-letter-4" transform="translate(-10.75 18.619546181365) rotate(0)" />
+      <use href="#arcade-letter-4" transform="translate(-10.5 18.186533479473) rotate(0)" />
+      <use href="#arcade-letter-4" transform="translate(-10.25 17.753520777581) rotate(0)" />
+      <use href="#arcade-letter-4" transform="translate(-10 17.320508075689) rotate(0)" />
+      <use href="#arcade-letter-4" transform="translate(-9.75 16.887495373797) rotate(0)" />
+      <use href="#arcade-letter-4" transform="translate(-9.5 16.454482671904) rotate(0)" />
+      <use href="#arcade-letter-4" transform="translate(-9.25 16.021469970012) rotate(0)" />
+    </g>
+    <g fill="#8C2C72" data-character="5">
+      <use href="#arcade-letter-5" transform="translate(-12 20.784609690827) rotate(0)" />
+      <use href="#arcade-letter-5" transform="translate(-11.75 20.351596988934) rotate(0)" />
+      <use href="#arcade-letter-5" transform="translate(-11.5 19.918584287042) rotate(0)" />
+      <use href="#arcade-letter-5" transform="translate(-11.25 19.48557158515) rotate(0)" />
+      <use href="#arcade-letter-5" transform="translate(-11 19.052558883258) rotate(0)" />
+      <use href="#arcade-letter-5" transform="translate(-10.75 18.619546181365) rotate(0)" />
+      <use href="#arcade-letter-5" transform="translate(-10.5 18.186533479473) rotate(0)" />
+      <use href="#arcade-letter-5" transform="translate(-10.25 17.753520777581) rotate(0)" />
+      <use href="#arcade-letter-5" transform="translate(-10 17.320508075689) rotate(0)" />
+      <use href="#arcade-letter-5" transform="translate(-9.75 16.887495373797) rotate(0)" />
+      <use href="#arcade-letter-5" transform="translate(-9.5 16.454482671904) rotate(0)" />
+      <use href="#arcade-letter-5" transform="translate(-9.25 16.021469970012) rotate(0)" />
+    </g>
+    <g fill="#194A7D" data-character="6">
+      <use href="#arcade-letter-6" transform="translate(-12 20.784609690827) rotate(0)" />
+      <use href="#arcade-letter-6" transform="translate(-11.75 20.351596988934) rotate(0)" />
+      <use href="#arcade-letter-6" transform="translate(-11.5 19.918584287042) rotate(0)" />
+      <use href="#arcade-letter-6" transform="translate(-11.25 19.48557158515) rotate(0)" />
+      <use href="#arcade-letter-6" transform="translate(-11 19.052558883258) rotate(0)" />
+      <use href="#arcade-letter-6" transform="translate(-10.75 18.619546181365) rotate(0)" />
+      <use href="#arcade-letter-6" transform="translate(-10.5 18.186533479473) rotate(0)" />
+      <use href="#arcade-letter-6" transform="translate(-10.25 17.753520777581) rotate(0)" />
+      <use href="#arcade-letter-6" transform="translate(-10 17.320508075689) rotate(0)" />
+      <use href="#arcade-letter-6" transform="translate(-9.75 16.887495373797) rotate(0)" />
+      <use href="#arcade-letter-6" transform="translate(-9.5 16.454482671904) rotate(0)" />
+      <use href="#arcade-letter-6" transform="translate(-9.25 16.021469970012) rotate(0)" />
+    </g>
+    <g fill="#C3473C" data-character="7">
+      <use href="#arcade-letter-7" transform="translate(-12 20.784609690827) rotate(0)" />
+      <use href="#arcade-letter-7" transform="translate(-11.75 20.351596988934) rotate(0)" />
+      <use href="#arcade-letter-7" transform="translate(-11.5 19.918584287042) rotate(0)" />
+      <use href="#arcade-letter-7" transform="translate(-11.25 19.48557158515) rotate(0)" />
+      <use href="#arcade-letter-7" transform="translate(-11 19.052558883258) rotate(0)" />
+      <use href="#arcade-letter-7" transform="translate(-10.75 18.619546181365) rotate(0)" />
+      <use href="#arcade-letter-7" transform="translate(-10.5 18.186533479473) rotate(0)" />
+      <use href="#arcade-letter-7" transform="translate(-10.25 17.753520777581) rotate(0)" />
+      <use href="#arcade-letter-7" transform="translate(-10 17.320508075689) rotate(0)" />
+      <use href="#arcade-letter-7" transform="translate(-9.75 16.887495373797) rotate(0)" />
+      <use href="#arcade-letter-7" transform="translate(-9.5 16.454482671904) rotate(0)" />
+      <use href="#arcade-letter-7" transform="translate(-9.25 16.021469970012) rotate(0)" />
+    </g>
+    <g fill="#327A41" data-character="8">
+      <use href="#arcade-letter-8" transform="translate(-12 20.784609690827) rotate(0)" />
+      <use href="#arcade-letter-8" transform="translate(-11.75 20.351596988934) rotate(0)" />
+      <use href="#arcade-letter-8" transform="translate(-11.5 19.918584287042) rotate(0)" />
+      <use href="#arcade-letter-8" transform="translate(-11.25 19.48557158515) rotate(0)" />
+      <use href="#arcade-letter-8" transform="translate(-11 19.052558883258) rotate(0)" />
+      <use href="#arcade-letter-8" transform="translate(-10.75 18.619546181365) rotate(0)" />
+      <use href="#arcade-letter-8" transform="translate(-10.5 18.186533479473) rotate(0)" />
+      <use href="#arcade-letter-8" transform="translate(-10.25 17.753520777581) rotate(0)" />
+      <use href="#arcade-letter-8" transform="translate(-10 17.320508075689) rotate(0)" />
+      <use href="#arcade-letter-8" transform="translate(-9.75 16.887495373797) rotate(0)" />
+      <use href="#arcade-letter-8" transform="translate(-9.5 16.454482671904) rotate(0)" />
+      <use href="#arcade-letter-8" transform="translate(-9.25 16.021469970012) rotate(0)" />
+    </g>
+  </g>
+  <g class="stacked-text__band" data-layer="1">
+    <g fill="#E8A200" data-character="0">
+      <use href="#arcade-letter-0" transform="translate(-7.5 12.990381056767) rotate(0)" />
+      <use href="#arcade-letter-0" transform="translate(-7.25 12.557368354874) rotate(0)" />
+      <use href="#arcade-letter-0" transform="translate(-7 12.124355652982) rotate(0)" />
+      <use href="#arcade-letter-0" transform="translate(-6.75 11.69134295109) rotate(0)" />
+      <use href="#arcade-letter-0" transform="translate(-6.5 11.258330249198) rotate(0)" />
+      <use href="#arcade-letter-0" transform="translate(-6.25 10.825317547305) rotate(0)" />
+      <use href="#arcade-letter-0" transform="translate(-6 10.392304845413) rotate(0)" />
+      <use href="#arcade-letter-0" transform="translate(-5.75 9.959292143521) rotate(0)" />
+      <use href="#arcade-letter-0" transform="translate(-5.5 9.5262794416288) rotate(0)" />
+      <use href="#arcade-letter-0" transform="translate(-5.25 9.0932667397366) rotate(0)" />
+      <use href="#arcade-letter-0" transform="translate(-5 8.6602540378444) rotate(0)" />
+      <use href="#arcade-letter-0" transform="translate(-4.75 8.2272413359522) rotate(0)" />
+    </g>
+    <g fill="#F42200" data-character="1">
+      <use href="#arcade-letter-1" transform="translate(-7.5 12.990381056767) rotate(0)" />
+      <use href="#arcade-letter-1" transform="translate(-7.25 12.557368354874) rotate(0)" />
+      <use href="#arcade-letter-1" transform="translate(-7 12.124355652982) rotate(0)" />
+      <use href="#arcade-letter-1" transform="translate(-6.75 11.69134295109) rotate(0)" />
+      <use href="#arcade-letter-1" transform="translate(-6.5 11.258330249198) rotate(0)" />
+      <use href="#arcade-letter-1" transform="translate(-6.25 10.825317547305) rotate(0)" />
+      <use href="#arcade-letter-1" transform="translate(-6 10.392304845413) rotate(0)" />
+      <use href="#arcade-letter-1" transform="translate(-5.75 9.959292143521) rotate(0)" />
+      <use href="#arcade-letter-1" transform="translate(-5.5 9.5262794416288) rotate(0)" />
+      <use href="#arcade-letter-1" transform="translate(-5.25 9.0932667397366) rotate(0)" />
+      <use href="#arcade-letter-1" transform="translate(-5 8.6602540378444) rotate(0)" />
+      <use href="#arcade-letter-1" transform="translate(-4.75 8.2272413359522) rotate(0)" />
+    </g>
+    <g fill="#4E0FFF" data-character="2">
+      <use href="#arcade-letter-2" transform="translate(-7.5 12.990381056767) rotate(0)" />
+      <use href="#arcade-letter-2" transform="translate(-7.25 12.557368354874) rotate(0)" />
+      <use href="#arcade-letter-2" transform="translate(-7 12.124355652982) rotate(0)" />
+      <use href="#arcade-letter-2" transform="translate(-6.75 11.69134295109) rotate(0)" />
+      <use href="#arcade-letter-2" transform="translate(-6.5 11.258330249198) rotate(0)" />
+      <use href="#arcade-letter-2" transform="translate(-6.25 10.825317547305) rotate(0)" />
+      <use href="#arcade-letter-2" transform="translate(-6 10.392304845413) rotate(0)" />
+      <use href="#arcade-letter-2" transform="translate(-5.75 9.959292143521) rotate(0)" />
+      <use href="#arcade-letter-2" transform="translate(-5.5 9.5262794416288) rotate(0)" />
+      <use href="#arcade-letter-2" transform="translate(-5.25 9.0932667397366) rotate(0)" />
+      <use href="#arcade-letter-2" transform="translate(-5 8.6602540378444) rotate(0)" />
+      <use href="#arcade-letter-2" transform="translate(-4.75 8.2272413359522) rotate(0)" />
+    </g>
+    <g fill="#F4088A" data-character="3">
+      <use href="#arcade-letter-3" transform="translate(-7.5 12.990381056767) rotate(0)" />
+      <use href="#arcade-letter-3" transform="translate(-7.25 12.557368354874) rotate(0)" />
+      <use href="#arcade-letter-3" transform="translate(-7 12.124355652982) rotate(0)" />
+      <use href="#arcade-letter-3" transform="translate(-6.75 11.69134295109) rotate(0)" />
+      <use href="#arcade-letter-3" transform="translate(-6.5 11.258330249198) rotate(0)" />
+      <use href="#arcade-letter-3" transform="translate(-6.25 10.825317547305) rotate(0)" />
+      <use href="#arcade-letter-3" transform="translate(-6 10.392304845413) rotate(0)" />
+      <use href="#arcade-letter-3" transform="translate(-5.75 9.959292143521) rotate(0)" />
+      <use href="#arcade-letter-3" transform="translate(-5.5 9.5262794416288) rotate(0)" />
+      <use href="#arcade-letter-3" transform="translate(-5.25 9.0932667397366) rotate(0)" />
+      <use href="#arcade-letter-3" transform="translate(-5 8.6602540378444) rotate(0)" />
+      <use href="#arcade-letter-3" transform="translate(-4.75 8.2272413359522) rotate(0)" />
+    </g>
+    <g fill="#1DA799" data-character="4">
+      <use href="#arcade-letter-4" transform="translate(-7.5 12.990381056767) rotate(0)" />
+      <use href="#arcade-letter-4" transform="translate(-7.25 12.557368354874) rotate(0)" />
+      <use href="#arcade-letter-4" transform="translate(-7 12.124355652982) rotate(0)" />
+      <use href="#arcade-letter-4" transform="translate(-6.75 11.69134295109) rotate(0)" />
+      <use href="#arcade-letter-4" transform="translate(-6.5 11.258330249198) rotate(0)" />
+      <use href="#arcade-letter-4" transform="translate(-6.25 10.825317547305) rotate(0)" />
+      <use href="#arcade-letter-4" transform="translate(-6 10.392304845413) rotate(0)" />
+      <use href="#arcade-letter-4" transform="translate(-5.75 9.959292143521) rotate(0)" />
+      <use href="#arcade-letter-4" transform="translate(-5.5 9.5262794416288) rotate(0)" />
+      <use href="#arcade-letter-4" transform="translate(-5.25 9.0932667397366) rotate(0)" />
+      <use href="#arcade-letter-4" transform="translate(-5 8.6602540378444) rotate(0)" />
+      <use href="#arcade-letter-4" transform="translate(-4.75 8.2272413359522) rotate(0)" />
+    </g>
+    <g fill="#CB3D90" data-character="5">
+      <use href="#arcade-letter-5" transform="translate(-7.5 12.990381056767) rotate(0)" />
+      <use href="#arcade-letter-5" transform="translate(-7.25 12.557368354874) rotate(0)" />
+      <use href="#arcade-letter-5" transform="translate(-7 12.124355652982) rotate(0)" />
+      <use href="#arcade-letter-5" transform="translate(-6.75 11.69134295109) rotate(0)" />
+      <use href="#arcade-letter-5" transform="translate(-6.5 11.258330249198) rotate(0)" />
+      <use href="#arcade-letter-5" transform="translate(-6.25 10.825317547305) rotate(0)" />
+      <use href="#arcade-letter-5" transform="translate(-6 10.392304845413) rotate(0)" />
+      <use href="#arcade-letter-5" transform="translate(-5.75 9.959292143521) rotate(0)" />
+      <use href="#arcade-letter-5" transform="translate(-5.5 9.5262794416288) rotate(0)" />
+      <use href="#arcade-letter-5" transform="translate(-5.25 9.0932667397366) rotate(0)" />
+      <use href="#arcade-letter-5" transform="translate(-5 8.6602540378444) rotate(0)" />
+      <use href="#arcade-letter-5" transform="translate(-4.75 8.2272413359522) rotate(0)" />
+    </g>
+    <g fill="#127CB4" data-character="6">
+      <use href="#arcade-letter-6" transform="translate(-7.5 12.990381056767) rotate(0)" />
+      <use href="#arcade-letter-6" transform="translate(-7.25 12.557368354874) rotate(0)" />
+      <use href="#arcade-letter-6" transform="translate(-7 12.124355652982) rotate(0)" />
+      <use href="#arcade-letter-6" transform="translate(-6.75 11.69134295109) rotate(0)" />
+      <use href="#arcade-letter-6" transform="translate(-6.5 11.258330249198) rotate(0)" />
+      <use href="#arcade-letter-6" transform="translate(-6.25 10.825317547305) rotate(0)" />
+      <use href="#arcade-letter-6" transform="translate(-6 10.392304845413) rotate(0)" />
+      <use href="#arcade-letter-6" transform="translate(-5.75 9.959292143521) rotate(0)" />
+      <use href="#arcade-letter-6" transform="translate(-5.5 9.5262794416288) rotate(0)" />
+      <use href="#arcade-letter-6" transform="translate(-5.25 9.0932667397366) rotate(0)" />
+      <use href="#arcade-letter-6" transform="translate(-5 8.6602540378444) rotate(0)" />
+      <use href="#arcade-letter-6" transform="translate(-4.75 8.2272413359522) rotate(0)" />
+    </g>
+    <g fill="#F1783D" data-character="7">
+      <use href="#arcade-letter-7" transform="translate(-7.5 12.990381056767) rotate(0)" />
+      <use href="#arcade-letter-7" transform="translate(-7.25 12.557368354874) rotate(0)" />
+      <use href="#arcade-letter-7" transform="translate(-7 12.124355652982) rotate(0)" />
+      <use href="#arcade-letter-7" transform="translate(-6.75 11.69134295109) rotate(0)" />
+      <use href="#arcade-letter-7" transform="translate(-6.5 11.258330249198) rotate(0)" />
+      <use href="#arcade-letter-7" transform="translate(-6.25 10.825317547305) rotate(0)" />
+      <use href="#arcade-letter-7" transform="translate(-6 10.392304845413) rotate(0)" />
+      <use href="#arcade-letter-7" transform="translate(-5.75 9.959292143521) rotate(0)" />
+      <use href="#arcade-letter-7" transform="translate(-5.5 9.5262794416288) rotate(0)" />
+      <use href="#arcade-letter-7" transform="translate(-5.25 9.0932667397366) rotate(0)" />
+      <use href="#arcade-letter-7" transform="translate(-5 8.6602540378444) rotate(0)" />
+      <use href="#arcade-letter-7" transform="translate(-4.75 8.2272413359522) rotate(0)" />
+    </g>
+    <g fill="#63AB38" data-character="8">
+      <use href="#arcade-letter-8" transform="translate(-7.5 12.990381056767) rotate(0)" />
+      <use href="#arcade-letter-8" transform="translate(-7.25 12.557368354874) rotate(0)" />
+      <use href="#arcade-letter-8" transform="translate(-7 12.124355652982) rotate(0)" />
+      <use href="#arcade-letter-8" transform="translate(-6.75 11.69134295109) rotate(0)" />
+      <use href="#arcade-letter-8" transform="translate(-6.5 11.258330249198) rotate(0)" />
+      <use href="#arcade-letter-8" transform="translate(-6.25 10.825317547305) rotate(0)" />
+      <use href="#arcade-letter-8" transform="translate(-6 10.392304845413) rotate(0)" />
+      <use href="#arcade-letter-8" transform="translate(-5.75 9.959292143521) rotate(0)" />
+      <use href="#arcade-letter-8" transform="translate(-5.5 9.5262794416288) rotate(0)" />
+      <use href="#arcade-letter-8" transform="translate(-5.25 9.0932667397366) rotate(0)" />
+      <use href="#arcade-letter-8" transform="translate(-5 8.6602540378444) rotate(0)" />
+      <use href="#arcade-letter-8" transform="translate(-4.75 8.2272413359522) rotate(0)" />
+    </g>
+  </g>
+  <g class="stacked-text__band" data-layer="0">
+    <g fill="#FFBE26" data-character="0">
+      <use href="#arcade-letter-0" transform="translate(-3 5.1961524227066) rotate(0)" />
+      <use href="#arcade-letter-0" transform="translate(-2.75 4.7631397208144) rotate(0)" />
+      <use href="#arcade-letter-0" transform="translate(-2.5 4.3301270189222) rotate(0)" />
+      <use href="#arcade-letter-0" transform="translate(-2.25 3.89711431703) rotate(0)" />
+      <use href="#arcade-letter-0" transform="translate(-2 3.4641016151378) rotate(0)" />
+      <use href="#arcade-letter-0" transform="translate(-1.75 3.0310889132455) rotate(0)" />
+      <use href="#arcade-letter-0" transform="translate(-1.5 2.5980762113533) rotate(0)" />
+      <use href="#arcade-letter-0" transform="translate(-1.25 2.1650635094611) rotate(0)" />
+      <use href="#arcade-letter-0" transform="translate(-1 1.7320508075689) rotate(0)" />
+      <use href="#arcade-letter-0" transform="translate(-0.75 1.2990381056767) rotate(0)" />
+      <use href="#arcade-letter-0" transform="translate(-0.5 0.86602540378444) rotate(0)" />
+      <use href="#arcade-letter-0" transform="translate(-0.25 0.43301270189222) rotate(0)" />
+    </g>
+    <g fill="#FF5134" data-character="1">
+      <use href="#arcade-letter-1" transform="translate(-3 5.1961524227066) rotate(0)" />
+      <use href="#arcade-letter-1" transform="translate(-2.75 4.7631397208144) rotate(0)" />
+      <use href="#arcade-letter-1" transform="translate(-2.5 4.3301270189222) rotate(0)" />
+      <use href="#arcade-letter-1" transform="translate(-2.25 3.89711431703) rotate(0)" />
+      <use href="#arcade-letter-1" transform="translate(-2 3.4641016151378) rotate(0)" />
+      <use href="#arcade-letter-1" transform="translate(-1.75 3.0310889132455) rotate(0)" />
+      <use href="#arcade-letter-1" transform="translate(-1.5 2.5980762113533) rotate(0)" />
+      <use href="#arcade-letter-1" transform="translate(-1.25 2.1650635094611) rotate(0)" />
+      <use href="#arcade-letter-1" transform="translate(-1 1.7320508075689) rotate(0)" />
+      <use href="#arcade-letter-1" transform="translate(-0.75 1.2990381056767) rotate(0)" />
+      <use href="#arcade-letter-1" transform="translate(-0.5 0.86602540378444) rotate(0)" />
+      <use href="#arcade-letter-1" transform="translate(-0.25 0.43301270189222) rotate(0)" />
+    </g>
+    <g fill="#8255FF" data-character="2">
+      <use href="#arcade-letter-2" transform="translate(-3 5.1961524227066) rotate(0)" />
+      <use href="#arcade-letter-2" transform="translate(-2.75 4.7631397208144) rotate(0)" />
+      <use href="#arcade-letter-2" transform="translate(-2.5 4.3301270189222) rotate(0)" />
+      <use href="#arcade-letter-2" transform="translate(-2.25 3.89711431703) rotate(0)" />
+      <use href="#arcade-letter-2" transform="translate(-2 3.4641016151378) rotate(0)" />
+      <use href="#arcade-letter-2" transform="translate(-1.75 3.0310889132455) rotate(0)" />
+      <use href="#arcade-letter-2" transform="translate(-1.5 2.5980762113533) rotate(0)" />
+      <use href="#arcade-letter-2" transform="translate(-1.25 2.1650635094611) rotate(0)" />
+      <use href="#arcade-letter-2" transform="translate(-1 1.7320508075689) rotate(0)" />
+      <use href="#arcade-letter-2" transform="translate(-0.75 1.2990381056767) rotate(0)" />
+      <use href="#arcade-letter-2" transform="translate(-0.5 0.86602540378444) rotate(0)" />
+      <use href="#arcade-letter-2" transform="translate(-0.25 0.43301270189222) rotate(0)" />
+    </g>
+    <g fill="#F944A8" data-character="3">
+      <use href="#arcade-letter-3" transform="translate(-3 5.1961524227066) rotate(0)" />
+      <use href="#arcade-letter-3" transform="translate(-2.75 4.7631397208144) rotate(0)" />
+      <use href="#arcade-letter-3" transform="translate(-2.5 4.3301270189222) rotate(0)" />
+      <use href="#arcade-letter-3" transform="translate(-2.25 3.89711431703) rotate(0)" />
+      <use href="#arcade-letter-3" transform="translate(-2 3.4641016151378) rotate(0)" />
+      <use href="#arcade-letter-3" transform="translate(-1.75 3.0310889132455) rotate(0)" />
+      <use href="#arcade-letter-3" transform="translate(-1.5 2.5980762113533) rotate(0)" />
+      <use href="#arcade-letter-3" transform="translate(-1.25 2.1650635094611) rotate(0)" />
+      <use href="#arcade-letter-3" transform="translate(-1 1.7320508075689) rotate(0)" />
+      <use href="#arcade-letter-3" transform="translate(-0.75 1.2990381056767) rotate(0)" />
+      <use href="#arcade-letter-3" transform="translate(-0.5 0.86602540378444) rotate(0)" />
+      <use href="#arcade-letter-3" transform="translate(-0.25 0.43301270189222) rotate(0)" />
+    </g>
+    <g fill="#4DDBBF" data-character="4">
+      <use href="#arcade-letter-4" transform="translate(-3 5.1961524227066) rotate(0)" />
+      <use href="#arcade-letter-4" transform="translate(-2.75 4.7631397208144) rotate(0)" />
+      <use href="#arcade-letter-4" transform="translate(-2.5 4.3301270189222) rotate(0)" />
+      <use href="#arcade-letter-4" transform="translate(-2.25 3.89711431703) rotate(0)" />
+      <use href="#arcade-letter-4" transform="translate(-2 3.4641016151378) rotate(0)" />
+      <use href="#arcade-letter-4" transform="translate(-1.75 3.0310889132455) rotate(0)" />
+      <use href="#arcade-letter-4" transform="translate(-1.5 2.5980762113533) rotate(0)" />
+      <use href="#arcade-letter-4" transform="translate(-1.25 2.1650635094611) rotate(0)" />
+      <use href="#arcade-letter-4" transform="translate(-1 1.7320508075689) rotate(0)" />
+      <use href="#arcade-letter-4" transform="translate(-0.75 1.2990381056767) rotate(0)" />
+      <use href="#arcade-letter-4" transform="translate(-0.5 0.86602540378444) rotate(0)" />
+      <use href="#arcade-letter-4" transform="translate(-0.25 0.43301270189222) rotate(0)" />
+    </g>
+    <g fill="#F266A4" data-character="5">
+      <use href="#arcade-letter-5" transform="translate(-3 5.1961524227066) rotate(0)" />
+      <use href="#arcade-letter-5" transform="translate(-2.75 4.7631397208144) rotate(0)" />
+      <use href="#arcade-letter-5" transform="translate(-2.5 4.3301270189222) rotate(0)" />
+      <use href="#arcade-letter-5" transform="translate(-2.25 3.89711431703) rotate(0)" />
+      <use href="#arcade-letter-5" transform="translate(-2 3.4641016151378) rotate(0)" />
+      <use href="#arcade-letter-5" transform="translate(-1.75 3.0310889132455) rotate(0)" />
+      <use href="#arcade-letter-5" transform="translate(-1.5 2.5980762113533) rotate(0)" />
+      <use href="#arcade-letter-5" transform="translate(-1.25 2.1650635094611) rotate(0)" />
+      <use href="#arcade-letter-5" transform="translate(-1 1.7320508075689) rotate(0)" />
+      <use href="#arcade-letter-5" transform="translate(-0.75 1.2990381056767) rotate(0)" />
+      <use href="#arcade-letter-5" transform="translate(-0.5 0.86602540378444) rotate(0)" />
+      <use href="#arcade-letter-5" transform="translate(-0.25 0.43301270189222) rotate(0)" />
+    </g>
+    <g fill="#26BDE2" data-character="6">
+      <use href="#arcade-letter-6" transform="translate(-3 5.1961524227066) rotate(0)" />
+      <use href="#arcade-letter-6" transform="translate(-2.75 4.7631397208144) rotate(0)" />
+      <use href="#arcade-letter-6" transform="translate(-2.5 4.3301270189222) rotate(0)" />
+      <use href="#arcade-letter-6" transform="translate(-2.25 3.89711431703) rotate(0)" />
+      <use href="#arcade-letter-6" transform="translate(-2 3.4641016151378) rotate(0)" />
+      <use href="#arcade-letter-6" transform="translate(-1.75 3.0310889132455) rotate(0)" />
+      <use href="#arcade-letter-6" transform="translate(-1.5 2.5980762113533) rotate(0)" />
+      <use href="#arcade-letter-6" transform="translate(-1.25 2.1650635094611) rotate(0)" />
+      <use href="#arcade-letter-6" transform="translate(-1 1.7320508075689) rotate(0)" />
+      <use href="#arcade-letter-6" transform="translate(-0.75 1.2990381056767) rotate(0)" />
+      <use href="#arcade-letter-6" transform="translate(-0.5 0.86602540378444) rotate(0)" />
+      <use href="#arcade-letter-6" transform="translate(-0.25 0.43301270189222) rotate(0)" />
+    </g>
+    <g fill="#FFAB45" data-character="7">
+      <use href="#arcade-letter-7" transform="translate(-3 5.1961524227066) rotate(0)" />
+      <use href="#arcade-letter-7" transform="translate(-2.75 4.7631397208144) rotate(0)" />
+      <use href="#arcade-letter-7" transform="translate(-2.5 4.3301270189222) rotate(0)" />
+      <use href="#arcade-letter-7" transform="translate(-2.25 3.89711431703) rotate(0)" />
+      <use href="#arcade-letter-7" transform="translate(-2 3.4641016151378) rotate(0)" />
+      <use href="#arcade-letter-7" transform="translate(-1.75 3.0310889132455) rotate(0)" />
+      <use href="#arcade-letter-7" transform="translate(-1.5 2.5980762113533) rotate(0)" />
+      <use href="#arcade-letter-7" transform="translate(-1.25 2.1650635094611) rotate(0)" />
+      <use href="#arcade-letter-7" transform="translate(-1 1.7320508075689) rotate(0)" />
+      <use href="#arcade-letter-7" transform="translate(-0.75 1.2990381056767) rotate(0)" />
+      <use href="#arcade-letter-7" transform="translate(-0.5 0.86602540378444) rotate(0)" />
+      <use href="#arcade-letter-7" transform="translate(-0.25 0.43301270189222) rotate(0)" />
+    </g>
+    <g fill="#A8D631" data-character="8">
+      <use href="#arcade-letter-8" transform="translate(-3 5.1961524227066) rotate(0)" />
+      <use href="#arcade-letter-8" transform="translate(-2.75 4.7631397208144) rotate(0)" />
+      <use href="#arcade-letter-8" transform="translate(-2.5 4.3301270189222) rotate(0)" />
+      <use href="#arcade-letter-8" transform="translate(-2.25 3.89711431703) rotate(0)" />
+      <use href="#arcade-letter-8" transform="translate(-2 3.4641016151378) rotate(0)" />
+      <use href="#arcade-letter-8" transform="translate(-1.75 3.0310889132455) rotate(0)" />
+      <use href="#arcade-letter-8" transform="translate(-1.5 2.5980762113533) rotate(0)" />
+      <use href="#arcade-letter-8" transform="translate(-1.25 2.1650635094611) rotate(0)" />
+      <use href="#arcade-letter-8" transform="translate(-1 1.7320508075689) rotate(0)" />
+      <use href="#arcade-letter-8" transform="translate(-0.75 1.2990381056767) rotate(0)" />
+      <use href="#arcade-letter-8" transform="translate(-0.5 0.86602540378444) rotate(0)" />
+      <use href="#arcade-letter-8" transform="translate(-0.25 0.43301270189222) rotate(0)" />
+    </g>
+  </g>
+  <g class="stacked-text__face" transform="rotate(0)">
+    <path d="M42.3438 -63.2422 33.9844 0H9.0234L-0.4688 -63.2422H16.875Q19.8828 -37.1094 21.1719 -19.0625Q22.4609 -37.3047 23.8672 -51.4844L25 -63.2422Z" fill="#FFD166" />
+    <path d="M61.5862 -63.2422V-12.6562H71.5862V0H45.1409V-63.2422Z" fill="#FF8B78" />
+    <path d="M126.3051 -63.2422V0H111.9301V-42.6953L106.1879 0H95.9926L89.9379 -41.7188V0H75.5629V-63.2422H96.852Q97.7895 -57.5391 98.8441 -49.8047L101.1098 -33.7109L104.8598 -63.2422Z" fill="#B9A0FF" />
+    <path d="M151.7742 -31.3672V-20.4688H131.032V-31.3672Z" fill="#F78CC7" />
+    <path d="M189.579 -63.2422V-50.5859H179.8133V0H163.368V-50.5859H153.6415V-63.2422Z" fill="#9CFFE0" />
+    <path d="M220.1182 -63.2422 229.5323 0H212.6964L211.876 -11.3672H205.9776L205.001 0H187.9698L196.3292 -63.2422ZM211.4073 -22.5781Q210.1573 -33.3203 208.9073 -49.1016Q206.4073 -30.9766 205.7823 -22.5781Z" fill="#FFA3CD" />
+    <path d="M265.595 -44.1016H250.3216V-48.7891Q250.3216 -52.0703 249.7356 -52.9688Q249.1497 -53.8672 247.7825 -53.8672Q246.2981 -53.8672 245.5364 -52.6562Q244.7747 -51.4453 244.7747 -48.9844Q244.7747 -45.8203 245.6341 -44.2188Q246.4544 -42.6172 250.2825 -40.3516Q261.2591 -33.8281 264.1106 -29.6484Q266.9622 -25.4688 266.9622 -16.1719Q266.9622 -9.4141 265.3802 -6.2109Q263.7981 -3.0078 259.2669 -0.8398Q254.7356 1.3281 248.72 1.3281Q242.1184 1.3281 237.4505 -1.1719Q232.7825 -3.6719 231.3372 -7.5391Q229.8919 -11.4062 229.8919 -18.5156V-22.6562H245.1653V-14.9609Q245.1653 -11.4062 245.8098 -10.3906Q246.4544 -9.375 248.095 -9.375Q249.7356 -9.375 250.5364 -10.6641Q251.3372 -11.9531 251.3372 -14.4922Q251.3372 -20.0781 249.8138 -21.7969Q248.2513 -23.5156 242.1184 -27.5391Q235.9856 -31.6016 233.9934 -33.4375Q232.0013 -35.2734 230.6927 -38.5156Q229.3841 -41.7578 229.3841 -46.7969Q229.3841 -54.0625 231.2395 -57.4219Q233.095 -60.7812 237.2356 -62.6758Q241.3763 -64.5703 247.2356 -64.5703Q253.6419 -64.5703 258.1536 -62.5Q262.6653 -60.4297 264.1302 -57.2852Q265.595 -54.1406 265.595 -46.6016Z" fill="#65E5FF" />
+    <path d="M311.2905 -63.2422 301.8765 -34.6875 312.189 0H295.1968L288.5562 -27.1094V0H272.1108V-63.2422H288.5562V-38.6719L295.8608 -63.2422Z" fill="#FFD36A" />
+    <path d="M349.2673 -44.1016H333.9939V-48.7891Q333.9939 -52.0703 333.408 -52.9688Q332.822 -53.8672 331.4548 -53.8672Q329.9705 -53.8672 329.2087 -52.6562Q328.447 -51.4453 328.447 -48.9844Q328.447 -45.8203 329.3064 -44.2188Q330.1267 -42.6172 333.9548 -40.3516Q344.9314 -33.8281 347.783 -29.6484Q350.6345 -25.4688 350.6345 -16.1719Q350.6345 -9.4141 349.0525 -6.2109Q347.4705 -3.0078 342.9392 -0.8398Q338.408 1.3281 332.3923 1.3281Q325.7908 1.3281 321.1228 -1.1719Q316.4548 -3.6719 315.0095 -7.5391Q313.5642 -11.4062 313.5642 -18.5156V-22.6562H328.8376V-14.9609Q328.8376 -11.4062 329.4822 -10.3906Q330.1267 -9.375 331.7673 -9.375Q333.408 -9.375 334.2087 -10.6641Q335.0095 -11.9531 335.0095 -14.4922Q335.0095 -20.0781 333.4861 -21.7969Q331.9236 -23.5156 325.7908 -27.5391Q319.658 -31.6016 317.6658 -33.4375Q315.6736 -35.2734 314.365 -38.5156Q313.0564 -41.7578 313.0564 -46.7969Q313.0564 -54.0625 314.9119 -57.4219Q316.7673 -60.7812 320.908 -62.6758Q325.0486 -64.5703 330.908 -64.5703Q337.3142 -64.5703 341.8259 -62.5Q346.3376 -60.4297 347.8025 -57.2852Q349.2673 -54.1406 349.2673 -46.6016Z" fill="#D9F467" />
+  </g>
+</svg>
