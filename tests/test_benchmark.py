@@ -165,6 +165,34 @@ def test_benchmark_rejects_invalid_retry_configs(value):
         max_retries({"retries": value})
 
 
+def test_retry_report_normalizes_requests_and_counts_capped_samples_once(tmp_path):
+    from benchmarks.src.artifacts import write_json
+    from benchmarks.src.generate_report import generate_report
+
+    run = tmp_path / "runs/retry-model"
+    write_json(run / "config.json", {"tasks": ["classify"], "max_new_tokens": 4096, "retries": 2})
+    write_json(run / "classify.json", {
+        "task": "classify", "dataset": "cifar10", "model": "test", "revision": "pinned",
+        "device": "cpu", "dtype": "float32", "retries": 2,
+        "metrics": {"samples": 2, "failures": 1, "accuracy_top1": .5},
+        "usage": {"input_tokens": 60, "output_tokens": 16394, "attempted_requests": 6,
+                  "estimated_cost_usd": "0.006"},
+        "speed_ms_per_sample": {"inference": 1000}, "elapsed_seconds": 2,
+        "dataset_fingerprint_sha256": "data",
+    })
+    call = {"attempted_requests": 3, "generations": [{"output_tokens": n} for n in (4096, 4096, 5)]}
+    (run / "classify.jsonl").write_text((json.dumps(call) + "\n") * 2)
+    row, = generate_report(run.parent)
+    assert row["usage_requests_per_sample"] == 3
+    assert row["responses_at_token_cap"] == 4
+    assert row["samples_at_token_cap"] == 2
+    assert row["responses_at_token_cap_per_sample"] == 2
+    assert row["samples_at_token_cap_per_sample"] == 1
+    page = (tmp_path / "README.md").read_text()
+    assert "| test (2 retries) |" in page
+    assert "50% (100%) | 3 | 30 | 8,197 | 3 | 1 |" in page
+
+
 @pytest.mark.parametrize("sample_scale", [1, 3])
 def test_comparison_normalizes_usage_and_rates_by_evaluated_samples(tmp_path, sample_scale):
     from benchmarks.src.artifacts import write_json
@@ -199,7 +227,8 @@ def test_comparison_normalizes_usage_and_rates_by_evaluated_samples(tmp_path, sa
     assert "Input tokens / sample | Output tokens / sample | Estimated cost / 1,000 samples | Mean latency (s)" in table
     assert "Failure rate (at cap)" in table
     assert "| At cap |" not in table
-    assert f"| {100 * sample_scale} | Top-1 Acc 90% | 2% (1%) | 0 | 41 | 0.2 | 1 |" in table
+    assert row["usage_requests_per_sample"] == 1
+    assert f"| {100 * sample_scale} | Top-1 Acc 90% | 2% (1%) | 1 | 0 | 41 | 0.2 | 1 |" in table
     assert "Each row evaluates 100" not in table
     assert (tmp_path / "reports/report-manifest.json").is_file()
 
@@ -412,8 +441,8 @@ def test_local_comparison_selects_only_two_models_and_preserves_overview(compari
     assert "Gemma" not in page
     rows = [line for line in page.splitlines() if line.startswith(("| Qwen/", "| qwen."))]
     assert len(rows) == 2 * len(TASKS)
-    assert "| 2 | Top-1 Acc 10% | 50% (50%) | 10 | 2,050 | — | 1 |" in page
-    assert "| 2 | Top-1 Acc 50% | 0% (50%) | 10 | 2,050 | 2 | 1 |" in page
+    assert "| 2 | Top-1 Acc 10% | 50% (50%) | 1 | 10 | 2,050 | — | 1 |" in page
+    assert "| 2 | Top-1 Acc 50% | 0% (50%) | 1 | 10 | 2,050 | 2 | 1 |" in page
     assert overview.read_text() == "Existing benchmark overview"
     assert all(path.read_bytes() == content for path, content in before.items())
     assert not (tmp_path / "reports/charts").exists()
@@ -464,6 +493,73 @@ def test_local_comparison_lists_available_names_without_generating_reports(compa
     listing = capsys.readouterr().out
     assert "Qwen3-VL-2B  [small]" in listing and "Qwen3-VL-235B  [large]" in listing
     assert not (tmp_path / "reports").exists()
+
+
+def test_retry_profiles_can_be_selected_by_their_displayed_names(comparison_runs, tmp_path):
+    pytest.importorskip("matplotlib")
+    from benchmarks.src.chart_style import model_color, next_color
+    from benchmarks.src.generate_comparison import generate_comparison
+
+    original = comparison_runs / "small"
+    retry = comparison_runs / "small-retries"
+    retry.mkdir()
+    for path in original.iterdir():
+        if path.suffix == ".json":
+            value = json.loads(path.read_text())
+            value["retries"] = 2
+            (retry / path.name).write_text(json.dumps(value))
+        else:
+            (retry / path.name).write_bytes(path.read_bytes())
+    output = generate_comparison(comparison_runs, ["Qwen3-VL-2B", "Qwen3-VL-2B (2 retries)"], tmp_path / "comparison").parent
+    manifest = json.loads((output / "manifest.json").read_text())
+    assert [model["run"] for model in manifest["models"]] == ["small", "small-retries"]
+    assert (output / "README.md").read_text().startswith("# Qwen3-VL-2B vs Qwen3-VL-2B (2 retries)")
+    base = model_color("Qwen/Qwen3-VL-2B-Instruct")
+    assert [model["base_color"] for model in manifest["models"]] == [base, base]
+    assert [model["color"] for model in manifest["models"]] == [base, next_color(base)]
+    svg = (output / "comparison.svg").read_text()
+    assert all(f"stroke: {model['color']}" in svg for model in manifest["models"])
+
+
+def test_checksum_palette_preserves_qwen_colors_and_accepts_new_models():
+    from benchmarks.src.chart_style import COLORS, model_color, next_color
+
+    assert len(COLORS) == len(set(COLORS)) == 10
+    assert model_color("Qwen/Qwen3-VL-2B-Instruct") == "#2563ad"
+    assert model_color("qwen.qwen3-vl-235b-a22b") == "#864b9a"
+    assert model_color("a-new-vlm-without-a-registered-color") in COLORS
+    assert next_color(COLORS[-1]) == COLORS[0]
+
+
+def test_comparison_colors_match_overview_after_adding_an_unrelated_model(comparison_runs, tmp_path):
+    pytest.importorskip("matplotlib")
+    from benchmarks.src.artifacts import write_json
+    from benchmarks.src.generate_charts import generate_charts
+    from benchmarks.src.generate_comparison import generate_comparison
+
+    generate_charts(comparison_runs)
+    manifest_path = tmp_path / "reports/charts/manifest.json"
+    before = manifest_path.read_bytes()
+    charts = json.loads(before)
+    colors = {model["run"]: model["color"] for model in charts["models"]}
+    assert all(model["color"] == colors[model["run"]]
+               for task in charts["task_comparisons"] for model in task["models"])
+
+    # A new, incomplete run would shift a positional palette assignment.
+    new = comparison_runs / "new-model"
+    write_json(new / "config.json", json.loads((comparison_runs / "small/config.json").read_text()))
+    sample = json.loads((comparison_runs / "small/classify.json").read_text())
+    write_json(new / "classify.json", {**sample, "model": "a-new-vlm"})
+    for index, names in enumerate((["large", "small"], ["small", "large"])):
+        output = generate_comparison(comparison_runs, names, tmp_path / f"comparison-{index}").parent
+        manifest = json.loads((output / "manifest.json").read_text())
+        assert {model["run"]: model["color"] for model in manifest["models"]} == {
+            run: colors[run] for run in names
+        }
+        assert "benchmarks/src/chart_style.py" in manifest["source_sha256"]
+        svg = (output / "comparison.svg").read_text()
+        assert all(f"stroke: {colors[run]}" in svg for run in names)
+    assert manifest_path.read_bytes() == before
 
 
 def test_standard_charts_do_not_generate_pairwise_reports(comparison_runs, tmp_path):

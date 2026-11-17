@@ -35,6 +35,13 @@ def write_json(path, value):
     pending.replace(path)
 
 
+def save_svg(figure, path):
+    """Save stable SVG metadata and remove whitespace emitted by Matplotlib."""
+    path = Path(path)
+    figure.savefig(path, metadata={"Date": None})
+    path.write_text("\n".join(line.rstrip() for line in path.read_text().splitlines()) + "\n")
+
+
 def utc_now():
     return datetime.now(timezone.utc).isoformat()
 

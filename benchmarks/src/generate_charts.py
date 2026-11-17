@@ -5,17 +5,10 @@ import argparse
 import math
 from pathlib import Path
 
-from .artifacts import digest, utc_now, write_json
-from .generate_report import format_number, generate_report, load_task_reports
+from .artifacts import digest, save_svg, utc_now, write_json
+from .chart_style import model_color
+from .generate_report import MODEL_LABELS, format_number, generate_report, load_task_reports, retry_label
 from .task_registry import AXES
-
-COLORS = ["#2563ad", "#c05822", "#138575", "#864b9a"]
-MODEL_LABELS = {
-    "Qwen/Qwen3-VL-2B-Instruct": "Qwen3-VL-2B",
-    "google.gemma-3-27b-it": "Gemma 3 27B",
-    "moonshotai.kimi-k3.1": "Kimi K3.1",
-    "qwen.qwen3-vl-235b-a22b": "Qwen3-VL-235B",
-}
 
 
 def build_profiles(reports):
@@ -35,6 +28,9 @@ def build_profiles(reports):
         first = tasks[AXES[0][0]]
         profiles.append({
             "run": run, "model": first["model"], "backend": first.get("backend", "transformers"),
+            "label": retry_label(MODEL_LABELS.get(first["model"], first["model"]), first.get("retries", 0)),
+            "retries": first.get("retries", 0),
+            "color": model_color(first["model"]),
             "scores": scores, "figure": f"model-profiles/{run}",
             "samples": {task: tasks[task]["metrics"]["samples"] for task, *_ in AXES},
         })
@@ -58,12 +54,12 @@ def configure_plotting():
     return plt
 
 
-def draw_profile(ax, profile, index, *, comparison=False):
+def draw_profile(ax, profile, *, comparison=False):
     import numpy as np
 
     angles = np.linspace(0, 2 * np.pi, len(AXES), endpoint=False)
     closed_angles = np.append(angles, angles[0])
-    color = COLORS[index % len(COLORS)]
+    color = profile["color"]
     values = np.array(profile["scores"]) * 100
     closed = np.append(values, values[0])
     ax.set_theta_offset(np.pi / 2)
@@ -85,7 +81,7 @@ def draw_profile(ax, profile, index, *, comparison=False):
         )
         label.set_color("#243244")
     ax.plot(closed_angles, closed, color=color, linewidth=2.5, zorder=3,
-            label=MODEL_LABELS.get(profile["model"], profile["model"]))
+            label=profile.get("label") or MODEL_LABELS.get(profile["model"], profile["model"]))
     ax.fill(closed_angles, closed, color=color, alpha=.10 if comparison else .15, zorder=2)
     ax.scatter(angles, values, color=color, s=30, edgecolor="white", linewidth=.8, zorder=4)
 
@@ -104,36 +100,37 @@ def generate_charts(directory):
     (output / "model-profiles").mkdir(parents=True, exist_ok=True)
     (output / "task-comparisons").mkdir(parents=True, exist_ok=True)
 
-    def save(profile, index):
+    def save(profile):
         fig, ax = plt.subplots(figsize=(8, 8), subplot_kw={"projection": "polar"})
         fig.subplots_adjust(left=.23, right=.77, bottom=.15, top=.77)
-        draw_profile(ax, profile, index)
-        title = profile["model"].removeprefix("Qwen/").removeprefix("qwen.")
-        fig.suptitle(title, y=.96, fontsize=21, fontweight="bold", color=COLORS[index % len(COLORS)])
+        draw_profile(ax, profile)
+        title = profile["label"]
+        fig.suptitle(title, y=.96, fontsize=21, fontweight="bold", color=profile["color"])
         fig.text(.5, .055, "Higher is better · Failures included",
                  ha="center", fontsize=11, color="#596778")
         fig.savefig(output / f"{profile['figure']}.png", dpi=180)
-        fig.savefig(output / f"{profile['figure']}.svg", metadata={"Date": None})
+        save_svg(fig, output / f"{profile['figure']}.svg")
         plt.close(fig)
 
-    for index, profile in enumerate(profiles):
-        save(profile, index)
+    for profile in profiles:
+        save(profile)
 
     task_comparisons = []
     for axis, (task, metric, title, metric_label) in enumerate(AXES):
         models = [{"run": profile["run"], "model": profile["model"],
-                   "label": MODEL_LABELS.get(profile["model"], profile["model"]),
+                   "label": profile["label"],
+                   "color": profile["color"],
                    "score": profile["scores"][axis]}
                   for profile in profiles]
         figure = f"task-comparisons/{task}"
         fig, ax = plt.subplots(figsize=(8, 4.8))
-        fig.subplots_adjust(left=.29, right=.88, bottom=.18, top=.76)
+        fig.subplots_adjust(left=.38, right=.9, bottom=.18, top=.76)
         values = [model["score"] * 100 for model in models]
         positions = np.arange(len(models))
         ax.set_facecolor("#f8fafc")
         ax.set_axisbelow(True)
         ax.barh(positions, values, height=.55,
-                color=[COLORS[index % len(COLORS)] for index in range(len(models))])
+                color=[model["color"] for model in models])
         ax.set_yticks(positions, [model["label"] for model in models], fontsize=13, color="#243244")
         ax.invert_yaxis()
         ax.set_xlim(0, 100)
@@ -151,7 +148,7 @@ def generate_charts(directory):
         fig.text(.5, .055, "Higher is better · Failures included",
                  ha="center", fontsize=11, color="#596778")
         fig.savefig(output / f"{figure}.png", dpi=180)
-        fig.savefig(output / f"{figure}.svg", metadata={"Date": None})
+        save_svg(fig, output / f"{figure}.svg")
         plt.close(fig)
         task_comparisons.append({
             "task": task, "title": title, "metric": metric, "metric_label": metric_label,
@@ -169,7 +166,8 @@ def generate_charts(directory):
         "models": profiles,
         "task_comparisons": task_comparisons,
         "source_sha256": {f"benchmarks/src/{name}": digest(Path(__file__).with_name(name).read_bytes())
-                          for name in ("generate_charts.py", "generate_report.py", "task_registry.py", "artifacts.py")},
+                          for name in ("generate_charts.py", "generate_report.py", "chart_style.py",
+                                       "task_registry.py", "artifacts.py")},
         "reports_sha256": {str(path.relative_to(directory)): digest(path.read_bytes()) for path, _ in reports},
         "figures_sha256": {path.relative_to(output).as_posix(): digest(path.read_bytes())
                            for name in figure_names for suffix in ("png", "svg")

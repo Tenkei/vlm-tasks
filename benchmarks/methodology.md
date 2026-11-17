@@ -216,41 +216,28 @@ sample to see what correction changed.
 
 ## Model profile charts
 
-The [radar charts](README.md#model-profiles) show one profile per
-model/run, with identical axis order and a fixed radial range of 0–100. Every
-plotted value is its recorded metric multiplied by 100; higher is better.
-This model view begins with a four-column overview grid. Each thumbnail has
-the model name above it; both the name and image link
-to a model's Markdown heading, followed by a collapsed block containing its full
-radar chart and task metrics and usage table. These headings provide GitHub's
-native section permalinks and outline entries. Download links appear in the grid only.
-Radial tick numbers, the scale subtitle and the sample-count subtitle are hidden.
-Task titles are bold, with metric labels and values in regular weight.
-There is no normalization to the best observed model or to sample count.
-Failures retain their original scoring penalties.
+The [radar charts](README.md#model-profiles) show one profile per model/run.
+Each axis uses the task's main metric from the report's overview table.
+The [Table field guide](README.md#table-field-guide) explains these metrics.
+Axes have identical order and a fixed radial range of 0–100, using recorded
+scores multiplied by 100. There is no normalization to the best observed
+model or to sample count, and failures retain their scoring penalties.
 
-| Axis | Display label | Recorded metric |
-|---|---|---|
-| Classification | Top-1 Acc | Top-1 accuracy |
-| Detection | F1@0.5 | F1 at IoU 0.5 |
-| Grounding (Box) | Acc@0.5 | Accuracy at IoU ≥0.5 |
-| Grounding (Point) | Point-in-box Acc | Point-in-box accuracy |
-| Attributes | Acc | Accuracy across known attribute decisions |
-| VQA | VQA Acc | VQA accuracy |
-| Captioning | ROUGE-L | ROUGE-L |
+The chart metrics have a natural 0–1 range. Captioning uses bounded ROUGE-L;
+CIDEr, which is not bounded to 0–1, remains in the tables. Each axis summarizes
+a different task: equal radial values do not imply equal difficulty, and
+polygon area is not an overall model score. Charts compare task quality;
+use the tables to assess quality alongside failures and resource usage.
 
-`Acc` abbreviates accuracy throughout the charts and comparison tables.
-`Mean Acc` is the mean of the per-attribute-group accuracies. Grounding (Box)
-also reports `Acc@0.75` and `Acc@0.9`; each suffix is the minimum box IoU
-required for a correct prediction. Accuracy metrics without an IoU threshold
-have no `@` suffix. The [Table field guide](README.md#table-field-guide)
-explains the display labels alongside the other table fields.
-
-ROUGE-L is bounded by 0–1, which allows a fixed scale. CIDEr has no fixed
-0–1 bound and remains in the table. Each axis summarizes a different task;
-equal radial values do not imply equal difficulty, and polygon area is not
-an overall model score. The table retains the other validation metrics and
-per-sample tokens and latency, and cost per 1,000 samples.
+Colors come from the shared ten-color palette in
+[`src/chart_style.py`](src/chart_style.py). The first eight bytes of a model ID's
+SHA-256 checksum, interpreted as an unsigned big-endian integer modulo the
+palette length, select its slot. Assignments are independent of run date,
+sample count and retry allowance. Changing palette length or order changes
+assignments. Profiles, task bars and pair comparisons use the same base
+colors; if both comparison curves share a color, the second uses the next
+palette entry, wrapping at the end. Manifests record resolved colors and
+source hashes.
 
 Generate PNG and editable SVG files using saved reports only:
 
@@ -259,13 +246,15 @@ uv pip install --python .venv/bin/python 'matplotlib==3.11.2'
 .venv/bin/python -m benchmarks.src.generate_charts
 ```
 
-The chart generator reads task reports, validates that all seven metrics are present
-and bounded, writes one PNG and SVG per model/run and task, and
-refreshes the README's chart grids and detail sections. It performs no inference. `reports/charts/manifest.json`
+The chart generator validates that all seven main metrics are present and
+bounded, writes one profile per model/run and one comparison per task, and
+refreshes the report. It performs no inference. `reports/charts/manifest.json`
 records metric choices, exact scores, sample counts, Matplotlib/NumPy versions,
 and source, report and figure hashes. Use those package versions to reproduce
-the rendering. The report generator embeds charts only when their report hashes
-match the current comparison; regenerate the charts after adding or changing runs.
+the rendering. The report generator embeds charts only when their report
+hashes match the current results; regenerate charts after adding or changing
+runs. To refresh only tables and the field guide, run
+`python -m benchmarks.src.generate_report`.
 
 ### Compare two models locally
 
@@ -279,9 +268,11 @@ as above:
 
 The command reads saved results and writes only the selected pair's report to
 `benchmarks/reports/model-comparisons/<run>--vs--<run>/`. Open its `README.md`
-for an overlaid radar chart and a table of validation metrics, failures, tokens
-per sample, estimated cost per 1,000 samples and mean latency. PNG and SVG
-images and a provenance manifest are saved alongside it. These local outputs
+for the introduction and run configurations, followed by the overlaid radar
+chart and task summary table. Expand **Breakdown** for full metrics and usage;
+its fields follow the main report's
+[Table field guide](README.md#table-field-guide). PNG and SVG images and a
+provenance manifest are saved alongside it. These local outputs
 are gitignored; the main benchmark README and charts are unchanged, and no
 model inference is performed.
 
@@ -299,7 +290,8 @@ run ID from the list to choose one. Unknown, ambiguous and duplicate selections
 are rejected before report generation.
 
 Overlays use the individual profiles' axis order, fixed scale, recorded scores
-and colors, without normalization between models. Both lines are solid and a
+and base colors, without normalization between models. When both colors match,
+the second curve uses the next palette entry. Both lines are solid and a
 legend identifies each model. Polygon area is not an overall score. The table
 uses the same formatting and usage accounting as the main report, with links
 back to the selected source results. The manifest records selected runs, original
@@ -307,32 +299,15 @@ scores, rendering versions, source and input hashes, and generated file hashes.
 
 ### Task comparison charts
 
-The [task comparisons](README.md#task-comparisons) use one
-horizontal bar chart per task, with the same main metrics listed above.
-Models keep the same order and colors as their radar profiles. Bar lengths
-use the fixed 0–100 range (recorded metric × 100), with numeric axis ticks
-hidden. Direct value labels show percentages, except caption ROUGE-L, which
-shows its native 0–1 value. Titles are bold and sample-count subtitles are
-omitted. No scores are normalized against the observed models.
+The [task comparisons](README.md#task-comparisons) show one horizontal bar
+chart per task variant, using the same main metrics, model order and colors
+as the model profiles. Bars use the same fixed 0–100 range (recorded metric
+multiplied by 100); no scores are normalized against the observed models.
 
 The chart manifest records each task's metric, original scores, displayed
-model labels and filenames. A models-by-tasks matrix near the top of the
-comparison README shows the main metrics with the best observed values in
-bold. Its column and row labels link to the corresponding model and task details.
-Task comparisons then begin with a four-column thumbnail grid presenting the
-task view: all models compared on each task. Each thumbnail has its task name
-above it; both the name and image link to the
-matching details; PNG/SVG downloads appear in the overview grids only.
-Each task has a level-three Markdown heading above a collapsed block pairing
-its chart with the full validation and usage table. Grounding nests Box and
-Point variations with level-four headings above their own collapsed blocks,
-using the same chart-then-table layout. Overview links target the native heading
-fragments; the previous model anchors remain as aliases above the headings.
-The tables retain additional validation metrics, failures, tokens per
-sample, cost per 1,000 samples and mean latency; charts compare task quality only.
-Shared column definitions and interpretation notes appear in the README's
-final [Table field guide](README.md#table-field-guide), with
-bullets named after the table headers and related fields grouped together.
+model labels and filenames. The report pairs charts with full tables and
+links both views through its overview. Shared field definitions live in the
+[Table field guide](README.md#table-field-guide).
 
 ## Reproduce
 
@@ -608,6 +583,7 @@ artifacts are retained as evidence of their execution environment.
 | `benchmarks/src/run_transformers.py` | Local model setup, inference and task reports |
 | `benchmarks/src/generate_report.py` | Comparison table and wide CSV generation |
 | `benchmarks/src/generate_charts.py` | Model radar profiles and task comparison charts from saved reports |
+| `benchmarks/src/chart_style.py` | Shared palette and deterministic model color selection |
 | `benchmarks/src/generate_comparison.py` | On-demand local report for two selected model runs |
 | `benchmarks/src/run_token_budget.py` | Paired 2×-budget reruns of capped samples |
 | `benchmarks/src/report_token_budget.py` | Report completed token-budget records after stopping inference |
