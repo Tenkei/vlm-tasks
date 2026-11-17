@@ -23,11 +23,12 @@ benchmarks/
 │   └── charts/
 │       ├── model-profiles/    # One radar profile per model
 │       └── task-comparisons/  # One bar chart per task
-├── experiments/token-budget/  # Paired token-budget experiments
-├── failed-runs/               # Startup and infrastructure failures
 ├── methodology.md
 └── README.md                  # Generated model and task overview
 ```
+
+One-off investigations and token-budget outputs live in the repository-root
+`experiments/` directory, separately from published benchmark runs.
 
 Python modules use `snake_case` and describe their action or responsibility.
 Model configs use `<model>-<backend>.json`, including model size where relevant;
@@ -501,9 +502,8 @@ to the configured foundation model. Reports retain that model ID; `model.json`
 also records the invoked profile ID and its resolved routing metadata. Kimi's
 global routing may serve requests outside Tokyo, which affects latency.
 Gemma's first Tokyo request timed out after 600 seconds without a returned
-generation; its benchmark therefore uses US East. The timeout attempt is
-preserved in `benchmarks/failed-runs/` with unknown usage and contributes no
-validation scores. Latency includes regional network differences. Independent
+generation; its benchmark therefore uses US East. Latency includes regional
+network differences. Independent
 cloud model runs may overlap; each run sends only one request at a time, with
 no batching or per-model concurrency.
 
@@ -534,8 +534,7 @@ counter even when reasoning text is present. Reasoning counts toward the common
 output allowance. Do not interpret this comparison as
 matching internal reasoning effort across models. Gemma uses temperature 0;
 Kimi rejects the temperature field, so its config sets `null` to omit it and
-uses provider-controlled sampling. The rejected startup request is retained in
-`benchmarks/failed-runs/` and contributes no validation scores.
+uses provider-controlled sampling.
 
 The pinned pricing package has no Bedrock K3.1 entry. Its config therefore
 records the official [AWS model-card rates](https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-moonshot-ai-kimi-k3-1-highspeed.html)
@@ -556,14 +555,15 @@ hardware, tokenization or provider preprocessing identical.
 
 ### Double the budget for capped responses
 
-After the baseline completes, rerun every sample whose response used the full
-4,096-token allowance with an 8,192-token allowance:
+After a local Transformers baseline completes, rerun samples that reached its
+output cap with twice the configured allowance. Save the experiment under
+the repository-root `experiments/` directory, using a fresh output path:
 
 ```bash
 python -m benchmarks.src.run_token_budget \
   --baseline benchmarks/runs/qwen3-vl-2b-20261112 \
   --prepared benchmarks/.cache/prepared-datasets-100 \
-  --output benchmarks/experiments/token-budget/qwen3-vl-2b-20261112-double-tokens --offline
+  --output experiments/token-budget/reproduction --offline
 ```
 
 The experiment verifies the dataset fingerprints, keeps the same model revision,
@@ -584,7 +584,7 @@ weights or running further inference:
 
 ```bash
 python -m benchmarks.src.report_token_budget \
-  --experiment benchmarks/experiments/token-budget/qwen3-vl-2b-20261112-double-tokens \
+  --experiment experiments/token-budget/reproduction \
   --baseline benchmarks/runs/qwen3-vl-2b-20261112 \
   --interrupted-requests 1
 ```
@@ -631,8 +631,7 @@ artifacts are retained as evidence of their execution environment.
 | `reports/model-comparisons/<run>--vs--<run>/` | Local README, overlay PNG/SVG and provenance for one selected pair (gitignored) |
 | `reports/charts/task-comparisons/<task>.png`, `*.svg` | One bar chart comparing models per task |
 | `reports/charts/manifest.json` | Chart metric choices, values, versions and provenance hashes |
-| `benchmarks/failed-runs/<attempt>/` | Startup or infrastructure failures retained outside scored benchmark results |
-| `benchmarks/experiments/token-budget/<experiment>/` | Paired token-budget samples, responses, metrics and completion status |
+| `experiments/token-budget/<experiment>/` | Local paired token-budget samples, responses, metrics and completion status |
 
 Keep the source revision and files matching the recorded SHA-256 hashes.
 Sources changed after inference are preserved in the runs' `source_snapshots/`
