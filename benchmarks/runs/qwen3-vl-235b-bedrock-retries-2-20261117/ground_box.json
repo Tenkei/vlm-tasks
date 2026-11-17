@@ -1,0 +1,711 @@
+{
+  "task": "ground_box",
+  "dataset": "refcocog",
+  "model": "qwen.qwen3-vl-235b-a22b",
+  "inference_model_id": "qwen.qwen3-vl-235b-a22b",
+  "retries": 2,
+  "revision": null,
+  "device": "bedrock/ap-northeast-1",
+  "dtype": "provider-managed",
+  "backend": "bedrock",
+  "region": "ap-northeast-1",
+  "completed_at": "2026-11-17T03:19:12.643230+00:00",
+  "execution_environment": "environment.json",
+  "metrics": {
+    "samples": 100,
+    "failures": 0,
+    "failure_rate": 0.0,
+    "unique_images": 52,
+    "accuracy_iou_0.5": 0.81,
+    "accuracy_iou_0.75": 0.68,
+    "accuracy_iou_0.9": 0.38,
+    "mean_iou": 0.7178564386739649
+  },
+  "summary": [
+    {
+      "class": "person",
+      "support": 34,
+      "accuracy_iou_0.5": 0.7941176470588235,
+      "accuracy_iou_0.75": 0.6470588235294118,
+      "accuracy_iou_0.9": 0.29411764705882354,
+      "mean_iou": 0.6879332502364826
+    },
+    {
+      "class": "bicycle",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "car",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "motorcycle",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "airplane",
+      "support": 2,
+      "accuracy_iou_0.5": 1.0,
+      "accuracy_iou_0.75": 1.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.8359341321322299
+    },
+    {
+      "class": "bus",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "train",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "truck",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "boat",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "traffic light",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "fire hydrant",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "stop sign",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "parking meter",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "bench",
+      "support": 2,
+      "accuracy_iou_0.5": 1.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.6286657607366751
+    },
+    {
+      "class": "bird",
+      "support": 2,
+      "accuracy_iou_0.5": 1.0,
+      "accuracy_iou_0.75": 1.0,
+      "accuracy_iou_0.9": 1.0,
+      "mean_iou": 0.9417476847166644
+    },
+    {
+      "class": "cat",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "dog",
+      "support": 6,
+      "accuracy_iou_0.5": 0.8333333333333334,
+      "accuracy_iou_0.75": 0.8333333333333334,
+      "accuracy_iou_0.9": 0.3333333333333333,
+      "mean_iou": 0.8001279343891309
+    },
+    {
+      "class": "horse",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "sheep",
+      "support": 5,
+      "accuracy_iou_0.5": 0.8,
+      "accuracy_iou_0.75": 0.8,
+      "accuracy_iou_0.9": 0.8,
+      "mean_iou": 0.8014646534283874
+    },
+    {
+      "class": "cow",
+      "support": 2,
+      "accuracy_iou_0.5": 0.5,
+      "accuracy_iou_0.75": 0.5,
+      "accuracy_iou_0.9": 0.5,
+      "mean_iou": 0.4662828048030759
+    },
+    {
+      "class": "elephant",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "bear",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "zebra",
+      "support": 1,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "giraffe",
+      "support": 4,
+      "accuracy_iou_0.5": 1.0,
+      "accuracy_iou_0.75": 0.5,
+      "accuracy_iou_0.9": 0.5,
+      "mean_iou": 0.8079024115221802
+    },
+    {
+      "class": "backpack",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "umbrella",
+      "support": 1,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.19015766386637045
+    },
+    {
+      "class": "handbag",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "tie",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "suitcase",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "frisbee",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "skis",
+      "support": 2,
+      "accuracy_iou_0.5": 1.0,
+      "accuracy_iou_0.75": 1.0,
+      "accuracy_iou_0.9": 0.5,
+      "mean_iou": 0.9037538794904023
+    },
+    {
+      "class": "snowboard",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "sports ball",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "kite",
+      "support": 2,
+      "accuracy_iou_0.5": 1.0,
+      "accuracy_iou_0.75": 1.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.7993926966678946
+    },
+    {
+      "class": "baseball bat",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "baseball glove",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "skateboard",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "surfboard",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "tennis racket",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "bottle",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "wine glass",
+      "support": 2,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "cup",
+      "support": 2,
+      "accuracy_iou_0.5": 1.0,
+      "accuracy_iou_0.75": 0.5,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.7286107279268271
+    },
+    {
+      "class": "fork",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "knife",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "spoon",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "bowl",
+      "support": 8,
+      "accuracy_iou_0.5": 0.875,
+      "accuracy_iou_0.75": 0.75,
+      "accuracy_iou_0.9": 0.625,
+      "mean_iou": 0.7933975628483839
+    },
+    {
+      "class": "banana",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "apple",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "sandwich",
+      "support": 3,
+      "accuracy_iou_0.5": 0.6666666666666666,
+      "accuracy_iou_0.75": 0.6666666666666666,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.5348699686610318
+    },
+    {
+      "class": "orange",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "broccoli",
+      "support": 2,
+      "accuracy_iou_0.5": 1.0,
+      "accuracy_iou_0.75": 1.0,
+      "accuracy_iou_0.9": 1.0,
+      "mean_iou": 0.9432961390880843
+    },
+    {
+      "class": "carrot",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "hot dog",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "pizza",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "donut",
+      "support": 2,
+      "accuracy_iou_0.5": 1.0,
+      "accuracy_iou_0.75": 1.0,
+      "accuracy_iou_0.9": 1.0,
+      "mean_iou": 0.9444859351029545
+    },
+    {
+      "class": "cake",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "chair",
+      "support": 5,
+      "accuracy_iou_0.5": 1.0,
+      "accuracy_iou_0.75": 1.0,
+      "accuracy_iou_0.9": 0.8,
+      "mean_iou": 0.9163574628945664
+    },
+    {
+      "class": "couch",
+      "support": 2,
+      "accuracy_iou_0.5": 1.0,
+      "accuracy_iou_0.75": 1.0,
+      "accuracy_iou_0.9": 1.0,
+      "mean_iou": 0.9646471810122665
+    },
+    {
+      "class": "potted plant",
+      "support": 2,
+      "accuracy_iou_0.5": 1.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.627391001889938
+    },
+    {
+      "class": "bed",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "dining table",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "toilet",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "tv",
+      "support": 2,
+      "accuracy_iou_0.5": 1.0,
+      "accuracy_iou_0.75": 1.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.7823375361858127
+    },
+    {
+      "class": "laptop",
+      "support": 2,
+      "accuracy_iou_0.5": 1.0,
+      "accuracy_iou_0.75": 1.0,
+      "accuracy_iou_0.9": 0.5,
+      "mean_iou": 0.8698813251784197
+    },
+    {
+      "class": "mouse",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "remote",
+      "support": 1,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.1721020577329021
+    },
+    {
+      "class": "keyboard",
+      "support": 2,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.40442673823655423
+    },
+    {
+      "class": "cell phone",
+      "support": 2,
+      "accuracy_iou_0.5": 1.0,
+      "accuracy_iou_0.75": 1.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.8893341543063864
+    },
+    {
+      "class": "microwave",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "oven",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "toaster",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "sink",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "refrigerator",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "book",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "clock",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "vase",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "scissors",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "teddy bear",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "hair drier",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    },
+    {
+      "class": "toothbrush",
+      "support": 0,
+      "accuracy_iou_0.5": 0.0,
+      "accuracy_iou_0.75": 0.0,
+      "accuracy_iou_0.9": 0.0,
+      "mean_iou": 0.0
+    }
+  ],
+  "failures": [],
+  "dataset_counts": {
+    "evaluated_expressions": 100,
+    "evaluated_images": 52,
+    "evaluated_samples": 100
+  },
+  "dataset_metadata": {
+    "dataset_name": "refcocog",
+    "config_name": "refcocog",
+    "version": "1.0.0",
+    "description": "MDETR RefCOCO annotations; RefCOCOg uses UMD splits, RefCOCO/+ use UNC.",
+    "split": "val"
+  },
+  "status_counts": {
+    "found": 92,
+    "not_found": 8,
+    "ambiguous": 0
+  },
+  "dataset_fingerprint_sha256": "ccde8d120ffa9a516aaa27b66ced9bcc5a6e0555202ece37b06fe21166b3373d",
+  "speed_ms_per_sample": {
+    "load": 2.022486719652079,
+    "inference": 1926.3688575092237,
+    "metrics": 0.2391350074321963
+  },
+  "elapsed_seconds": 192.86579341700417,
+  "wall_seconds": 192.86643016702146,
+  "usage": {
+    "attempted_requests": 155,
+    "measured_requests": 155,
+    "unmeasured_requests": 0,
+    "input_tokens": 115741,
+    "output_tokens": 7015,
+    "cache_read_tokens": 0,
+    "cache_write_tokens": 0,
+    "output_reasoning_tokens": 0,
+    "estimated_cost_usd": "0.08000263",
+    "costed_requests": 155,
+    "estimated_cost_complete": true,
+    "reported_cost_usd": null,
+    "cost_note": "Estimate from recorded pricing sources; Bedrock does not return invoiced charges",
+    "cost_sources": [
+      "genai-prices"
+    ],
+    "total_tokens": 122756
+  }
+}

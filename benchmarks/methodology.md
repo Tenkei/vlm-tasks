@@ -49,7 +49,7 @@ describe the published runs rather than requirements of the protocol.
 | `tasks` | Select task variants to evaluate | Seven variants across six vision tasks |
 | `samples_per_task` | Positive sample count, frozen during preparation; the run must match its prepared manifest | 100 per variant |
 | `max_new_tokens` | Maximum generated tokens per request, including each correction attempt | 4,096 |
-| `retries` | Nonnegative maximum correction attempts after the initial request; defaults to `0` when omitted | `0` |
+| `retries` | Nonnegative maximum correction attempts after the initial request; defaults to `0` when omitted | `0`, plus a separate Qwen3-VL-235B run with `2` |
 | Generation settings | Control decoding where the backend supports it; record differences such as provider-controlled sampling | Local greedy decoding with seed 42; hosted settings vary by model |
 | `match_iou`, `tokenizer_version` | Fix detection matching and caption tokenization for scoring | `0.5` and Stanford PTBTokenizer `3.4.1` |
 
@@ -213,6 +213,20 @@ allowance changes the inference budget. Hosted first-attempt outputs can
 vary even at temperature zero, so differences from an earlier baseline may
 also include initial-response variation. Inspect attempts within each saved
 sample to see what correction changed.
+
+### Example: Qwen3-VL-235B on Bedrock
+
+The [two-retry configuration](configs/qwen3-vl-235b-a22b-bedrock-retries-2.json)
+illustrates this parameter. It keeps the baseline's 100 frozen samples per
+task, model settings, first-attempt prompts, nested response schemas, scoring
+and 4,096-token limit per request, while setting `retries` to `2`. All seven
+task variants are evaluated in a fresh run stored separately from the
+zero-retry baseline.
+
+See the [published overview table](https://github.com/Tenkei/vlm-tasks/blob/main/benchmarks/README.md)
+and the dedicated [Qwen3-VL-235B (2 retries) profile](https://github.com/Tenkei/vlm-tasks/blob/main/benchmarks/README.md#qwen3-vl-235b-2-retries)
+for results, and the [reproduction command](#reproduce-the-retry-example)
+below to run the same configuration.
 
 ## Model profile charts
 
@@ -446,6 +460,20 @@ invoices, which the Converse API does not return. Reports record cost coverage
 and unmeasured usage; display conventions are defined in the
 [Table field guide](README.md#table-field-guide).
 
+### Reproduce the retry example
+
+To reproduce the [Qwen3-VL-235B retry example](#example-qwen3-vl-235b-on-bedrock),
+use the same environment, prepared datasets and AWS login as above, with its
+separate config and a fresh output directory:
+
+```bash
+HF_HUB_OFFLINE=0 HF_DATASETS_OFFLINE=0 .venv/bin/python -m benchmarks.src.run_bedrock \
+  --config benchmarks/configs/qwen3-vl-235b-a22b-bedrock-retries-2.json \
+  --prepared benchmarks/.cache/prepared-datasets-100 \
+  --output benchmarks/runs/qwen3-vl-235b-bedrock-retries-2-reproduction
+.venv/bin/python -m benchmarks.src.generate_charts
+```
+
 ### Gemma 3 27B and Kimi K3.1 on AWS Bedrock
 
 The additional runs use the same frozen data, task prompts, schemas,
@@ -575,6 +603,7 @@ artifacts are retained as evidence of their execution environment.
 |---|---|
 | `benchmarks/configs/qwen3-vl-2b-transformers.json` | Fixed baseline configuration |
 | `benchmarks/configs/qwen3-vl-235b-a22b-bedrock.json`, `benchmarks/src/run_bedrock.py` | Hosted Qwen3 configuration, execution and usage collection |
+| `benchmarks/configs/qwen3-vl-235b-a22b-bedrock-retries-2.json` | Example of a separate correction-retry configuration |
 | `benchmarks/configs/gemma-3-27b-bedrock.json`, `benchmarks/configs/kimi-k3.1-bedrock.json` | Additional hosted model configurations, routing and pricing settings |
 | `benchmarks/src/prepare_datasets.py` | Dataset preparation and sample freezing |
 | `benchmarks/src/task_registry.py` | Shared task definitions, datasets, metric labels and chart axes |
