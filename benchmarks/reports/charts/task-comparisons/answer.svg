@@ -90,97 +90,116 @@ L 518.4 82.944
     <g id="ytick_1">
      <g id="line2d_13"/>
      <g id="text_1">
-      <text style="font-size: 13px; font-family: 'DejaVu Sans'; text-anchor: end; fill: #243244" x="208.88" y="108.007376" transform="rotate(-0 208.88 108.007376)">Qwen3-VL-2B</text>
+      <text style="font-size: 13px; font-family: 'DejaVu Sans'; text-anchor: end; fill: #243244" x="208.88" y="106.022938" transform="rotate(-0 208.88 106.022938)">Qwen3-VL-2B</text>
      </g>
     </g>
     <g id="ytick_2">
      <g id="line2d_14"/>
      <g id="text_2">
-      <text style="font-size: 13px; font-family: 'DejaVu Sans'; text-anchor: end; fill: #243244" x="208.88" y="148.056926" transform="rotate(-0 208.88 148.056926)">Gemma 3 27B</text>
+      <text style="font-size: 13px; font-family: 'DejaVu Sans'; text-anchor: end; fill: #243244" x="208.88" y="138.856354" transform="rotate(-0 208.88 138.856354)">Gemma 3 27B</text>
      </g>
     </g>
     <g id="ytick_3">
      <g id="line2d_15"/>
      <g id="text_3">
-      <text style="font-size: 13px; font-family: 'DejaVu Sans'; text-anchor: end; fill: #243244" x="208.88" y="188.106984" transform="rotate(-0 208.88 188.106984)">Kimi K3.1</text>
+      <text style="font-size: 13px; font-family: 'DejaVu Sans'; text-anchor: end; fill: #243244" x="208.88" y="171.690277" transform="rotate(-0 208.88 171.690277)">Kimi K3.1</text>
      </g>
     </g>
     <g id="ytick_4">
      <g id="line2d_16"/>
      <g id="text_4">
-      <text style="font-size: 13px; font-family: 'DejaVu Sans'; text-anchor: end; fill: #243244" x="208.88" y="228.156027" transform="rotate(-0 208.88 228.156027)">Qwen3-VL-235B</text>
+      <text style="font-size: 13px; font-family: 'DejaVu Sans'; text-anchor: end; fill: #243244" x="208.88" y="204.523184" transform="rotate(-0 208.88 204.523184)">Qwen3-VL-235B</text>
      </g>
     </g>
     <g id="ytick_5">
      <g id="line2d_17"/>
      <g id="text_5">
-      <text style="font-size: 13px; font-family: 'DejaVu Sans'; text-anchor: end; fill: #243244" x="208.88" y="268.206085" transform="rotate(-0 208.88 268.206085)">Qwen3-VL-235B (2 retries)</text>
+      <text style="font-size: 13px; font-family: 'DejaVu Sans'; fill: #243244" transform="translate(105.245625 230.205457)">Qwen3-VL-235B</text>
+      <text style="font-size: 13px; font-family: 'DejaVu Sans'; fill: #243244" transform="translate(110.289219 245.809012)">(JSON Schema)</text>
+     </g>
+    </g>
+    <g id="ytick_6">
+     <g id="line2d_18"/>
+     <g id="text_6">
+      <text style="font-size: 13px; font-family: 'DejaVu Sans'; fill: #243244" transform="translate(105.245625 263.038872)">Qwen3-VL-235B</text>
+      <text style="font-size: 13px; font-family: 'DejaVu Sans'; fill: #243244" transform="translate(144.452812 278.642427)">(2 retries)</text>
      </g>
     </g>
    </g>
    <g id="patch_3">
     <path d="M 218.88 92.055273
 L 413.568 92.055273
-L 413.568 114.082525
-L 218.88 114.082525
+L 413.568 110.113651
+L 218.88 110.113651
 z
 " clip-path="url(#p9a324c0101)" style="fill: #2563ad"/>
    </g>
    <g id="patch_4">
-    <path d="M 218.88 132.104823
-L 386.6112 132.104823
-L 386.6112 154.132076
-L 218.88 154.132076
+    <path d="M 218.88 124.888688
+L 386.6112 124.888688
+L 386.6112 142.947066
+L 218.88 142.947066
 z
 " clip-path="url(#p9a324c0101)" style="fill: #c05822"/>
    </g>
    <g id="patch_5">
-    <path d="M 218.88 172.154374
-L 346.77504 172.154374
-L 346.77504 194.181626
-L 218.88 194.181626
+    <path d="M 218.88 157.722103
+L 346.77504 157.722103
+L 346.77504 175.780482
+L 218.88 175.780482
 z
 " clip-path="url(#p9a324c0101)" style="fill: #138575"/>
    </g>
    <g id="patch_6">
-    <path d="M 218.88 212.203924
-L 423.75168 212.203924
-L 423.75168 234.231177
-L 218.88 234.231177
+    <path d="M 218.88 190.555518
+L 423.75168 190.555518
+L 423.75168 208.613897
+L 218.88 208.613897
 z
 " clip-path="url(#p9a324c0101)" style="fill: #864b9a"/>
    </g>
    <g id="patch_7">
-    <path d="M 218.88 252.253475
-L 413.26848 252.253475
+    <path d="M 218.88 223.388934
+L 462.9888 223.388934
+L 462.9888 241.447312
+L 218.88 241.447312
+z
+" clip-path="url(#p9a324c0101)" style="fill: #864b9a"/>
+   </g>
+   <g id="patch_8">
+    <path d="M 218.88 256.222349
+L 413.26848 256.222349
 L 413.26848 274.280727
 L 218.88 274.280727
 z
 " clip-path="url(#p9a324c0101)" style="fill: #864b9a"/>
    </g>
-   <g id="text_6">
-    <text style="font-size: 13px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #243244" x="418.0608" y="106.445852" transform="rotate(-0 418.0608 106.445852)">65%</text>
-   </g>
    <g id="text_7">
-    <text style="font-size: 13px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #243244" x="391.104" y="146.495403" transform="rotate(-0 391.104 146.495403)">56%</text>
+    <text style="font-size: 13px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #243244" x="418.0608" y="104.461415" transform="rotate(-0 418.0608 104.461415)">65%</text>
    </g>
    <g id="text_8">
-    <text style="font-size: 13px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #243244" x="351.26784" y="186.544953" transform="rotate(-0 351.26784 186.544953)">42.7%</text>
+    <text style="font-size: 13px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #243244" x="391.104" y="137.29483" transform="rotate(-0 391.104 137.29483)">56%</text>
    </g>
    <g id="text_9">
-    <text style="font-size: 13px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #243244" x="428.24448" y="226.594504" transform="rotate(-0 428.24448 226.594504)">68.4%</text>
+    <text style="font-size: 13px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #243244" x="351.26784" y="170.128246" transform="rotate(-0 351.26784 170.128246)">42.7%</text>
    </g>
    <g id="text_10">
-    <text style="font-size: 13px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #243244" x="417.76128" y="266.644054" transform="rotate(-0 417.76128 266.644054)">64.9%</text>
+    <text style="font-size: 13px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #243244" x="428.24448" y="202.961661" transform="rotate(-0 428.24448 202.961661)">68.4%</text>
+   </g>
+   <g id="text_11">
+    <text style="font-size: 13px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #243244" x="467.4816" y="235.795076" transform="rotate(-0 467.4816 235.795076)">81.5%</text>
+   </g>
+   <g id="text_12">
+    <text style="font-size: 13px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #243244" x="417.76128" y="268.628491" transform="rotate(-0 417.76128 268.628491)">64.9%</text>
    </g>
   </g>
-  <g id="text_11">
+  <g id="text_13">
    <text style="font-weight: 700; font-size: 21px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #243244" x="288" y="29.779078" transform="rotate(-0 288 29.779078)">VQA</text>
   </g>
-  <g id="text_12">
+  <g id="text_14">
    <text style="font-size: 13px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #596778" x="288" y="51.84" transform="rotate(-0 288 51.84)">VQA Acc</text>
   </g>
-  <g id="text_13">
+  <g id="text_15">
    <text style="font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #596778" x="288" y="326.592" transform="rotate(-0 288 326.592)">Higher is better · Failures included</text>
   </g>
  </g>

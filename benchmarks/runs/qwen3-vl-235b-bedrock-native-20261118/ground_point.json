@@ -1,0 +1,477 @@
+{
+  "task": "ground_point",
+  "dataset": "refcocog",
+  "model": "qwen.qwen3-vl-235b-a22b",
+  "inference_model_id": "qwen.qwen3-vl-235b-a22b",
+  "output_mode": "native",
+  "retries": 0,
+  "revision": null,
+  "device": "bedrock/ap-northeast-1",
+  "dtype": "provider-managed",
+  "backend": "bedrock",
+  "region": "ap-northeast-1",
+  "completed_at": "2026-11-18T06:54:43.540289+00:00",
+  "execution_environment": "environment.json",
+  "metrics": {
+    "samples": 100,
+    "failures": 1,
+    "failure_rate": 0.01,
+    "unique_images": 52,
+    "point_in_box_accuracy": 0.88
+  },
+  "summary": [
+    {
+      "class": "person",
+      "support": 34,
+      "point_in_box_accuracy": 0.7941176470588235
+    },
+    {
+      "class": "bicycle",
+      "support": 0,
+      "point_in_box_accuracy": 0.0
+    },
+    {
+      "class": "car",
+      "support": 0,
+      "point_in_box_accuracy": 0.0
+    },
+    {
+      "class": "motorcycle",
+      "support": 0,
+      "point_in_box_accuracy": 0.0
+    },
+    {
+      "class": "airplane",
+      "support": 2,
+      "point_in_box_accuracy": 1.0
+    },
+    {
+      "class": "bus",
+      "support": 0,
+      "point_in_box_accuracy": 0.0
+    },
+    {
+      "class": "train",
+      "support": 0,
+      "point_in_box_accuracy": 0.0
+    },
+    {
+      "class": "truck",
+      "support": 0,
+      "point_in_box_accuracy": 0.0
+    },
+    {
+      "class": "boat",
+      "support": 0,
+      "point_in_box_accuracy": 0.0
+    },
+    {
+      "class": "traffic light",
+      "support": 0,
+      "point_in_box_accuracy": 0.0
+    },
+    {
+      "class": "fire hydrant",
+      "support": 0,
+      "point_in_box_accuracy": 0.0
+    },
+    {
+      "class": "stop sign",
+      "support": 0,
+      "point_in_box_accuracy": 0.0
+    },
+    {
+      "class": "parking meter",
+      "support": 0,
+      "point_in_box_accuracy": 0.0
+    },
+    {
+      "class": "bench",
+      "support": 2,
+      "point_in_box_accuracy": 1.0
+    },
+    {
+      "class": "bird",
+      "support": 2,
+      "point_in_box_accuracy": 1.0
+    },
+    {
+      "class": "cat",
+      "support": 0,
+      "point_in_box_accuracy": 0.0
+    },
+    {
+      "class": "dog",
+      "support": 6,
+      "point_in_box_accuracy": 1.0
+    },
+    {
+      "class": "horse",
+      "support": 0,
+      "point_in_box_accuracy": 0.0
+    },
+    {
+      "class": "sheep",
+      "support": 5,
+      "point_in_box_accuracy": 0.8
+    },
+    {
+      "class": "cow",
+      "support": 2,
+      "point_in_box_accuracy": 0.5
+    },
+    {
+      "class": "elephant",
+      "support": 0,
+      "point_in_box_accuracy": 0.0
+    },
+    {
+      "class": "bear",
+      "support": 0,
+      "point_in_box_accuracy": 0.0
+    },
+    {
+      "class": "zebra",
+      "support": 1,
+      "point_in_box_accuracy": 1.0
+    },
+    {
+      "class": "giraffe",
+      "support": 4,
+      "point_in_box_accuracy": 1.0
+    },
+    {
+      "class": "backpack",
+      "support": 0,
+      "point_in_box_accuracy": 0.0
+    },
+    {
+      "class": "umbrella",
+      "support": 1,
+      "point_in_box_accuracy": 1.0
+    },
+    {
+      "class": "handbag",
+      "support": 0,
+      "point_in_box_accuracy": 0.0
+    },
+    {
+      "class": "tie",
+      "support": 0,
+      "point_in_box_accuracy": 0.0
+    },
+    {
+      "class": "suitcase",
+      "support": 0,
+      "point_in_box_accuracy": 0.0
+    },
+    {
+      "class": "frisbee",
+      "support": 0,
+      "point_in_box_accuracy": 0.0
+    },
+    {
+      "class": "skis",
+      "support": 2,
+      "point_in_box_accuracy": 1.0
+    },
+    {
+      "class": "snowboard",
+      "support": 0,
+      "point_in_box_accuracy": 0.0
+    },
+    {
+      "class": "sports ball",
+      "support": 0,
+      "point_in_box_accuracy": 0.0
+    },
+    {
+      "class": "kite",
+      "support": 2,
+      "point_in_box_accuracy": 1.0
+    },
+    {
+      "class": "baseball bat",
+      "support": 0,
+      "point_in_box_accuracy": 0.0
+    },
+    {
+      "class": "baseball glove",
+      "support": 0,
+      "point_in_box_accuracy": 0.0
+    },
+    {
+      "class": "skateboard",
+      "support": 0,
+      "point_in_box_accuracy": 0.0
+    },
+    {
+      "class": "surfboard",
+      "support": 0,
+      "point_in_box_accuracy": 0.0
+    },
+    {
+      "class": "tennis racket",
+      "support": 0,
+      "point_in_box_accuracy": 0.0
+    },
+    {
+      "class": "bottle",
+      "support": 0,
+      "point_in_box_accuracy": 0.0
+    },
+    {
+      "class": "wine glass",
+      "support": 2,
+      "point_in_box_accuracy": 1.0
+    },
+    {
+      "class": "cup",
+      "support": 2,
+      "point_in_box_accuracy": 1.0
+    },
+    {
+      "class": "fork",
+      "support": 0,
+      "point_in_box_accuracy": 0.0
+    },
+    {
+      "class": "knife",
+      "support": 0,
+      "point_in_box_accuracy": 0.0
+    },
+    {
+      "class": "spoon",
+      "support": 0,
+      "point_in_box_accuracy": 0.0
+    },
+    {
+      "class": "bowl",
+      "support": 8,
+      "point_in_box_accuracy": 0.875
+    },
+    {
+      "class": "banana",
+      "support": 0,
+      "point_in_box_accuracy": 0.0
+    },
+    {
+      "class": "apple",
+      "support": 0,
+      "point_in_box_accuracy": 0.0
+    },
+    {
+      "class": "sandwich",
+      "support": 3,
+      "point_in_box_accuracy": 0.6666666666666666
+    },
+    {
+      "class": "orange",
+      "support": 0,
+      "point_in_box_accuracy": 0.0
+    },
+    {
+      "class": "broccoli",
+      "support": 2,
+      "point_in_box_accuracy": 1.0
+    },
+    {
+      "class": "carrot",
+      "support": 0,
+      "point_in_box_accuracy": 0.0
+    },
+    {
+      "class": "hot dog",
+      "support": 0,
+      "point_in_box_accuracy": 0.0
+    },
+    {
+      "class": "pizza",
+      "support": 0,
+      "point_in_box_accuracy": 0.0
+    },
+    {
+      "class": "donut",
+      "support": 2,
+      "point_in_box_accuracy": 1.0
+    },
+    {
+      "class": "cake",
+      "support": 0,
+      "point_in_box_accuracy": 0.0
+    },
+    {
+      "class": "chair",
+      "support": 5,
+      "point_in_box_accuracy": 1.0
+    },
+    {
+      "class": "couch",
+      "support": 2,
+      "point_in_box_accuracy": 1.0
+    },
+    {
+      "class": "potted plant",
+      "support": 2,
+      "point_in_box_accuracy": 1.0
+    },
+    {
+      "class": "bed",
+      "support": 0,
+      "point_in_box_accuracy": 0.0
+    },
+    {
+      "class": "dining table",
+      "support": 0,
+      "point_in_box_accuracy": 0.0
+    },
+    {
+      "class": "toilet",
+      "support": 0,
+      "point_in_box_accuracy": 0.0
+    },
+    {
+      "class": "tv",
+      "support": 2,
+      "point_in_box_accuracy": 1.0
+    },
+    {
+      "class": "laptop",
+      "support": 2,
+      "point_in_box_accuracy": 1.0
+    },
+    {
+      "class": "mouse",
+      "support": 0,
+      "point_in_box_accuracy": 0.0
+    },
+    {
+      "class": "remote",
+      "support": 1,
+      "point_in_box_accuracy": 1.0
+    },
+    {
+      "class": "keyboard",
+      "support": 2,
+      "point_in_box_accuracy": 1.0
+    },
+    {
+      "class": "cell phone",
+      "support": 2,
+      "point_in_box_accuracy": 0.5
+    },
+    {
+      "class": "microwave",
+      "support": 0,
+      "point_in_box_accuracy": 0.0
+    },
+    {
+      "class": "oven",
+      "support": 0,
+      "point_in_box_accuracy": 0.0
+    },
+    {
+      "class": "toaster",
+      "support": 0,
+      "point_in_box_accuracy": 0.0
+    },
+    {
+      "class": "sink",
+      "support": 0,
+      "point_in_box_accuracy": 0.0
+    },
+    {
+      "class": "refrigerator",
+      "support": 0,
+      "point_in_box_accuracy": 0.0
+    },
+    {
+      "class": "book",
+      "support": 0,
+      "point_in_box_accuracy": 0.0
+    },
+    {
+      "class": "clock",
+      "support": 0,
+      "point_in_box_accuracy": 0.0
+    },
+    {
+      "class": "vase",
+      "support": 0,
+      "point_in_box_accuracy": 0.0
+    },
+    {
+      "class": "scissors",
+      "support": 0,
+      "point_in_box_accuracy": 0.0
+    },
+    {
+      "class": "teddy bear",
+      "support": 0,
+      "point_in_box_accuracy": 0.0
+    },
+    {
+      "class": "hair drier",
+      "support": 0,
+      "point_in_box_accuracy": 0.0
+    },
+    {
+      "class": "toothbrush",
+      "support": 0,
+      "point_in_box_accuracy": 0.0
+    }
+  ],
+  "failures": [
+    {
+      "im_file": "/Users/esbati.keivan/PycharmProjects/vlm-tasks/experiments/qwen3_grounding_validation_20261103/train2014/COCO_train2014_000000485173.jpg",
+      "type": "ResponseConstraintError",
+      "message": "2 validation errors for _PointGrounding\npoint.x\n  Input should be less than or equal to 1 [type=less_than_equal, input_value=377, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.14/v/less_than_equal\npoint.y\n  Input should be less than or equal to 1 [type=less_than_equal, input_value=708, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.14/v/less_than_equal",
+      "sample_id": 342997,
+      "target": "the head and shoulders and one leg of a goat closest to the dog"
+    }
+  ],
+  "dataset_counts": {
+    "evaluated_expressions": 100,
+    "evaluated_images": 52,
+    "evaluated_samples": 100
+  },
+  "dataset_metadata": {
+    "dataset_name": "refcocog",
+    "config_name": "refcocog",
+    "version": "1.0.0",
+    "description": "MDETR RefCOCO annotations; RefCOCOg uses UMD splits, RefCOCO/+ use UNC.",
+    "split": "val"
+  },
+  "status_counts": {
+    "found": 91,
+    "not_found": 7,
+    "ambiguous": 1
+  },
+  "dataset_fingerprint_sha256": "ccde8d120ffa9a516aaa27b66ced9bcc5a6e0555202ece37b06fe21166b3373d",
+  "speed_ms_per_sample": {
+    "load": 6.171751240035519,
+    "inference": 963.5313066589879,
+    "metrics": 0.8910999703221023
+  },
+  "elapsed_seconds": 97.06818429200212,
+  "wall_seconds": 97.06859283300582,
+  "usage": {
+    "attempted_requests": 100,
+    "measured_requests": 100,
+    "unmeasured_requests": 0,
+    "input_tokens": 41433,
+    "output_tokens": 2865,
+    "cache_read_tokens": 0,
+    "cache_write_tokens": 0,
+    "output_reasoning_tokens": 0,
+    "estimated_cost_usd": "0.02958039",
+    "costed_requests": 100,
+    "estimated_cost_complete": true,
+    "reported_cost_usd": null,
+    "cost_note": "Estimate from recorded pricing sources; Bedrock does not return invoiced charges",
+    "cost_sources": [
+      "genai-prices"
+    ],
+    "total_tokens": 44298
+  }
+}
