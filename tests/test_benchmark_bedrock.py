@@ -9,9 +9,8 @@ import pytest
 from botocore.stub import Stubber
 from pydantic_ai.providers.bedrock import BedrockProvider
 
-from benchmarks.src.run_bedrock import InfrastructureCheckedBackend, RecordingBedrockModel, inference_target, priced_usage, remaining_tasks, usage_summary
-from ml_pipes.vlm import Classify, InvalidModelResponseError, PydanticAIBackend
-from ml_pipes.vlm.transformer import _PROMPTED_OUTPUT_TEMPLATE
+from benchmarks.src.run_bedrock import InfrastructureCheckedBackend, RecordingBedrockModel, build_model, inference_target, output_mode, priced_usage, remaining_tasks, usage_summary
+from ml_pipes.vlm import Classify, Ground, InvalidModelResponseError, PydanticAIBackend, ResponseConstraintError
 
 
 @pytest.mark.parametrize("model_id, temperature", [
@@ -36,11 +35,7 @@ def test_bedrock_benchmark_counts_invalid_output_and_preserves_prompt_schema(mod
     if "kimi-k3.1" in model_id:
         from pathlib import Path
         pricing = json.loads(Path("benchmarks/configs/kimi-k3.1-bedrock.json").read_text())["pricing"]
-    model = RecordingBedrockModel(
-        model_id, provider=BedrockProvider(bedrock_client=client), pricing=pricing,
-        settings={"temperature": temperature, "max_tokens": 4096},
-        profile={"prompted_output_template": _PROMPTED_OUTPUT_TEMPLATE, "json_schema_transformer": None},
-    )
+    model = build_model({"temperature": temperature, "max_new_tokens": 4096, "pricing": pricing}, client, model_id)
     stream = StringIO()
     backend = InfrastructureCheckedBackend(PydanticAIBackend(model, retries=0), stream)
     task = Classify(backend, labels=["cat", "dog"])
@@ -68,6 +63,56 @@ def test_bedrock_benchmark_counts_invalid_output_and_preserves_prompt_schema(mod
         schema = json.loads(instructions.split("JSON schema:\n", 1)[1])
         assert schema["title"] == task._spec.schema["title"]
         assert schema["properties"] == task._spec.schema["properties"]
+        assert "outputConfig" not in request
+
+
+@pytest.mark.parametrize("geometry, field, coordinates", [
+    ("point", "point", {"x": 0.25, "y": 0.5}),
+    ("box", "box", {"x1": 0.1, "y1": 0.2, "x2": 0.7, "y2": 0.8}),
+])
+def test_native_benchmark_sends_schema_and_keeps_original_value_validation(geometry, field, coordinates):
+    client = boto3.client("bedrock-runtime", region_name="ap-northeast-1",
+                          aws_access_key_id="test", aws_secret_access_key="test")
+    stubber = Stubber(client)
+    outside_bounds = {**coordinates, next(iter(coordinates)): -0.1}
+    for values in (coordinates, outside_bounds):
+        stubber.add_response("converse", {
+            "output": {"message": {"role": "assistant", "content": [
+                {"text": json.dumps({"status": "found", field: values})},
+            ]}},
+            "stopReason": "end_turn", "usage": {"inputTokens": 100, "outputTokens": 30, "totalTokens": 130},
+            "metrics": {"latencyMs": 5},
+        })
+    model = build_model({"output_mode": "native", "temperature": 0, "max_new_tokens": 4096},
+                        client, "qwen.qwen3-vl-235b-a22b")
+    stream = StringIO()
+    backend = InfrastructureCheckedBackend(PydanticAIBackend(model, output_mode="native", retries=0), stream)
+    task = Ground(backend, target="the cat", geometry=geometry)
+    with stubber:
+        assert task(np.zeros((2, 3, 3), dtype=np.uint8)).status == "found"
+        with pytest.raises(ResponseConstraintError):
+            task(np.zeros((2, 3, 3), dtype=np.uint8))
+    calls = [json.loads(line) for line in stream.getvalue().splitlines()]
+    for call in calls:
+        assert call["attempted_requests"] == 1
+        output = call["generations"][0]["output_config"]["textFormat"]
+        assert output["type"] == "json_schema"
+        schema = json.loads(output["structure"]["jsonSchema"]["schema"])
+        geometry_schema = schema["properties"][field]["anyOf"][0]
+        assert set(geometry_schema["required"]) == set(coordinates)
+        assert geometry_schema["additionalProperties"] is False
+        for key in coordinates:
+            assert geometry_schema["properties"][key]["type"] == "number"
+            assert call["response_schema"]["$defs"]["_Point" if geometry == "point" else "_Box"]["properties"][key]["minimum"] == 0
+    usage = usage_summary(model.generations, backend.attempted_requests)
+    assert usage["attempted_requests"] == usage["measured_requests"] == 2
+
+
+def test_bedrock_output_mode_defaults_and_validation():
+    assert output_mode({}) == "prompted"
+    assert output_mode({"output_mode": "native"}) == "native"
+    with pytest.raises(ValueError, match="output_mode"):
+        output_mode({"output_mode": "json_schema"})
 
 
 def test_bedrock_benchmark_aborts_on_infrastructure_errors():

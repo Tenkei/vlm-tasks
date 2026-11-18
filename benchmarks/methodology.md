@@ -32,7 +32,7 @@ One-off investigations and token-budget outputs live in the repository-root
 
 Python modules use `snake_case` and describe their action or responsibility.
 Model configs use `<model>-<backend>.json`, including model size where relevant;
-retry variants append `-retries-<limit>`.
+variants append a setting such as `-retries-<limit>` or `-native`.
 Report folders match the overview's **Model profiles** and **Task comparisons**
 sections. Recorded run IDs, task IDs and original metadata retain their identity
 when directories move. Prepared datasets are cached in
@@ -41,7 +41,7 @@ when directories move. Prepared datasets are cached in
 ## Benchmark parameters
 
 Each run uses a JSON configuration from [`configs/`](configs/). The sample
-count, output budget and retry allowance are configurable; the values below
+count, output budget, output mode and retry allowance are configurable; the values below
 describe the published runs rather than requirements of the protocol.
 
 | Parameter | Behavior | Published configurations |
@@ -50,22 +50,25 @@ describe the published runs rather than requirements of the protocol.
 | `tasks` | Select task variants to evaluate | Seven variants across six vision tasks |
 | `samples_per_task` | Positive sample count, frozen during preparation; the run must match its prepared manifest | 100 per variant |
 | `max_new_tokens` | Maximum generated tokens per request, including each correction attempt | 4,096 |
+| `output_mode` (Bedrock) | `prompted` supplies schema instructions in the prompt; `native` requests provider JSON Schema output. Defaults to `prompted` | Prompted baselines and a separate native Qwen3-VL-235B run |
 | `retries` | Nonnegative maximum correction attempts after the initial request; defaults to `0` when omitted | `0`, plus a separate Qwen3-VL-235B run with `2` |
 | Generation settings | Control decoding where the backend supports it; record differences such as provider-controlled sampling | Local greedy decoding with seed 42; hosted settings vary by model |
 | `match_iou`, `tokenizer_version` | Fix detection matching and caption tokenization for scoring | `0.5` and Stanford PTBTokenizer `3.4.1` |
 
-Both runners currently use prompted JSON output. The library also supports
-native and tool output where the provider allows them; these are described in
-[output modes and retries](../docs/model-backends.md#output-modes-and-retries)
-and are not exposed as benchmark config parameters. Actual generation
-configuration, processor or provider settings, output instructions and retry
-allowance are saved in each run's `model.json`.
+The Transformers runner uses prompted JSON output. The Bedrock runner accepts
+prompted or native output; see [Native JSON Schema runs](#native-json-schema-runs).
+The library's output modes are described in
+[output modes and retries](../docs/model-backends.md#output-modes-and-retries).
+Actual generation configuration, processor or provider settings, output
+instructions and retry allowance are saved in each run's `model.json`.
 
 For a model comparison, keep the prepared data, task instructions, response
 schemas, scoring, token budget and retry allowance the same, and record any
 differences. To study a parameter such as retries or token budget, change that
-parameter in a separate config and save a separate run. These comparisons
-evaluate different inference budgets as well as task quality.
+parameter in a separate config and save a separate run. Output-mode comparisons
+also change how the schema reaches the model and which constraints the provider
+enforces. Retry and token-budget comparisons evaluate different inference budgets
+as well as task quality.
 
 A fixed output cap bounds repetitive generation, but can truncate valid long
 answers. Increasing it is a separate experiment; see
@@ -143,6 +146,49 @@ and metric calculation have separate timings. Dataset preparation and shared
 model load time are recorded separately. Hosted timing includes network and
 service time. Batching, concurrency, cold downloads, peak memory and energy
 are not measured.
+
+## Native JSON Schema runs
+
+Set `output_mode` to `"native"` in a Bedrock config to request provider-enforced
+JSON Schema output through `outputConfig.textFormat`. Omitting it preserves
+the prompted baseline. Native mode requires support from the exact model,
+API route and installed adapter; a provider model card or SDK capability flag
+alone may be inaccurate. Live image-input probes confirmed support for
+`qwen.qwen3-vl-235b-a22b` in `ap-northeast-1` before this benchmark run.
+
+Native runs use PydanticAI's provider schema transformer rather than the
+prompted baseline's disabled transformer. It adapts the task schema to the
+provider's supported subset; for example, coordinate bounds may become field
+descriptions instead of enforced numerical constraints. The original task
+validators still enforce all bounds, types, vocabulary and consistency rules.
+Native output does not establish that a prediction is correct, and invalid
+responses retain the normal scoring penalty. The same configured output cap
+still applies, so a response can also be truncated.
+
+Record this as a separate run because the output contract is delivered
+differently. The runner saves the selected output mode and transformer in
+`model.json`, the original task schema in every sample journal entry, and the
+transmitted native `outputConfig` alongside each returned generation. The
+report labels these profiles `(JSON Schema)`; retry allowance is an independent
+parameter and defaults to zero. There is no dedicated warmup; measured request
+latency includes any provider-side schema compilation incurred during the run.
+
+The [Qwen3-VL-235B native config](configs/qwen3-vl-235b-a22b-bedrock-native.json)
+uses the same frozen 100 samples per task variant, task instructions, original
+schemas, scoring, 4,096-token cap and temperature zero as the prompted baseline,
+with native output enabled and no correction retries. Hosted first-attempt
+responses can vary between runs, even at temperature zero.
+
+After preparing the data and signing in as described under
+[Larger Qwen3 on AWS Bedrock](#larger-qwen3-on-aws-bedrock), reproduce it with:
+
+```bash
+HF_HUB_OFFLINE=0 HF_DATASETS_OFFLINE=0 .venv/bin/python -m benchmarks.src.run_bedrock \
+  --config benchmarks/configs/qwen3-vl-235b-a22b-bedrock-native.json \
+  --prepared benchmarks/.cache/prepared-datasets-100 \
+  --output benchmarks/runs/qwen3-vl-235b-bedrock-native-reproduction
+.venv/bin/python -m benchmarks.src.generate_charts
+```
 
 ## Correction retry runs
 

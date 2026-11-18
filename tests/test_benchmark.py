@@ -495,7 +495,12 @@ def test_local_comparison_lists_available_names_without_generating_reports(compa
     assert not (tmp_path / "reports").exists()
 
 
-def test_retry_profiles_can_be_selected_by_their_displayed_names(comparison_runs, tmp_path):
+@pytest.mark.parametrize("settings, suffix", [
+    ({"retries": 2}, "2 retries"),
+    ({"output_mode": "native"}, "JSON Schema"),
+    ({"output_mode": "native", "retries": 2}, "JSON Schema, 2 retries"),
+])
+def test_configured_profiles_can_be_selected_by_their_displayed_names(comparison_runs, tmp_path, settings, suffix):
     pytest.importorskip("matplotlib")
     from benchmarks.src.chart_style import model_color, next_color
     from benchmarks.src.generate_comparison import generate_comparison
@@ -506,14 +511,16 @@ def test_retry_profiles_can_be_selected_by_their_displayed_names(comparison_runs
     for path in original.iterdir():
         if path.suffix == ".json":
             value = json.loads(path.read_text())
-            value["retries"] = 2
+            value.update(settings)
             (retry / path.name).write_text(json.dumps(value))
         else:
             (retry / path.name).write_bytes(path.read_bytes())
-    output = generate_comparison(comparison_runs, ["Qwen3-VL-2B", "Qwen3-VL-2B (2 retries)"], tmp_path / "comparison").parent
+    output = generate_comparison(comparison_runs, ["Qwen3-VL-2B", f"Qwen3-VL-2B ({suffix})"], tmp_path / "comparison").parent
     manifest = json.loads((output / "manifest.json").read_text())
     assert [model["run"] for model in manifest["models"]] == ["small", "small-retries"]
-    assert (output / "README.md").read_text().startswith("# Qwen3-VL-2B vs Qwen3-VL-2B (2 retries)")
+    page = (output / "README.md").read_text()
+    assert page.startswith(f"# Qwen3-VL-2B vs Qwen3-VL-2B ({suffix})")
+    assert f"Qwen/Qwen3-VL-2B-Instruct ({suffix})" in page
     base = model_color("Qwen/Qwen3-VL-2B-Instruct")
     assert [model["base_color"] for model in manifest["models"]] == [base, base]
     assert [model["color"] for model in manifest["models"]] == [base, next_color(base)]

@@ -7,7 +7,7 @@ from pathlib import Path
 
 from .artifacts import digest, save_svg, utc_now, write_json
 from .chart_style import model_color
-from .generate_report import MODEL_LABELS, format_number, generate_report, load_task_reports, retry_label
+from .generate_report import MODEL_LABELS, format_number, generate_report, load_task_reports, profile_label
 from .task_registry import AXES
 
 
@@ -28,8 +28,10 @@ def build_profiles(reports):
         first = tasks[AXES[0][0]]
         profiles.append({
             "run": run, "model": first["model"], "backend": first.get("backend", "transformers"),
-            "label": retry_label(MODEL_LABELS.get(first["model"], first["model"]), first.get("retries", 0)),
+            "label": profile_label(MODEL_LABELS.get(first["model"], first["model"]),
+                                   first.get("retries", 0), first.get("output_mode", "prompted")),
             "retries": first.get("retries", 0),
+            "output_mode": first.get("output_mode", "prompted"),
             "color": model_color(first["model"]),
             "scores": scores, "figure": f"model-profiles/{run}",
             "samples": {task: tasks[task]["metrics"]["samples"] for task, *_ in AXES},
@@ -131,7 +133,8 @@ def generate_charts(directory):
         ax.set_axisbelow(True)
         ax.barh(positions, values, height=.55,
                 color=[model["color"] for model in models])
-        ax.set_yticks(positions, [model["label"] for model in models], fontsize=13, color="#243244")
+        ax.set_yticks(positions, [model["label"].replace(" (", "\n(") for model in models],
+                      fontsize=13, color="#243244")
         ax.invert_yaxis()
         ax.set_xlim(0, 100)
         ax.set_xticks([0, 20, 40, 60, 80, 100], labels=[])

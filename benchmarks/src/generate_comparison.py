@@ -9,7 +9,7 @@ from urllib.parse import quote
 from .artifacts import digest, save_svg, utc_now, write_json
 from .chart_style import next_color
 from .generate_charts import build_profiles, configure_plotting, draw_profile
-from .generate_report import MODEL_LABELS, TABLE_HEADER, comparison_table, load_task_reports, retry_label, summarize_task_report
+from .generate_report import MODEL_LABELS, TABLE_HEADER, comparison_table, load_task_reports, profile_label, summarize_task_report
 from .task_registry import AXES
 
 
@@ -44,8 +44,9 @@ def select_runs(catalog, names, *, labels=None):
 
 
 def run_labels(reports):
-    return {path.parent.name: retry_label(MODEL_LABELS.get(report["model"], report["model"]),
-                                          report.get("retries", 0)) for path, report in reports}
+    return {path.parent.name: profile_label(MODEL_LABELS.get(report["model"], report["model"]),
+                                           report.get("retries", 0), report.get("output_mode", "prompted"))
+            for path, report in reports}
 
 
 def generate_comparison(directory, names, output=None):

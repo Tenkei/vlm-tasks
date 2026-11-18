@@ -27,10 +27,16 @@ class RecordingBedrockModel(BedrockConverseModel):
         self.generations = []
         self.attempted_requests = 0
         self.pricing = pricing
+        self.output_config = None
         super().__init__(*args, **kwargs)
+
+    def record_output_config(self, params, **kwargs):
+        """Retain the transformed native schema without image bytes or credentials."""
+        self.output_config = params.get("outputConfig")
 
     async def request(self, messages, model_settings, model_request_parameters):
         self.attempted_requests += 1
+        self.output_config = None
         started = perf_counter()
         response = await super().request(messages, model_settings, model_request_parameters)
         if self.pricing is not None:
@@ -55,8 +61,31 @@ class RecordingBedrockModel(BedrockConverseModel):
             "provider_response_id": response.provider_response_id,
             "estimated_cost_usd": estimated_cost,
             "estimated_cost_source": self.pricing["source"] if self.pricing else "genai-prices",
+            **({"output_config": self.output_config} if self.output_config is not None else {}),
         })
         return response
+
+
+def output_mode(config):
+    mode = config.get("output_mode", "prompted")
+    if mode not in ("prompted", "native"):
+        raise ValueError("Bedrock benchmark output_mode must be prompted or native")
+    return mode
+
+
+def build_model(config, client, target):
+    from pydantic_ai.providers.bedrock import BedrockProvider
+
+    mode = output_mode(config)
+    profile = ({"prompted_output_template": _PROMPTED_OUTPUT_TEMPLATE, "json_schema_transformer": None}
+               if mode == "prompted" else None)
+    model = RecordingBedrockModel(
+        target, provider=BedrockProvider(bedrock_client=client), pricing=config.get("pricing"),
+        settings={"temperature": config["temperature"], "max_tokens": config["max_new_tokens"]},
+        profile=profile,
+    )
+    client.meta.events.register("before-parameter-build.bedrock-runtime.Converse", model.record_output_config)
+    return model
 
 
 class InfrastructureCheckedBackend(RecordingBackend):
@@ -128,11 +157,11 @@ def main(argv=None):
     args = parser.parse_args(argv)
     config = json.loads(args.config.read_text())
     retries = max_retries(config)
+    mode = output_mode(config)
     if args.output.exists() and not args.resume:
         raise FileExistsError(f"Use a new run directory: {args.output}")
     import boto3
     from botocore.config import Config
-    from pydantic_ai.providers.bedrock import BedrockProvider
 
     manifest = json.loads((args.prepared / "manifest.json").read_text())
     if config["samples_per_task"] != manifest["samples_per_task"]:
@@ -149,12 +178,8 @@ def main(argv=None):
         raise ValueError("The selected model does not support image input")
     target, inference_profile = inference_target(control, config, details)
     client = session.client("bedrock-runtime", config=sdk_config)
-    model = RecordingBedrockModel(
-        target, provider=BedrockProvider(bedrock_client=client),
-        pricing=config.get("pricing"),
-        settings={"temperature": config["temperature"], "max_tokens": config["max_new_tokens"]},
-        profile={"prompted_output_template": _PROMPTED_OUTPUT_TEMPLATE, "json_schema_transformer": None},
-    )
+    model = build_model(config, client, target)
+    transformer = model.profile.get("json_schema_transformer")
     metadata_output = args.output
     if args.resume:
         metadata_output = args.output / "continuations" / utc_now().replace(":", "-")
@@ -172,15 +197,18 @@ def main(argv=None):
         "model_details": details, "endpoint": client.meta.endpoint_url,
         "inference_model_id": target, "inference_profile": inference_profile,
         "pricing": config.get("pricing"),
-        "settings": model.settings, "prompted_output_template": _PROMPTED_OUTPUT_TEMPLATE,
-        "json_schema_transformer": None, "output_mode": "prompted", "retries": retries,
+        "settings": model.settings,
+        "prompted_output_template": _PROMPTED_OUTPUT_TEMPLATE if mode == "prompted" else None,
+        "json_schema_transformer": f"{transformer.__module__}.{transformer.__qualname__}" if transformer else None,
+        "output_mode": mode, "retries": retries,
         "sdk_total_max_attempts": config["sdk_total_max_attempts"], "read_timeout_seconds": 600,
         "checkpoint_revision": None, "dtype": None, "device": None, "seed": None,
         "note": "Bedrock manages checkpoint revision, hardware, dtype, image processing and sampling seed",
     }
     if args.resume:
         original = json.loads((args.output / "model.json").read_text())
-        for key in ("inference_model_id", "settings", "prompted_output_template", "pricing", "output_mode", "retries"):
+        for key in ("inference_model_id", "settings", "prompted_output_template", "json_schema_transformer",
+                    "pricing", "output_mode", "retries"):
             if original.get(key) != model_metadata.get(key):
                 raise ValueError(f"Resume model setting differs: {key}")
         write_json(metadata_output / "resume.json", {"tasks": tasks, "reason": "Continue untouched tasks; completed task artifacts retained"})
@@ -189,7 +217,7 @@ def main(argv=None):
         print(f"Running {task_name}: {config['samples_per_task']} frozen samples on {config['model']}", flush=True)
         before = len(model.generations)
         with (args.output / f"{task_name}.jsonl").open("w") as stream:
-            backend = InfrastructureCheckedBackend(vlm.PydanticAIBackend(model, retries=retries), stream)
+            backend = InfrastructureCheckedBackend(vlm.PydanticAIBackend(model, output_mode=mode, retries=retries), stream)
             started = perf_counter()
             metrics = evaluate(task_name, backend, loaded[DATASETS[task_name]], config, args.prepared.parent / "downloads")
             wall_seconds = perf_counter() - started
@@ -198,7 +226,7 @@ def main(argv=None):
         report = {
             "task": task_name, "dataset": DATASETS[task_name], "model": config["model"],
             "inference_model_id": target,
-            "retries": retries,
+            "output_mode": mode, "retries": retries,
             "revision": None, "device": f"bedrock/{config['region']}", "dtype": "provider-managed",
             "backend": "bedrock", "region": config["region"], "completed_at": utc_now(),
             "execution_environment": str((metadata_output / "environment.json").relative_to(args.output)),

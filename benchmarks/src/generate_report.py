@@ -30,8 +30,11 @@ def format_number(value, decimal_places):
     return text.rstrip("0").rstrip(".") if "." in text else text
 
 
-def retry_label(label, retries):
-    return f"{label} ({retries} retries)" if retries else label
+def profile_label(label, retries=0, output_mode="prompted"):
+    settings = (["JSON Schema"] if output_mode == "native" else [])
+    if retries:
+        settings.append(f"{retries} retries")
+    return f"{label} ({', '.join(settings)})" if settings else label
 
 
 def model_anchors(models):
@@ -218,6 +221,7 @@ def summarize_task_report(path, report, report_link):
     failure_rate = m["failures"] / samples if samples else None
     cap_rate = samples_at_cap / samples if samples_at_cap is not None and samples else None
     retries = config.get("retries", 0)
+    output_mode = config.get("output_mode", "prompted")
     requests = usage.get("attempted_requests", samples if not retries else None)
     requests_per_sample = requests / samples if requests is not None and samples else None
     requests_text = format_number(requests_per_sample, 3) if requests_per_sample is not None else "—"
@@ -234,7 +238,7 @@ def summarize_task_report(path, report, report_link):
     input_text = f"{input_per_sample:,.0f}" if input_per_sample is not None else "—"
     output_text = f"{output_per_sample:,.0f}" if output_per_sample is not None else "—"
     table_row = (
-        f"| {retry_label(report['model'], retries)} | [{task} / {report['dataset']}]({report_link}) | "
+        f"| {profile_label(report['model'], retries, output_mode)} | [{task} / {report['dataset']}]({report_link}) | "
         f"{samples} | {'; '.join(scores)} | {failure_text} ({cap_text}) | "
         f"{requests_text} | {input_text} | {output_text} | {cost_text} | {format_number(latency, 3)} |")
     row = {"run": path.parent.name, "model": report["model"], "revision": report["revision"],
@@ -242,7 +246,7 @@ def summarize_task_report(path, report, report_link):
            "backend": report.get("backend", "transformers"), "region": report.get("region"),
            **m, **{f"usage_{k}": v for k, v in usage.items()},
            "failure_rate": failure_rate,
-           "max_new_tokens": config["max_new_tokens"], "max_retries": retries,
+           "max_new_tokens": config["max_new_tokens"], "max_retries": retries, "output_mode": output_mode,
            "responses_at_token_cap": at_cap, "samples_at_token_cap": samples_at_cap,
            "usage_requests_per_sample": requests_per_sample,
            "responses_at_token_cap_per_sample": at_cap / samples if at_cap is not None and samples else None,
@@ -275,6 +279,8 @@ def generate_report(directory):
         "- **Model**: the evaluated model identifier; model columns in the overview identify "
         "the same runs. Their headings link to model details. A suffix such as `(2 retries)` "
         "states the maximum correction allowance, not the number used on every sample. "
+        "`(JSON Schema)` identifies provider-native structured output; the other published "
+        "profiles use schema instructions in the prompt. The CSV records `output_mode`. "
         "Hardware, provider settings and regions are recorded in the run metadata and "
         "can affect comparisons.", "",
         "- **Task / dataset**, **Task**: the task, its variation and evaluation data. Detail-table "
