@@ -1,0 +1,68 @@
+{
+  "created_at": "2026-11-19T12:51:40.504524+00:00",
+  "model_requests": 0,
+  "segments": [
+    {
+      "source": "experiments/claude-fable-5.2-bedrock-pilot/runs/claude-fable-5.2-bedrock-10-20261119",
+      "saved_copy": "segments/000",
+      "start_index": 0,
+      "samples_per_task": 10,
+      "files_sha256": {
+        "answer.json": "6bba3f91494ff770f7919d919a53c422822142f3744236d35cc97b4da9a6bebc",
+        "answer.jsonl": "d393581af2898368544ea6e3a6dcc6ec1a3f11321c69dce12cd8196421727f6d",
+        "attributes.json": "fffdab3ce8741b7c2cf20678d328adfa9c4b95c195abfc9d9e3b35673b185015",
+        "attributes.jsonl": "2a2381bca4fb0c7b059ad0bfff82bb38be2c72a93181deacb81b2b3cdaffee5c",
+        "classify.json": "f2baeccfabeef2113493ab1dc018833b0c880b1cbace900ba957f10bcb7c0755",
+        "classify.jsonl": "edea3d15a6efbda71092c7d99035618df19b9baceb62d9c06f58a524d3314b45",
+        "completed.json": "2dedf6d12ed936cc5207c81930afe14d4ac5566dcdc176326c4449141a9ca8b7",
+        "config.json": "2207e078604927b0984ba6f3d1a9ede76347d3e2965c383ab6112e96ab509cbe",
+        "describe.json": "85a6824682775624bf5264dd1b781410ed2dfa6983422ff99557d48afb0abc31",
+        "describe.jsonl": "f6f565868ac4bf4a973b5bcf4c5ba3d64c5d3e437e57e18ec270907332429a5d",
+        "detect.json": "6b1a240576a254c3ea024ff881d92ddcde5f125d25c1c19447c39cc3da29f739",
+        "detect.jsonl": "2a18e500afcda91e1dc4312a4bdd1f5256fa504eff485f9439f4f1ea7553906d",
+        "environment.json": "9997e1eeb2a7512be3492696ae746e4dcafba0458f96b55c29cdab9988582903",
+        "ground_box.json": "0e8074922d917c2922a752677b7fe826a9f19a6e9cbfcfefd97675cb1d4103f1",
+        "ground_box.jsonl": "18ff5d5517490df88f0b050eaffbcbb4c57c01055595b2fdc7845b28fa02477a",
+        "ground_point.json": "5cd5b391803417e3970ea3ec4e1f0bc24e9fbc1f9a416f8be3906d37331d4d0b",
+        "ground_point.jsonl": "dc62a55e380c9d9a4f64c8db54ec40b34783397532f87f76ebb9efcc93a845ac",
+        "manifest.json": "f0e7cb12f32c9a2d46e2e8b59ecce4e54904db928b40a5989b3ea5328e56ed10",
+        "model.json": "1ef37981060e9876d682440693225a7b8b49dc6930c37556f75f4e5b293e3749",
+        "requirements.txt": "7dba8f2ff12fce4ba07a0f2c1760694d88331954189a29dd0709038c2a820850",
+        "source_snapshots/benchmarks/src/generate_charts.py": "c619a1c3d7f234b6e4838626d6e31c74e2fe79afe13220d6381500dfb5e8084a",
+        "source_snapshots/benchmarks/src/generate_report.py": "c1313a7972e09378afd8315e1e2208fdf15a31fe86faf0c1449fde8733beae8c"
+      }
+    },
+    {
+      "source": "experiments/claude-fable-5.2-bedrock-continuation/runs/claude-fable-5.2-bedrock-remaining-90-20261119",
+      "saved_copy": "segments/001",
+      "start_index": 10,
+      "samples_per_task": 90,
+      "files_sha256": {
+        "answer.json": "b15bc7c0c4b4f5ed9664c6b526a68e7e5c3fd2d379fd8e4b192be94b8fd564af",
+        "answer.jsonl": "5031f6fca761c9b162b0de3d1ce5002b5ce8c0c2c603f13731363ba3ff71aad0",
+        "attributes.json": "023301e423337491c32e2d469770154aafdd2657a3be6adbd62a1a7405649f69",
+        "attributes.jsonl": "3a98af07895822c10150959dce255cfc883e570b82874b8eda725dfd33d6c6e8",
+        "classify.json": "4daf835fb4b791f3f9d10b15e015d529a53a45b953f6716b494899aeb74f64ca",
+        "classify.jsonl": "50e54f8ac1a670f4d1710aad1756a152e34d25bf67853d9d09355c0630cf064b",
+        "completed.json": "2cbec022c8cdae44c78e2be64b0f6981ccbccf86f787704138187aeccda3a111",
+        "config.json": "c478460ba9394f3d7fb8c012369e1ee5c68c3d087ea747ef9b5c2e87d3782009",
+        "describe.json": "504395c8bdf634be0e1b8407352c9c71f2990fcad5d8ca4547f6cdef7aec2e4a",
+        "describe.jsonl": "3ef9267f9f46512b919981b472c49844f79c32dd754245aeb09158704bc61cd1",
+        "detect.json": "1c395c763d43528f6fe151fa51c7296448c833186e195ca892c450621c776c3f",
+        "detect.jsonl": "67c0125c00c98f269f4dc91725fa27266b9e4b004b8b7f17fc3648e5dd1fc690",
+        "environment.json": "85564ed01da5ee64d7edf8203c0b1272c56cd14188749f19367c65c4658f0b3e",
+        "ground_box.json": "966156cd18b8e28909be9829186bd17bbac2c180f4a562b95cf7498bf9969e35",
+        "ground_box.jsonl": "db7bd08a7c2f8df6f214191fa3567753d9f2d87a53b62e9f84f0ff90f32103b4",
+        "ground_point.json": "8c25f478074c80e3516f40cd59f523ba036996cd9ecc71a3a7a2c305e64dda4c",
+        "ground_point.jsonl": "2310920ba6b29df0bbe52bb586252a5af97d3e96cebcc194c1e2efe37a1f3ef2",
+        "manifest.json": "acfa7f61c08cb14f6672695f4e86847d36b3fd85ffc911d24c4e66ebd6edea96",
+        "model.json": "1ef37981060e9876d682440693225a7b8b49dc6930c37556f75f4e5b293e3749",
+        "requirements.txt": "7dba8f2ff12fce4ba07a0f2c1760694d88331954189a29dd0709038c2a820850",
+        "source_snapshots/benchmarks/src/generate_charts.py": "c619a1c3d7f234b6e4838626d6e31c74e2fe79afe13220d6381500dfb5e8084a",
+        "source_snapshots/benchmarks/src/generate_report.py": "c1313a7972e09378afd8315e1e2208fdf15a31fe86faf0c1449fde8733beae8c"
+      }
+    }
+  ],
+  "method": "Consecutive frozen subsets; recompute all metrics on the full suite; retain live usage and latency",
+  "source_snapshot_note": "Original response journals and metadata are unchanged; matching reporting and assembly source snapshots are retained for code changed after inference."
+}

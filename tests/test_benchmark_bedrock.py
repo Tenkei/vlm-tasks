@@ -108,6 +108,32 @@ def test_native_benchmark_sends_schema_and_keeps_original_value_validation(geome
     assert usage["attempted_requests"] == usage["measured_requests"] == 2
 
 
+def test_bedrock_benchmark_passes_adaptive_thinking_without_temperature():
+    client = boto3.client("bedrock-runtime", region_name="ap-northeast-1",
+                          aws_access_key_id="test", aws_secret_access_key="test")
+    stubber = Stubber(client)
+    stubber.add_response("converse", {
+        "output": {"message": {"role": "assistant", "content": [
+            {"text": '{"labels":["cat"]}'},
+        ]}},
+        "stopReason": "end_turn", "usage": {"inputTokens": 100, "outputTokens": 30, "totalTokens": 130},
+        "metrics": {"latencyMs": 5},
+    })
+    requests = []
+    client.meta.events.register("before-parameter-build.bedrock-runtime.Converse",
+                                lambda params, **kwargs: requests.append(params))
+    model = build_model({"temperature": None, "max_new_tokens": 4096, "thinking": "high"},
+                        client, "global.anthropic.claude-fable-5-2")
+    backend = InfrastructureCheckedBackend(PydanticAIBackend(model, retries=0), StringIO())
+    with stubber:
+        assert Classify(backend, labels=["cat"])(np.zeros((2, 3, 3), dtype=np.uint8)).labels == ("cat",)
+    request, = requests
+    assert request["inferenceConfig"] == {"maxTokens": 4096}
+    assert request["additionalModelRequestFields"]["thinking"] == {"type": "adaptive"}
+    assert request["additionalModelRequestFields"]["output_config"] == {"effort": "high"}
+    assert model.settings["thinking"] == "high"
+
+
 def test_bedrock_output_mode_defaults_and_validation():
     assert output_mode({}) == "prompted"
     assert output_mode({"output_mode": "native"}) == "native"

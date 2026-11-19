@@ -1,0 +1,71 @@
+{
+  "model_details": {
+    "modelArn": "arn:aws:bedrock:ap-northeast-1::foundation-model/anthropic.claude-fable-5-2",
+    "modelId": "anthropic.claude-fable-5-2",
+    "modelName": "Claude Fable 5.2",
+    "providerName": "Anthropic",
+    "inputModalities": [
+      "TEXT",
+      "IMAGE"
+    ],
+    "outputModalities": [
+      "TEXT"
+    ],
+    "responseStreamingSupported": true,
+    "customizationsSupported": [],
+    "inferenceTypesSupported": [
+      "INFERENCE_PROFILE"
+    ],
+    "modelLifecycle": {
+      "status": "ACTIVE",
+      "startOfLifeTime": "2026-10-14 10:00:00+00:00"
+    }
+  },
+  "endpoint": "https://bedrock-runtime.ap-northeast-1.amazonaws.com",
+  "inference_model_id": "global.anthropic.claude-fable-5-2",
+  "inference_profile": {
+    "inferenceProfileName": "Global Anthropic Claude Fable 5.2",
+    "description": "Routes requests to Claude Fable 5.2 globally across all supported AWS Regions.",
+    "createdAt": "2026-11-06 06:24:29.767000+00:00",
+    "updatedAt": "2026-11-06 06:24:29.767000+00:00",
+    "inferenceProfileArn": "arn:aws:bedrock:ap-northeast-1:381492192265:inference-profile/global.anthropic.claude-fable-5-2",
+    "models": [
+      {
+        "modelArn": "arn:aws:bedrock:::foundation-model/anthropic.claude-fable-5-2"
+      },
+      {
+        "modelArn": "arn:aws:bedrock:ap-northeast-1::foundation-model/anthropic.claude-fable-5-2"
+      }
+    ],
+    "inferenceProfileId": "global.anthropic.claude-fable-5-2",
+    "status": "ACTIVE",
+    "type": "SYSTEM_DEFINED"
+  },
+  "pricing": {
+    "source": "https://aws.amazon.com/bedrock/pricing/",
+    "source_section": "Anthropic Claude Fable 5.2: Global cross-region inference, Standard tier; output includes reasoning",
+    "retrieved_at": "2026-11-19",
+    "rates_usd_per_million_tokens": {
+      "input": "8.00",
+      "output": "40.00",
+      "cache_read": "0.20",
+      "cache_write": "10.00"
+    }
+  },
+  "settings": {
+    "temperature": null,
+    "max_tokens": 4096,
+    "thinking": "high"
+  },
+  "prompted_output_template": "Return a JSON object containing your prediction. Use the property names defined by the JSON schema below as the keys, and fill in their predicted values. Produce an instance of the schema. Do not return the schema itself or wrap your prediction in its 'properties' field. Return only the JSON object, without explanatory text or Markdown fences.\n\nJSON schema:\n{schema}",
+  "json_schema_transformer": null,
+  "output_mode": "prompted",
+  "retries": 0,
+  "sdk_total_max_attempts": 1,
+  "read_timeout_seconds": 600,
+  "checkpoint_revision": null,
+  "dtype": null,
+  "device": null,
+  "seed": null,
+  "note": "Bedrock manages checkpoint revision, hardware, dtype, image processing and sampling seed"
+}

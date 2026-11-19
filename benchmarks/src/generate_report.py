@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+from datetime import datetime, timezone
 from html import escape
 import json
 from pathlib import Path
@@ -22,6 +23,7 @@ MODEL_LABELS = {
     "google.gemma-3-27b-it": "Gemma 3 27B",
     "moonshotai.kimi-k3.1": "Kimi K3.1",
     "qwen.qwen3-vl-235b-a22b": "Qwen3-VL-235B",
+    "anthropic.claude-fable-5-2": "Claude Fable 5.2",
 }
 
 
@@ -52,6 +54,37 @@ def model_anchors(models):
     return anchors
 
 
+def ordered_runs(reports):
+    """Newest recorded completion first; undated runs last, ties by run ID."""
+    dates, directories = {}, {}
+    unknown = datetime.min.replace(tzinfo=timezone.utc)
+
+    def timestamp(value):
+        if not value:
+            return unknown
+        parsed = datetime.fromisoformat(value)
+        return parsed.replace(tzinfo=timezone.utc) if parsed.tzinfo is None else parsed.astimezone(timezone.utc)
+
+    for path, report in reports:
+        run = path.parent.name
+        directories[run] = path.parent
+        dates[run] = max(dates.get(run, unknown), timestamp(report.get("completed_at")))
+    for run, directory in directories.items():
+        completed = directory / "completed.json"
+        if completed.is_file():
+            value = json.loads(completed.read_text()).get("completed_at")
+            if value:
+                dates[run] = timestamp(value)
+    return sorted(sorted(dates), key=dates.__getitem__, reverse=True)
+
+
+def run_metadata_hashes(reports):
+    """Record completion metadata used to order the report."""
+    directories = sorted({path.parent for path, _ in reports})
+    return {f"{directory.name}/completed.json": digest(path.read_bytes())
+            for directory in directories if (path := directory / "completed.json").is_file()}
+
+
 def load_task_reports(directory):
     directory = Path(directory)
     reports = []
@@ -64,7 +97,8 @@ def load_task_reports(directory):
             if path.is_file():
                 reports.append((path, json.loads(path.read_text())))
     order = {task: i for i, task in enumerate(DATASETS)}
-    reports.sort(key=lambda item: (order[item[1]["task"]], item[1]["model"]))
+    ranks = {run: index for index, run in enumerate(ordered_runs(reports))}
+    reports.sort(key=lambda item: (order[item[1]["task"]], ranks[item[0].parent.name]))
     return reports
 
 
@@ -95,7 +129,8 @@ def comparison_table(comparisons, *, link_details=True):
     anchors = model_anchors(models)
     lines = [
         "Main validation metric per task; **best observed values** are bold. "
-        "Failures are included. Caption ROUGE-L uses its native scale; other values are percentages."
+        + ("Model runs are ordered newest first by recorded completion time. " if link_details else "")
+        + "Failures are included. Caption ROUGE-L uses its native scale; other values are percentages."
         + (" Select a model or task name for detailed metrics and usage." if link_details else ""), "",
         "| Task | Main metric | " + " | ".join(
             f"[{model['label']}](#{anchors[model['run']]})" if link_details else model["label"]
@@ -352,11 +387,14 @@ def generate_report(directory):
         model_rows.setdefault(path.parent.name, []).append(table_row)
         rows.append(row)
     report_hashes = {str(path.relative_to(directory)): digest(path.read_bytes()) for path, _ in reports}
+    metadata_hashes = run_metadata_hashes(reports)
     chart_manifest = output / "charts" / "manifest.json"
     current_charts = {}
     if chart_manifest.is_file():
         charts = json.loads(chart_manifest.read_text())
-        if charts["reports_sha256"] == report_hashes:
+        if (charts["reports_sha256"] == report_hashes
+                and charts.get("run_metadata_sha256", {}) == metadata_hashes
+                and [model["run"] for model in charts.get("models", [])] == ordered_runs(reports)):
             current_charts = charts
     if current_charts.get("task_comparisons"):
         lines += comparison_table(current_charts["task_comparisons"])
@@ -371,6 +409,7 @@ def generate_report(directory):
         "source_sha256": {f"benchmarks/src/{name}": digest(Path(__file__).with_name(name).read_bytes())
                           for name in ("generate_report.py", "task_registry.py", "artifacts.py")},
         "reports_sha256": report_hashes,
+        "run_metadata_sha256": metadata_hashes,
     })
     fields = list(dict.fromkeys(key for row in rows for key in row))
     if rows:

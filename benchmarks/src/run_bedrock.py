@@ -79,9 +79,12 @@ def build_model(config, client, target):
     mode = output_mode(config)
     profile = ({"prompted_output_template": _PROMPTED_OUTPUT_TEMPLATE, "json_schema_transformer": None}
                if mode == "prompted" else None)
+    settings = {"temperature": config["temperature"], "max_tokens": config["max_new_tokens"]}
+    if "thinking" in config:
+        settings["thinking"] = config["thinking"]
     model = RecordingBedrockModel(
         target, provider=BedrockProvider(bedrock_client=client), pricing=config.get("pricing"),
-        settings={"temperature": config["temperature"], "max_tokens": config["max_new_tokens"]},
+        settings=settings,
         profile=profile,
     )
     client.meta.events.register("before-parameter-build.bedrock-runtime.Converse", model.record_output_config)

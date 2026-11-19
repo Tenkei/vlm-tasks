@@ -7,18 +7,20 @@ from pathlib import Path
 
 from .artifacts import digest, save_svg, utc_now, write_json
 from .chart_style import model_color
-from .generate_report import MODEL_LABELS, format_number, generate_report, load_task_reports, profile_label
+from .generate_report import MODEL_LABELS, format_number, generate_report, load_task_reports, ordered_runs, profile_label, run_metadata_hashes
 from .task_registry import AXES
 
 
 def build_profiles(reports):
     """Validate and collect the task scores used by every radar chart."""
+    reports = list(reports)
     grouped = {}
     for path, report in reports:
         grouped.setdefault(path.parent.name, {})[report["task"]] = report
 
     profiles = []
-    for run, tasks in sorted(grouped.items(), key=lambda item: next(iter(item[1].values()))["model"]):
+    for run in ordered_runs(reports):
+        tasks = grouped[run]
         missing = [task for task, _, _, _ in AXES if task not in tasks]
         if missing:
             raise ValueError(f"{run}: missing chart tasks: {', '.join(missing)}")
@@ -125,7 +127,8 @@ def generate_charts(directory):
                    "score": profile["scores"][axis]}
                   for profile in profiles]
         figure = f"task-comparisons/{task}"
-        fig, ax = plt.subplots(figsize=(8, 4.8))
+        # Keep wrapped model labels separate as more profiles are added.
+        fig, ax = plt.subplots(figsize=(8, max(4.8, .7 * len(models) + .6)))
         fig.subplots_adjust(left=.38, right=.9, bottom=.18, top=.76)
         values = [model["score"] * 100 for model in models]
         positions = np.arange(len(models))
@@ -172,6 +175,7 @@ def generate_charts(directory):
                           for name in ("generate_charts.py", "generate_report.py", "chart_style.py",
                                        "task_registry.py", "artifacts.py")},
         "reports_sha256": {str(path.relative_to(directory)): digest(path.read_bytes()) for path, _ in reports},
+        "run_metadata_sha256": run_metadata_hashes(reports),
         "figures_sha256": {path.relative_to(output).as_posix(): digest(path.read_bytes())
                            for name in figure_names for suffix in ("png", "svg")
                            for path in [output / f"{name}.{suffix}"]},

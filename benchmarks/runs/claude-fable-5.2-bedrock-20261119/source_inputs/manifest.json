@@ -1,0 +1,7 @@
+{
+  "note": "Preparation helper and 90-row config used by the continuation; inference used the standard run_bedrock entry point",
+  "files_sha256": {
+    "continuation/config.json": "c478460ba9394f3d7fb8c012369e1ee5c68c3d087ea747ef9b5c2e87d3782009",
+    "continuation/prepare_remaining.py": "a247c3f136e4766f2189f3af0949210dd769ef6f24dc44ce847c2f5a720a5329"
+  }
+}

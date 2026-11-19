@@ -1,0 +1,989 @@
+{
+  "task": "attributes",
+  "dataset": "ovad",
+  "model": "anthropic.claude-fable-5-2",
+  "inference_model_id": "global.anthropic.claude-fable-5-2",
+  "output_mode": "prompted",
+  "retries": 0,
+  "revision": null,
+  "device": "bedrock/ap-northeast-1",
+  "dtype": "provider-managed",
+  "backend": "bedrock",
+  "region": "ap-northeast-1",
+  "completed_at": "2026-11-19T08:30:39.964619+00:00",
+  "execution_environment": "environment.json",
+  "metrics": {
+    "samples": 10,
+    "failures": 0,
+    "failure_rate": 0.0,
+    "attribute_decisions": 95,
+    "unique_images": 1,
+    "accuracy": 0.6421052631578947,
+    "mean_attribute_accuracy": 0.6549603174603175,
+    "macro_f1": 0.48577145726268534
+  },
+  "summary": [
+    {
+      "attribute": "cleanliness",
+      "support": 4,
+      "accuracy": 1.0,
+      "macro_f1": 1.0,
+      "values": [
+        {
+          "value": "clean",
+          "support": 4,
+          "prediction_support": 4,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        {
+          "value": "unclean",
+          "support": 0,
+          "prediction_support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        }
+      ]
+    },
+    {
+      "attribute": "clothes pattern",
+      "support": 1,
+      "accuracy": 1.0,
+      "macro_f1": 1.0,
+      "values": [
+        {
+          "value": "dotted",
+          "support": 0,
+          "prediction_support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "value": "floral",
+          "support": 0,
+          "prediction_support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "value": "lettered",
+          "support": 0,
+          "prediction_support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "value": "plaid",
+          "support": 0,
+          "prediction_support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "value": "plain",
+          "support": 1,
+          "prediction_support": 1,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        {
+          "value": "striped",
+          "support": 0,
+          "prediction_support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "value": "tiled",
+          "support": 0,
+          "prediction_support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        }
+      ]
+    },
+    {
+      "attribute": "color quantity",
+      "support": 7,
+      "accuracy": 0.42857142857142855,
+      "macro_f1": 0.19999999999999998,
+      "values": [
+        {
+          "value": "multicolored",
+          "support": 0,
+          "prediction_support": 3,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "value": "single-colored",
+          "support": 7,
+          "prediction_support": 3,
+          "precision": 1.0,
+          "recall": 0.42857142857142855,
+          "f1": 0.6
+        },
+        {
+          "value": "two-colored",
+          "support": 0,
+          "prediction_support": 1,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        }
+      ]
+    },
+    {
+      "attribute": "cooked",
+      "support": 0,
+      "accuracy": null,
+      "macro_f1": null,
+      "values": [
+        {
+          "value": "cooked",
+          "support": 0,
+          "prediction_support": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        {
+          "value": "raw",
+          "support": 0,
+          "prediction_support": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        }
+      ]
+    },
+    {
+      "attribute": "face expression",
+      "support": 0,
+      "accuracy": null,
+      "macro_f1": null,
+      "values": [
+        {
+          "value": "angry",
+          "support": 0,
+          "prediction_support": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        {
+          "value": "disgust",
+          "support": 0,
+          "prediction_support": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        {
+          "value": "fear",
+          "support": 0,
+          "prediction_support": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        {
+          "value": "happy",
+          "support": 0,
+          "prediction_support": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        {
+          "value": "neutral",
+          "support": 0,
+          "prediction_support": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        {
+          "value": "sad",
+          "support": 0,
+          "prediction_support": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        {
+          "value": "sleepy",
+          "support": 0,
+          "prediction_support": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        }
+      ]
+    },
+    {
+      "attribute": "gender",
+      "support": 0,
+      "accuracy": null,
+      "macro_f1": null,
+      "values": [
+        {
+          "value": "female",
+          "support": 0,
+          "prediction_support": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        {
+          "value": "male",
+          "support": 0,
+          "prediction_support": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        }
+      ]
+    },
+    {
+      "attribute": "group",
+      "support": 10,
+      "accuracy": 0.9,
+      "macro_f1": 0.47368421052631576,
+      "values": [
+        {
+          "value": "group",
+          "support": 0,
+          "prediction_support": 1,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "value": "single",
+          "support": 10,
+          "prediction_support": 9,
+          "precision": 1.0,
+          "recall": 0.9,
+          "f1": 0.9473684210526315
+        }
+      ]
+    },
+    {
+      "attribute": "hair color",
+      "support": 2,
+      "accuracy": 0.0,
+      "macro_f1": 0.0,
+      "values": [
+        {
+          "value": "black",
+          "support": 0,
+          "prediction_support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "value": "blue",
+          "support": 0,
+          "prediction_support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "value": "brown",
+          "support": 0,
+          "prediction_support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "value": "gray",
+          "support": 0,
+          "prediction_support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "value": "green",
+          "support": 0,
+          "prediction_support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "value": "orange",
+          "support": 0,
+          "prediction_support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "value": "pink",
+          "support": 0,
+          "prediction_support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "value": "red",
+          "support": 0,
+          "prediction_support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "value": "tan",
+          "support": 2,
+          "prediction_support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "value": "violet",
+          "support": 0,
+          "prediction_support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "value": "white",
+          "support": 0,
+          "prediction_support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "value": "yellow",
+          "support": 0,
+          "prediction_support": 2,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        }
+      ]
+    },
+    {
+      "attribute": "hair length",
+      "support": 2,
+      "accuracy": 0.5,
+      "macro_f1": 0.3333333333333333,
+      "values": [
+        {
+          "value": "bald",
+          "support": 0,
+          "prediction_support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "value": "long",
+          "support": 1,
+          "prediction_support": 2,
+          "precision": 0.5,
+          "recall": 1.0,
+          "f1": 0.6666666666666666
+        },
+        {
+          "value": "short",
+          "support": 1,
+          "prediction_support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        }
+      ]
+    },
+    {
+      "attribute": "hair tone",
+      "support": 2,
+      "accuracy": 1.0,
+      "macro_f1": 1.0,
+      "values": [
+        {
+          "value": "dark",
+          "support": 0,
+          "prediction_support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "value": "light",
+          "support": 2,
+          "prediction_support": 2,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      ]
+    },
+    {
+      "attribute": "hair type",
+      "support": 2,
+      "accuracy": 0.5,
+      "macro_f1": 0.3333333333333333,
+      "values": [
+        {
+          "value": "curly",
+          "support": 1,
+          "prediction_support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "value": "straight",
+          "support": 1,
+          "prediction_support": 2,
+          "precision": 0.5,
+          "recall": 1.0,
+          "f1": 0.6666666666666666
+        }
+      ]
+    },
+    {
+      "attribute": "length",
+      "support": 2,
+      "accuracy": 0.5,
+      "macro_f1": 0.3333333333333333,
+      "values": [
+        {
+          "value": "long",
+          "support": 2,
+          "prediction_support": 1,
+          "precision": 1.0,
+          "recall": 0.5,
+          "f1": 0.6666666666666666
+        },
+        {
+          "value": "short",
+          "support": 0,
+          "prediction_support": 1,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        }
+      ]
+    },
+    {
+      "attribute": "material",
+      "support": 8,
+      "accuracy": 0.375,
+      "macro_f1": 0.15,
+      "values": [
+        {
+          "value": "asphalt",
+          "support": 0,
+          "prediction_support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "value": "ceramic",
+          "support": 0,
+          "prediction_support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "value": "glass",
+          "support": 1,
+          "prediction_support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "value": "leather",
+          "support": 0,
+          "prediction_support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "value": "metal",
+          "support": 1,
+          "prediction_support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "value": "paper",
+          "support": 2,
+          "prediction_support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "value": "polymers",
+          "support": 0,
+          "prediction_support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "value": "stone",
+          "support": 0,
+          "prediction_support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "value": "textile",
+          "support": 0,
+          "prediction_support": 4,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "value": "wood",
+          "support": 4,
+          "prediction_support": 4,
+          "precision": 0.75,
+          "recall": 0.75,
+          "f1": 0.75
+        }
+      ]
+    },
+    {
+      "attribute": "maturity",
+      "support": 2,
+      "accuracy": 1.0,
+      "macro_f1": 1.0,
+      "values": [
+        {
+          "value": "adult",
+          "support": 2,
+          "prediction_support": 2,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        {
+          "value": "young",
+          "support": 0,
+          "prediction_support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        }
+      ]
+    },
+    {
+      "attribute": "optical property",
+      "support": 8,
+      "accuracy": 0.75,
+      "macro_f1": 0.2857142857142857,
+      "values": [
+        {
+          "value": "opaque",
+          "support": 6,
+          "prediction_support": 8,
+          "precision": 0.75,
+          "recall": 1.0,
+          "f1": 0.8571428571428571
+        },
+        {
+          "value": "reflective",
+          "support": 1,
+          "prediction_support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "value": "transparent",
+          "support": 1,
+          "prediction_support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        }
+      ]
+    },
+    {
+      "attribute": "order",
+      "support": 5,
+      "accuracy": 1.0,
+      "macro_f1": 1.0,
+      "values": [
+        {
+          "value": "messy",
+          "support": 0,
+          "prediction_support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "value": "ordered",
+          "support": 5,
+          "prediction_support": 5,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      ]
+    },
+    {
+      "attribute": "pattern",
+      "support": 7,
+      "accuracy": 0.5714285714285714,
+      "macro_f1": 0.24242424242424243,
+      "values": [
+        {
+          "value": "dotted",
+          "support": 0,
+          "prediction_support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "value": "floral",
+          "support": 0,
+          "prediction_support": 1,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "value": "lettered",
+          "support": 0,
+          "prediction_support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "value": "plaid",
+          "support": 0,
+          "prediction_support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "value": "plain",
+          "support": 7,
+          "prediction_support": 4,
+          "precision": 1.0,
+          "recall": 0.5714285714285714,
+          "f1": 0.7272727272727273
+        },
+        {
+          "value": "striped",
+          "support": 0,
+          "prediction_support": 2,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "value": "tiled",
+          "support": 0,
+          "prediction_support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        }
+      ]
+    },
+    {
+      "attribute": "position",
+      "support": 10,
+      "accuracy": 0.8,
+      "macro_f1": 0.4444444444444444,
+      "values": [
+        {
+          "value": "horizontal",
+          "support": 1,
+          "prediction_support": 1,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "value": "sitting",
+          "support": 0,
+          "prediction_support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "value": "vertical",
+          "support": 9,
+          "prediction_support": 9,
+          "precision": 0.8888888888888888,
+          "recall": 0.8888888888888888,
+          "f1": 0.8888888888888888
+        }
+      ]
+    },
+    {
+      "attribute": "size",
+      "support": 0,
+      "accuracy": null,
+      "macro_f1": null,
+      "values": [
+        {
+          "value": "big",
+          "support": 0,
+          "prediction_support": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        {
+          "value": "small",
+          "support": 0,
+          "prediction_support": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        }
+      ]
+    },
+    {
+      "attribute": "state",
+      "support": 7,
+      "accuracy": 0.7142857142857143,
+      "macro_f1": 0.41428571428571426,
+      "values": [
+        {
+          "value": "closed",
+          "support": 3,
+          "prediction_support": 4,
+          "precision": 0.75,
+          "recall": 1.0,
+          "f1": 0.8571428571428571
+        },
+        {
+          "value": "covered",
+          "support": 0,
+          "prediction_support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "value": "cracked",
+          "support": 0,
+          "prediction_support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "value": "dilapidated",
+          "support": 0,
+          "prediction_support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "value": "dry",
+          "support": 0,
+          "prediction_support": 1,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "value": "empty",
+          "support": 3,
+          "prediction_support": 2,
+          "precision": 1.0,
+          "recall": 0.6666666666666666,
+          "f1": 0.8
+        },
+        {
+          "value": "folded",
+          "support": 0,
+          "prediction_support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "value": "full",
+          "support": 1,
+          "prediction_support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "value": "off",
+          "support": 0,
+          "prediction_support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "value": "on",
+          "support": 0,
+          "prediction_support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "value": "open",
+          "support": 0,
+          "prediction_support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "value": "piece",
+          "support": 0,
+          "prediction_support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "value": "wet",
+          "support": 0,
+          "prediction_support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        }
+      ]
+    },
+    {
+      "attribute": "texture",
+      "support": 8,
+      "accuracy": 0.5,
+      "macro_f1": 0.3333333333333333,
+      "values": [
+        {
+          "value": "rough",
+          "support": 0,
+          "prediction_support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "value": "smooth",
+          "support": 8,
+          "prediction_support": 4,
+          "precision": 1.0,
+          "recall": 0.5,
+          "f1": 0.6666666666666666
+        },
+        {
+          "value": "soft",
+          "support": 0,
+          "prediction_support": 4,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        }
+      ]
+    },
+    {
+      "attribute": "tone",
+      "support": 8,
+      "accuracy": 0.25,
+      "macro_f1": 0.2,
+      "values": [
+        {
+          "value": "dark",
+          "support": 0,
+          "prediction_support": 6,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "value": "light",
+          "support": 8,
+          "prediction_support": 2,
+          "precision": 1.0,
+          "recall": 0.25,
+          "f1": 0.4
+        }
+      ]
+    }
+  ],
+  "failures": [],
+  "dataset_counts": {
+    "evaluated_objects": 10,
+    "evaluated_attribute_decisions": 95,
+    "evaluated_images": 1,
+    "evaluated_samples": 10
+  },
+  "dataset_metadata": {
+    "dataset_name": "ovad",
+    "config_name": "ovad",
+    "version": "1.0.0",
+    "description": "OVAD categorical object attributes (22 groups; excludes color and clothes color); not official mAP",
+    "split": "val"
+  },
+  "status_counts": {},
+  "dataset_fingerprint_sha256": "e654ff25121b93864237ec23531e2570b058fe9b8d15bc62546a566932af54bd",
+  "speed_ms_per_sample": {
+    "load": 1.2455791933462024,
+    "inference": 4826.592137408443,
+    "metrics": 0.13792500249110162
+  },
+  "elapsed_seconds": 48.28313937498024,
+  "wall_seconds": 48.28330512496177,
+  "usage": {
+    "attempted_requests": 10,
+    "measured_requests": 10,
+    "unmeasured_requests": 0,
+    "input_tokens": 21620,
+    "output_tokens": 2908,
+    "cache_read_tokens": 0,
+    "cache_write_tokens": 0,
+    "output_reasoning_tokens": 0,
+    "estimated_cost_usd": "0.289280",
+    "costed_requests": 10,
+    "estimated_cost_complete": true,
+    "reported_cost_usd": null,
+    "cost_note": "Estimate from recorded pricing sources; Bedrock does not return invoiced charges",
+    "cost_sources": [
+      "https://aws.amazon.com/bedrock/pricing/"
+    ],
+    "total_tokens": 24528
+  }
+}

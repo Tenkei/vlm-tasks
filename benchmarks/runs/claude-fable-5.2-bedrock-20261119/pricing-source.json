@@ -1,0 +1,42 @@
+{
+  "url": "https://aws.amazon.com/bedrock/pricing/",
+  "retrieved_at": "2026-11-19",
+  "section": "Anthropic Claude Fable 5.2, Global Cross-region Inference, Standard",
+  "pricing_page_sha256": "3ee73a4d548043f3b41b9453d9e4050eb85ee1aabdf1a53af3ec0f0d8b96fae1",
+  "feed_url": "https://b0.p.awsstatic.com/pricing/2.0/meteredUnitMaps/bedrockfoundationmodels/USD/current/bedrockfoundationmodels.json",
+  "feed_sha256": "ea11a58323a1a8991e002ec2a1ac420c5536bae1e3a5fa68b5e7a6a7b4df9bf4",
+  "rate_unit": "USD per million tokens",
+  "table_row": {
+    "model": "Claude Fable 5.2",
+    "heading": " Global Cross-region Inference  {regionSelector} \n",
+    "values": [
+      {
+        "path": "bedrockfoundationmodels/cHVibGljLzljYzM1NWVlLTRjNjYtNDk0OC04MTg0LWVjMDFkYjBlNGNmMy8zMA",
+        "key": "Nf5SjdBIxvbECrQVBqfPtRO8WTewwWgH3YyYB0trbWY",
+        "price": 8.0
+      },
+      {
+        "path": "bedrockfoundationmodels/cHVibGljLzljYzM1NWVlLTRjNjYtNDk0OC04MTg0LWVjMDFkYjBlNGNmMy8zMA",
+        "key": "8fQtcCrhAdf6jWE5uYBbHVevyZUZf4C6KHmHQe1pfRw",
+        "price": 40.0
+      }
+    ]
+  },
+  "regional_feed_entries": {
+    "Nf5SjdBIxvbECrQVBqfPtRO8WTewwWgH3YyYB0trbWY": {
+      "rateCode": "22329X8FU7Z2PZTH.4799GE89SK.6YS6EN2CT7",
+      "price": "8.0000000000",
+      "RegionlessRateCode": "Nf5SjdBIxvbECrQVBqfPtRO8WTewwWgH3YyYB0trbWY"
+    },
+    "8fQtcCrhAdf6jWE5uYBbHVevyZUZf4C6KHmHQe1pfRw": {
+      "rateCode": "SFYN2BXZUMSK6JU9.4799GE89SK.6YS6EN2CT7",
+      "price": "40.0000000000",
+      "RegionlessRateCode": "8fQtcCrhAdf6jWE5uYBbHVevyZUZf4C6KHmHQe1pfRw"
+    }
+  },
+  "billed_rates_usd_per_million_tokens": {
+    "input": "8.00",
+    "output": "40.00"
+  },
+  "note": "No caching is requested by this benchmark; verify observed cache counters are zero before publishing cost estimates."
+}

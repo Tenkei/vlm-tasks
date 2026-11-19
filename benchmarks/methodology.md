@@ -53,6 +53,7 @@ describe the published runs rather than requirements of the protocol.
 | `output_mode` (Bedrock) | `prompted` supplies schema instructions in the prompt; `native` requests provider JSON Schema output. Defaults to `prompted` | Prompted baselines and a separate native Qwen3-VL-235B run |
 | `retries` | Nonnegative maximum correction attempts after the initial request; defaults to `0` when omitted | `0`, plus a separate Qwen3-VL-235B run with `2` |
 | Generation settings | Control decoding where the backend supports it; record differences such as provider-controlled sampling | Local greedy decoding with seed 42; hosted settings vary by model |
+| `thinking` (Bedrock, optional) | Pass PydanticAI's reasoning-effort setting to the provider; reasoning counts toward `max_new_tokens` | Claude Fable 5.2: `high` adaptive effort |
 | `match_iou`, `tokenizer_version` | Fix detection matching and caption tokenization for scoring | `0.5` and Stanford PTBTokenizer `3.4.1` |
 
 The Transformers runner uses prompted JSON output. The Bedrock runner accepts
@@ -290,6 +291,13 @@ a different task: equal radial values do not imply equal difficulty, and
 polygon area is not an overall model score. Charts compare task quality;
 use the tables to assess quality alongside failures and resource usage.
 
+Model columns, profile grids, task bars and detail tables show the newest
+completed runs first. Ordering uses `completed.json`'s recorded `completed_at`,
+falling back to the latest task completion for unfinished or older runs.
+Undated runs appear last; ties use the run ID. File modification times and
+chart regeneration do not change the order. On-demand pair comparisons keep
+the model order supplied in the command.
+
 Colors come from the shared ten-color palette in
 [`src/chart_style.py`](src/chart_style.py). The first eight bytes of a model ID's
 SHA-256 checksum, interpreted as an unsigned big-endian integer modulo the
@@ -311,10 +319,10 @@ The chart generator validates that all seven main metrics are present and
 bounded, writes one profile per model/run and one comparison per task, and
 refreshes the report. It performs no inference. `reports/charts/manifest.json`
 records metric choices, exact scores, sample counts, Matplotlib/NumPy versions,
-and source, report and figure hashes. Use those package versions to reproduce
+and source, report, run-completion metadata and figure hashes. Use those package versions to reproduce
 the rendering. The report generator embeds charts only when their report
-hashes match the current results; regenerate charts after adding or changing
-runs. To refresh only tables and the field guide, run
+hashes and run order match the current results; regenerate charts after adding
+or changing runs or their completion metadata. To refresh only tables and the field guide, run
 `python -m benchmarks.src.generate_report`.
 
 ### Compare two models locally
@@ -466,6 +474,28 @@ before inference add no model requests or scored failures. The local runner
 also supports `--tasks TASK ...` for a selected-task run in a fresh output
 directory; retain artifacts from both invocations if using this alternative.
 
+### Combine consecutive runs
+
+[`combine_runs.py`](src/combine_runs.py) joins completed consecutive subsets
+from local or hosted backends. It verifies that the parts cover the full
+frozen suite in order, with matching images, targets, features, backend,
+model and processor settings, routing where applicable, and scoring sources.
+Only sample counts may differ between the run configs.
+
+Saved responses are replayed through the public validators to recompute
+metrics across the full suite, including failures. Scores are not averaged
+across parts; caption IDF and corpus metrics are recomputed for the full
+subset. No model requests are made. Usage totals and available estimated
+costs are added, unavailable local costs remain unmeasured, and partial
+estimates retain their incomplete coverage. Inference latency uses the
+sample-weighted original live measurements, excluding replay time.
+
+The output includes copies of the source runs under `segments/` and records
+their hashes and index ranges in `assembly.json`. Pass source directories
+in sample order and use a new output directory. The
+[Fable pilot continuation](#continuing-the-pilot-without-repeating-requests)
+below gives a concrete example; the same command accepts local runs.
+
 ### Larger Qwen3 on AWS Bedrock
 
 The hosted comparison uses `qwen.qwen3-vl-235b-a22b` in `ap-northeast-1`, with
@@ -599,6 +629,57 @@ network and service time. This compares complete task configurations across
 model sizes and backends; matching samples and prompts does not make their
 hardware, tokenization or provider preprocessing identical.
 
+### Claude Fable 5.2 on AWS Bedrock
+
+[`claude-fable-5.2-bedrock.json`](configs/claude-fable-5.2-bedrock.json)
+uses 100 samples per variant, prompted JSON, zero correction retries and the
+same 4,096-token output budget and scoring rules. The initial
+[`pilot config`](configs/claude-fable-5.2-bedrock-pilot.json) uses the first
+10 rows per variant; its standalone results remain under `experiments/`.
+
+Fable is invoked through `global.anthropic.claude-fable-5-2` from Tokyo.
+Temperature is omitted as required by the model. Adaptive thinking is always
+enabled, with effort explicitly set to the documented `high` default;
+reasoning shares the output allowance. The config records Global Standard
+pricing, including reasoning in total output without charging it twice.
+
+The [AWS model card](https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-fable-5-2.html)
+requires data retention mode `aws_review`. This is an account-wide opt-in;
+the benchmark runner does not change it automatically. Confirm access before
+inference. This run uses prompted schema instructions, matching the original
+Qwen, Gemma and Kimi baselines.
+
+For a fresh reproduction, use the normal runner on the full frozen dataset:
+
+```bash
+HF_HUB_OFFLINE=0 HF_DATASETS_OFFLINE=0 .venv/bin/python -m benchmarks.src.run_bedrock \
+  --config benchmarks/configs/claude-fable-5.2-bedrock.json \
+  --prepared benchmarks/.cache/prepared-datasets-100 \
+  --output benchmarks/runs/claude-fable-5.2-bedrock-reproduction
+.venv/bin/python -m benchmarks.src.generate_charts
+```
+
+#### Continuing the pilot without repeating requests
+
+The recorded run retains the initial 10 responses per variant and evaluates
+only rows 11–100 in the continuation: 70 existing requests plus 630 new ones.
+Both parts use the normal Bedrock runner, with prepared dataset subsets and
+configs that differ only in sample count. This is separate from `--resume`,
+which continues between completed tasks and requires the original sample count.
+
+The [combining procedure](#combine-consecutive-runs) recomputes all metrics
+on the full 100 samples per variant and preserves both runs' usage and live
+latency. To reproduce the offline assembly from the saved segment copies,
+use a new output directory:
+
+```bash
+HF_HUB_OFFLINE=0 HF_DATASETS_OFFLINE=0 .venv/bin/python -m benchmarks.src.combine_runs \
+  --segments benchmarks/runs/claude-fable-5.2-bedrock-20261119/segments/000 \
+             benchmarks/runs/claude-fable-5.2-bedrock-20261119/segments/001 \
+  --prepared benchmarks/.cache/prepared-datasets-100 \
+  --output experiments/claude-fable-5.2-offline-reproduction/runs/claude-fable-5.2
+```
+
 ### Double the budget for capped responses
 
 After a local Transformers baseline completes, rerun samples that reached its
@@ -651,11 +732,14 @@ artifacts are retained as evidence of their execution environment.
 | `benchmarks/configs/qwen3-vl-235b-a22b-bedrock.json`, `benchmarks/src/run_bedrock.py` | Hosted Qwen3 configuration, execution and usage collection |
 | `benchmarks/configs/qwen3-vl-235b-a22b-bedrock-retries-2.json` | Example of a separate correction-retry configuration |
 | `benchmarks/configs/gemma-3-27b-bedrock.json`, `benchmarks/configs/kimi-k3.1-bedrock.json` | Additional hosted model configurations, routing and pricing settings |
+| `benchmarks/configs/claude-fable-5.2-bedrock.json` | Fable model configuration, required reasoning settings and recorded pricing |
 | `benchmarks/src/prepare_datasets.py` | Dataset preparation and sample freezing |
 | `benchmarks/src/task_registry.py` | Shared task definitions, datasets, metric labels and chart axes |
 | `benchmarks/src/evaluation.py` | Shared validation, frozen-data verification, response recording and replay |
 | `benchmarks/src/artifacts.py` | JSON artifacts, sample identities, content hashes and source provenance |
 | `benchmarks/src/run_transformers.py` | Local model setup, inference and task reports |
+| `benchmarks/src/combine_runs.py` | Verify consecutive local or hosted subsets and rescore their saved responses without inference |
+| `benchmarks/src/usage.py` | Reconcile saved request usage and aggregate totals while preserving unavailable and partial costs |
 | `benchmarks/src/generate_report.py` | Comparison table and wide CSV generation |
 | `benchmarks/src/generate_charts.py` | Model radar profiles and task comparison charts from saved reports |
 | `benchmarks/src/chart_style.py` | Shared palette and deterministic model color selection |
@@ -671,6 +755,7 @@ artifacts are retained as evidence of their execution environment.
 | `runs/<run>/<task>.json` | Full validation metrics, breakdowns, failures, timings and usage totals |
 | `runs/<run>/completed.json` | All configured tasks completed, including retained tasks after a resume |
 | `runs/<run>/continuations/<timestamp>/` | Metadata and source hashes for an explicitly resumed run |
+| `runs/<run>/assembly.json`, `segments/` | Source index ranges, checksums and exact original runs when consecutive subsets are combined |
 | `reports/metrics.csv`, `benchmarks/README.md` | Generated comparison views |
 | `reports/report-manifest.json` | Report generator and input task-report hashes for the generated comparison |
 | `reports/charts/model-profiles/<run>.png`, `*.svg` | One radar profile per model/run |

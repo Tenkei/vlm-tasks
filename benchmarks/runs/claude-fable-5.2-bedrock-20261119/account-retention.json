@@ -1,0 +1,9 @@
+{
+  "before": "inherit",
+  "during": "aws_review",
+  "started_at": "2026-11-19T12:06:51.315801+00:00",
+  "note": "AWS review opt-in authorized by user; restore the previous account mode after inference",
+  "benchmark_exit_code": 0,
+  "after": "inherit",
+  "finished_at": "2026-11-19T12:51:21.746077+00:00"
+}

@@ -419,6 +419,57 @@ def comparison_runs(tmp_path):
     return runs
 
 
+def test_report_views_share_newest_run_order_using_recorded_dates(comparison_runs, tmp_path):
+    pytest.importorskip("matplotlib")
+    import csv
+
+    from benchmarks.src.artifacts import write_json
+    from benchmarks.src.generate_charts import build_profiles, generate_charts
+    from benchmarks.src.generate_report import load_task_reports, ordered_runs
+
+    # UTC normalization, latest-task fallback and completion metadata all matter.
+    for name, date in [("small", "2026-11-19T15:00:00+09:00"),
+                       ("gemma", "2026-11-19T07:00:00Z"),
+                       ("large", "2026-11-19T05:00:00+00:00")]:
+        for path in (comparison_runs / name).glob("*.json"):
+            if path.name == "config.json":
+                continue
+            report = json.loads(path.read_text())
+            report["completed_at"] = date
+            write_json(path, report)
+    write_json(comparison_runs / "large/completed.json", {"completed_at": "2026-11-20T00:00:00Z"})
+    latest = comparison_runs / "small/describe.json"
+    report = json.loads(latest.read_text())
+    report["completed_at"] = "2026-11-19T08:00:00Z"
+    write_json(latest, report)
+    expected = ["large", "small", "gemma"]
+    reports = load_task_reports(comparison_runs)
+    assert ordered_runs(reports) == expected
+    assert [profile["run"] for profile in build_profiles(reports)] == expected
+    generate_charts(comparison_runs)
+    charts = json.loads((tmp_path / "reports/charts/manifest.json").read_text())
+    assert [model["run"] for model in charts["models"]] == expected
+    assert all([model["run"] for model in task["models"]] == expected for task in charts["task_comparisons"])
+    rows = list(csv.DictReader((tmp_path / "reports/metrics.csv").open()))
+    for task in {row["task"] for row in rows}:
+        assert [row["run"] for row in rows if row["task"] == task] == expected
+    page = (tmp_path / "README.md").read_text()
+    assert page.index("### Qwen3-VL-235B") < page.index("### Qwen3-VL-2B") < page.index("### Gemma 3 27B")
+    # Changing completion metadata alone must not reuse charts in the old order.
+    from benchmarks.src.generate_report import generate_report
+    write_json(comparison_runs / "large/completed.json", {"completed_at": "2026-11-18T00:00:00Z"})
+    generate_report(comparison_runs)
+    assert "reports/charts/model-profiles/" not in (tmp_path / "README.md").read_text()
+
+
+def test_undated_runs_sort_last_with_stable_ties(tmp_path):
+    from benchmarks.src.generate_report import ordered_runs
+
+    reports = [(tmp_path / run / "classify.json", {"completed_at": date}) for run, date in [
+        ("unknown", None), ("zulu", "2026-11-19T00:00:00Z"), ("alpha", "2026-11-19T09:00:00+09:00")]]
+    assert ordered_runs(reports) == ["alpha", "zulu", "unknown"]
+
+
 def test_local_comparison_selects_only_two_models_and_preserves_overview(comparison_runs, tmp_path):
     pytest.importorskip("matplotlib")
     import re

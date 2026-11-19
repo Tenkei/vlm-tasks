@@ -1,0 +1,131 @@
+{
+  "task": "classify",
+  "dataset": "cifar10",
+  "model": "anthropic.claude-fable-5-2",
+  "inference_model_id": "global.anthropic.claude-fable-5-2",
+  "output_mode": "prompted",
+  "retries": 0,
+  "revision": null,
+  "device": "bedrock/ap-northeast-1",
+  "dtype": "provider-managed",
+  "backend": "bedrock",
+  "region": "ap-northeast-1",
+  "completed_at": "2026-11-19T08:27:11.768280+00:00",
+  "execution_environment": "environment.json",
+  "metrics": {
+    "samples": 10,
+    "failures": 0,
+    "failure_rate": 0.0,
+    "accuracy_top1": 1.0
+  },
+  "summary": [
+    {
+      "class": "airplane",
+      "support": 1,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "class": "automobile",
+      "support": 2,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "class": "bird",
+      "support": 0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    {
+      "class": "cat",
+      "support": 2,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "class": "deer",
+      "support": 0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    {
+      "class": "dog",
+      "support": 0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    {
+      "class": "frog",
+      "support": 3,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "class": "horse",
+      "support": 0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    {
+      "class": "ship",
+      "support": 2,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "class": "truck",
+      "support": 0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    }
+  ],
+  "failures": [],
+  "dataset_counts": {
+    "evaluated_samples": 10
+  },
+  "dataset_metadata": {
+    "dataset_name": "cifar10",
+    "config_name": "plain_text",
+    "version": "0.0.0",
+    "split": "test"
+  },
+  "status_counts": {},
+  "dataset_fingerprint_sha256": "59680b1f4e1de333bb6546e614dc75e4c113213b88c3cc3ab76cabdedde1f161",
+  "speed_ms_per_sample": {
+    "load": 0.8397040946874768,
+    "inference": 3108.2183664955664,
+    "metrics": 0.03625850658863783
+  },
+  "elapsed_seconds": 31.092248125001788,
+  "wall_seconds": 31.09902929101372,
+  "usage": {
+    "attempted_requests": 10,
+    "measured_requests": 10,
+    "unmeasured_requests": 0,
+    "input_tokens": 4020,
+    "output_tokens": 534,
+    "cache_read_tokens": 0,
+    "cache_write_tokens": 0,
+    "output_reasoning_tokens": 0,
+    "estimated_cost_usd": "0.053520",
+    "costed_requests": 10,
+    "estimated_cost_complete": true,
+    "reported_cost_usd": null,
+    "cost_note": "Estimate from recorded pricing sources; Bedrock does not return invoiced charges",
+    "cost_sources": [
+      "https://aws.amazon.com/bedrock/pricing/"
+    ],
+    "total_tokens": 4554
+  }
+}

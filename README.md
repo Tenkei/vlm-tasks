@@ -20,18 +20,18 @@ text generation and agent workflows, see other popular projects.
 <table>
   <tr>
     <td width="34%" align="center" valign="top">
-      <p><a href="benchmarks/README.md#qwen3-vl-235b-2-retries"><img src="benchmarks/reports/charts/model-profiles/qwen3-vl-235b-bedrock-retries-2-20261117.png" alt="Qwen3-VL-235B with two retries: performance across vision tasks" width="240"></a></p>
+      <p><a href="benchmarks/README.md#claude-fable-52"><img src="benchmarks/reports/charts/model-profiles/claude-fable-5.2-bedrock-20261119.png" alt="Claude Fable 5.2: performance across vision tasks" width="240"></a></p>
     </td>
     <td width="66%" valign="top">
-      <p><strong>Qwen3-VL-235B on AWS Bedrock · 2026-11-17</strong><br>
-      100 samples per task variant, with up to two correction retries.</p>
+      <p><strong>Claude Fable 5.2 · 2026-11-19</strong></p>
       <ul>
-        <li><strong>Grounding:</strong> 81% Acc@0.5 for boxes and 85% Point-in-box Acc.</li>
-        <li><strong>Task performance:</strong> 96% classification Top-1 Acc and 78.02% attribute Acc; detection remains challenging at 28.45% F1@0.5.</li>
-        <li><strong>Response reliability:</strong> zero final failures across 700 samples, averaging about 1.2 requests per sample, including the initial request.</li>
+        <li><strong>Competitive:</strong> classification, attributes and VQA hold up well against the other models.</li>
+        <li><strong>Detection stands out:</strong> the best F1 in our comparison (71.23%), beating Kimi while costing about 40% less for this task.</li>
+        <li><strong>Strong box localization:</strong> the first model in our comparison with a higher box score than point score: 80% Acc@0.5 versus 68% Point-in-box Acc.</li>
+        <li><strong>Caption scores disappoint:</strong> the lowest ROUGE-L in our comparison; its long descriptions match short COCO references poorly.</li>
       </ul>
-      <p>See the <a href="benchmarks/README.md#qwen3-vl-235b-2-retries">full results and usage breakdown</a>
-      and <a href="benchmarks/methodology.md#correction-retry-runs">retry methodology</a>.</p>
+      <p>Estimated $15.19 / 1,000 samples across the suite. Cheaper alternatives come close on several tasks.
+      See the <a href="benchmarks/README.md#claude-fable-52">full results and cost comparison</a>.</p>
     </td>
   </tr>
 </table>

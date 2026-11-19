@@ -1,0 +1,145 @@
+{
+  "task": "answer",
+  "dataset": "vqav2",
+  "model": "anthropic.claude-fable-5-2",
+  "inference_model_id": "global.anthropic.claude-fable-5-2",
+  "output_mode": "prompted",
+  "retries": 0,
+  "revision": null,
+  "device": "bedrock/ap-northeast-1",
+  "dtype": "provider-managed",
+  "backend": "bedrock",
+  "region": "ap-northeast-1",
+  "completed_at": "2026-11-19T08:31:15.933474+00:00",
+  "execution_environment": "environment.json",
+  "metrics": {
+    "samples": 10,
+    "failures": 0,
+    "failure_rate": 0.0,
+    "vqa_accuracy": 0.63,
+    "unique_images": 3
+  },
+  "summary": [
+    {
+      "group_by": "answer_type",
+      "group": "yes/no",
+      "support": 2,
+      "vqa_accuracy": 0.5
+    },
+    {
+      "group_by": "answer_type",
+      "group": "number",
+      "support": 1,
+      "vqa_accuracy": 1.0
+    },
+    {
+      "group_by": "answer_type",
+      "group": "other",
+      "support": 7,
+      "vqa_accuracy": 0.6142857142857142
+    },
+    {
+      "group_by": "question_type",
+      "group": "how many",
+      "support": 1,
+      "vqa_accuracy": 1.0
+    },
+    {
+      "group_by": "question_type",
+      "group": "is this",
+      "support": 1,
+      "vqa_accuracy": 1.0
+    },
+    {
+      "group_by": "question_type",
+      "group": "is this a",
+      "support": 1,
+      "vqa_accuracy": 0.0
+    },
+    {
+      "group_by": "question_type",
+      "group": "none of the above",
+      "support": 1,
+      "vqa_accuracy": 1.0
+    },
+    {
+      "group_by": "question_type",
+      "group": "what",
+      "support": 1,
+      "vqa_accuracy": 1.0
+    },
+    {
+      "group_by": "question_type",
+      "group": "what are the",
+      "support": 1,
+      "vqa_accuracy": 0.0
+    },
+    {
+      "group_by": "question_type",
+      "group": "what does the",
+      "support": 1,
+      "vqa_accuracy": 1.0
+    },
+    {
+      "group_by": "question_type",
+      "group": "what is",
+      "support": 2,
+      "vqa_accuracy": 0.65
+    },
+    {
+      "group_by": "question_type",
+      "group": "what is the man",
+      "support": 1,
+      "vqa_accuracy": 0.0
+    }
+  ],
+  "failures": [],
+  "dataset_counts": {
+    "evaluated_questions": 10,
+    "evaluated_images": 3,
+    "evaluated_samples": 10
+  },
+  "dataset_metadata": {
+    "dataset_name": "vqav2",
+    "config_name": "vqav2",
+    "version": "1.0.0",
+    "description": "VQA v2 labeled questions, preserving all ten annotator answer votes.",
+    "split": "val",
+    "protocol": "VQA v2 ten-answer leave-one-out consensus",
+    "normalization": "lmms-eval VQA v2 (always normalized)",
+    "scorer_version": 1,
+    "upstream_revision": "c7eaef373f4b1bd8a6b5f3e85c3391962c30068c",
+    "upstream_url": "https://github.com/EvolvingLMMs-Lab/lmms-eval"
+  },
+  "status_counts": {
+    "answered": 10,
+    "unanswerable": 0
+  },
+  "dataset_fingerprint_sha256": "49707e70f0f87bca8a09d430c91ac1b62713510d45c2ae010d02558a9a58d556",
+  "speed_ms_per_sample": {
+    "load": 6.376629386795685,
+    "inference": 3586.7004584055394,
+    "metrics": 0.7858749886509031
+  },
+  "elapsed_seconds": 35.94005720800487,
+  "wall_seconds": 35.94080695800949,
+  "usage": {
+    "attempted_requests": 10,
+    "measured_requests": 10,
+    "unmeasured_requests": 0,
+    "input_tokens": 8291,
+    "output_tokens": 491,
+    "cache_read_tokens": 0,
+    "cache_write_tokens": 0,
+    "output_reasoning_tokens": 0,
+    "estimated_cost_usd": "0.085968",
+    "costed_requests": 10,
+    "estimated_cost_complete": true,
+    "reported_cost_usd": null,
+    "cost_note": "Estimate from recorded pricing sources; Bedrock does not return invoiced charges",
+    "cost_sources": [
+      "https://aws.amazon.com/bedrock/pricing/"
+    ],
+    "total_tokens": 8782
+  }
+}

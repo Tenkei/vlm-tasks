@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-18T07:05:39.756188+00:00",
+  "generated_at": "2026-11-19T13:10:36.192601+00:00",
   "matplotlib_version": "3.11.2",
   "numpy_version": "2.5.4",
   "radial_range": [
@@ -53,107 +53,23 @@
   ],
   "models": [
     {
-      "run": "qwen3-vl-2b-20261112",
-      "model": "Qwen/Qwen3-VL-2B-Instruct",
-      "backend": "transformers",
-      "label": "Qwen3-VL-2B",
-      "retries": 0,
-      "output_mode": "prompted",
-      "color": "#2563ad",
-      "scores": [
-        0.93,
-        0.11235955056179775,
-        0.22,
-        0.35,
-        0.552665799739922,
-        0.65,
-        0.3017200104023414
-      ],
-      "figure": "model-profiles/qwen3-vl-2b-20261112",
-      "samples": {
-        "classify": 100,
-        "detect": 100,
-        "ground_box": 100,
-        "ground_point": 100,
-        "attributes": 100,
-        "answer": 100,
-        "describe": 100
-      }
-    },
-    {
-      "run": "gemma3-27b-bedrock-20261112",
-      "model": "google.gemma-3-27b-it",
+      "run": "claude-fable-5.2-bedrock-20261119",
+      "model": "anthropic.claude-fable-5-2",
       "backend": "bedrock",
-      "label": "Gemma 3 27B",
+      "label": "Claude Fable 5.2",
       "retries": 0,
       "output_mode": "prompted",
-      "color": "#c05822",
+      "color": "#8b7660",
       "scores": [
-        0.82,
-        0.082687338501292,
-        0.16,
-        0.53,
-        0.7022106631989596,
-        0.56,
-        0.42744712991746875
+        0.91,
+        0.7122545700744752,
+        0.8,
+        0.68,
+        0.8192457737321196,
+        0.8209999999999996,
+        0.24616548433715504
       ],
-      "figure": "model-profiles/gemma3-27b-bedrock-20261112",
-      "samples": {
-        "classify": 100,
-        "detect": 100,
-        "ground_box": 100,
-        "ground_point": 100,
-        "attributes": 100,
-        "answer": 100,
-        "describe": 100
-      }
-    },
-    {
-      "run": "kimi-k3.1-bedrock-20261112",
-      "model": "moonshotai.kimi-k3.1",
-      "backend": "bedrock",
-      "label": "Kimi K3.1",
-      "retries": 0,
-      "output_mode": "prompted",
-      "color": "#138575",
-      "scores": [
-        0.67,
-        0.6375092661230541,
-        0.92,
-        0.98,
-        0.7568270481144344,
-        0.42700000000000005,
-        0.3300951491666937
-      ],
-      "figure": "model-profiles/kimi-k3.1-bedrock-20261112",
-      "samples": {
-        "classify": 100,
-        "detect": 100,
-        "ground_box": 100,
-        "ground_point": 100,
-        "attributes": 100,
-        "answer": 100,
-        "describe": 100
-      }
-    },
-    {
-      "run": "qwen3-vl-235b-bedrock-20261112",
-      "model": "qwen.qwen3-vl-235b-a22b",
-      "backend": "bedrock",
-      "label": "Qwen3-VL-235B",
-      "retries": 0,
-      "output_mode": "prompted",
-      "color": "#864b9a",
-      "scores": [
-        0.96,
-        0.16666666666666666,
-        0.31,
-        0.41,
-        0.7386215864759428,
-        0.684,
-        0.3841172585954187
-      ],
-      "figure": "model-profiles/qwen3-vl-235b-bedrock-20261112",
+      "figure": "model-profiles/claude-fable-5.2-bedrock-20261119",
       "samples": {
         "classify": 100,
         "detect": 100,
@@ -219,6 +135,118 @@
         "answer": 100,
         "describe": 100
       }
+    },
+    {
+      "run": "kimi-k3.1-bedrock-20261112",
+      "model": "moonshotai.kimi-k3.1",
+      "backend": "bedrock",
+      "label": "Kimi K3.1",
+      "retries": 0,
+      "output_mode": "prompted",
+      "color": "#138575",
+      "scores": [
+        0.67,
+        0.6375092661230541,
+        0.92,
+        0.98,
+        0.7568270481144344,
+        0.42700000000000005,
+        0.3300951491666937
+      ],
+      "figure": "model-profiles/kimi-k3.1-bedrock-20261112",
+      "samples": {
+        "classify": 100,
+        "detect": 100,
+        "ground_box": 100,
+        "ground_point": 100,
+        "attributes": 100,
+        "answer": 100,
+        "describe": 100
+      }
+    },
+    {
+      "run": "gemma3-27b-bedrock-20261112",
+      "model": "google.gemma-3-27b-it",
+      "backend": "bedrock",
+      "label": "Gemma 3 27B",
+      "retries": 0,
+      "output_mode": "prompted",
+      "color": "#c05822",
+      "scores": [
+        0.82,
+        0.082687338501292,
+        0.16,
+        0.53,
+        0.7022106631989596,
+        0.56,
+        0.42744712991746875
+      ],
+      "figure": "model-profiles/gemma3-27b-bedrock-20261112",
+      "samples": {
+        "classify": 100,
+        "detect": 100,
+        "ground_box": 100,
+        "ground_point": 100,
+        "attributes": 100,
+        "answer": 100,
+        "describe": 100
+      }
+    },
+    {
+      "run": "qwen3-vl-235b-bedrock-20261112",
+      "model": "qwen.qwen3-vl-235b-a22b",
+      "backend": "bedrock",
+      "label": "Qwen3-VL-235B",
+      "retries": 0,
+      "output_mode": "prompted",
+      "color": "#864b9a",
+      "scores": [
+        0.96,
+        0.16666666666666666,
+        0.31,
+        0.41,
+        0.7386215864759428,
+        0.684,
+        0.3841172585954187
+      ],
+      "figure": "model-profiles/qwen3-vl-235b-bedrock-20261112",
+      "samples": {
+        "classify": 100,
+        "detect": 100,
+        "ground_box": 100,
+        "ground_point": 100,
+        "attributes": 100,
+        "answer": 100,
+        "describe": 100
+      }
+    },
+    {
+      "run": "qwen3-vl-2b-20261112",
+      "model": "Qwen/Qwen3-VL-2B-Instruct",
+      "backend": "transformers",
+      "label": "Qwen3-VL-2B",
+      "retries": 0,
+      "output_mode": "prompted",
+      "color": "#2563ad",
+      "scores": [
+        0.93,
+        0.11235955056179775,
+        0.22,
+        0.35,
+        0.552665799739922,
+        0.65,
+        0.3017200104023414
+      ],
+      "figure": "model-profiles/qwen3-vl-2b-20261112",
+      "samples": {
+        "classify": 100,
+        "detect": 100,
+        "ground_box": 100,
+        "ground_point": 100,
+        "attributes": 100,
+        "answer": 100,
+        "describe": 100
+      }
     }
   ],
   "task_comparisons": [
@@ -236,32 +264,11 @@
       "value_format": "percent",
       "models": [
         {
-          "run": "qwen3-vl-2b-20261112",
-          "model": "Qwen/Qwen3-VL-2B-Instruct",
-          "label": "Qwen3-VL-2B",
-          "color": "#2563ad",
-          "score": 0.93
-        },
-        {
-          "run": "gemma3-27b-bedrock-20261112",
-          "model": "google.gemma-3-27b-it",
-          "label": "Gemma 3 27B",
-          "color": "#c05822",
-          "score": 0.82
-        },
-        {
-          "run": "kimi-k3.1-bedrock-20261112",
-          "model": "moonshotai.kimi-k3.1",
-          "label": "Kimi K3.1",
-          "color": "#138575",
-          "score": 0.67
-        },
-        {
-          "run": "qwen3-vl-235b-bedrock-20261112",
-          "model": "qwen.qwen3-vl-235b-a22b",
-          "label": "Qwen3-VL-235B",
-          "color": "#864b9a",
-          "score": 0.96
+          "run": "claude-fable-5.2-bedrock-20261119",
+          "model": "anthropic.claude-fable-5-2",
+          "label": "Claude Fable 5.2",
+          "color": "#8b7660",
+          "score": 0.91
         },
         {
           "run": "qwen3-vl-235b-bedrock-native-20261118",
@@ -276,6 +283,34 @@
           "label": "Qwen3-VL-235B (2 retries)",
           "color": "#864b9a",
           "score": 0.96
+        },
+        {
+          "run": "kimi-k3.1-bedrock-20261112",
+          "model": "moonshotai.kimi-k3.1",
+          "label": "Kimi K3.1",
+          "color": "#138575",
+          "score": 0.67
+        },
+        {
+          "run": "gemma3-27b-bedrock-20261112",
+          "model": "google.gemma-3-27b-it",
+          "label": "Gemma 3 27B",
+          "color": "#c05822",
+          "score": 0.82
+        },
+        {
+          "run": "qwen3-vl-235b-bedrock-20261112",
+          "model": "qwen.qwen3-vl-235b-a22b",
+          "label": "Qwen3-VL-235B",
+          "color": "#864b9a",
+          "score": 0.96
+        },
+        {
+          "run": "qwen3-vl-2b-20261112",
+          "model": "Qwen/Qwen3-VL-2B-Instruct",
+          "label": "Qwen3-VL-2B",
+          "color": "#2563ad",
+          "score": 0.93
         }
       ]
     },
@@ -293,32 +328,11 @@
       "value_format": "percent",
       "models": [
         {
-          "run": "qwen3-vl-2b-20261112",
-          "model": "Qwen/Qwen3-VL-2B-Instruct",
-          "label": "Qwen3-VL-2B",
-          "color": "#2563ad",
-          "score": 0.11235955056179775
-        },
-        {
-          "run": "gemma3-27b-bedrock-20261112",
-          "model": "google.gemma-3-27b-it",
-          "label": "Gemma 3 27B",
-          "color": "#c05822",
-          "score": 0.082687338501292
-        },
-        {
-          "run": "kimi-k3.1-bedrock-20261112",
-          "model": "moonshotai.kimi-k3.1",
-          "label": "Kimi K3.1",
-          "color": "#138575",
-          "score": 0.6375092661230541
-        },
-        {
-          "run": "qwen3-vl-235b-bedrock-20261112",
-          "model": "qwen.qwen3-vl-235b-a22b",
-          "label": "Qwen3-VL-235B",
-          "color": "#864b9a",
-          "score": 0.16666666666666666
+          "run": "claude-fable-5.2-bedrock-20261119",
+          "model": "anthropic.claude-fable-5-2",
+          "label": "Claude Fable 5.2",
+          "color": "#8b7660",
+          "score": 0.7122545700744752
         },
         {
           "run": "qwen3-vl-235b-bedrock-native-20261118",
@@ -333,6 +347,34 @@
           "label": "Qwen3-VL-235B (2 retries)",
           "color": "#864b9a",
           "score": 0.2844638949671772
+        },
+        {
+          "run": "kimi-k3.1-bedrock-20261112",
+          "model": "moonshotai.kimi-k3.1",
+          "label": "Kimi K3.1",
+          "color": "#138575",
+          "score": 0.6375092661230541
+        },
+        {
+          "run": "gemma3-27b-bedrock-20261112",
+          "model": "google.gemma-3-27b-it",
+          "label": "Gemma 3 27B",
+          "color": "#c05822",
+          "score": 0.082687338501292
+        },
+        {
+          "run": "qwen3-vl-235b-bedrock-20261112",
+          "model": "qwen.qwen3-vl-235b-a22b",
+          "label": "Qwen3-VL-235B",
+          "color": "#864b9a",
+          "score": 0.16666666666666666
+        },
+        {
+          "run": "qwen3-vl-2b-20261112",
+          "model": "Qwen/Qwen3-VL-2B-Instruct",
+          "label": "Qwen3-VL-2B",
+          "color": "#2563ad",
+          "score": 0.11235955056179775
         }
       ]
     },
@@ -350,32 +392,11 @@
       "value_format": "percent",
       "models": [
         {
-          "run": "qwen3-vl-2b-20261112",
-          "model": "Qwen/Qwen3-VL-2B-Instruct",
-          "label": "Qwen3-VL-2B",
-          "color": "#2563ad",
-          "score": 0.22
-        },
-        {
-          "run": "gemma3-27b-bedrock-20261112",
-          "model": "google.gemma-3-27b-it",
-          "label": "Gemma 3 27B",
-          "color": "#c05822",
-          "score": 0.16
-        },
-        {
-          "run": "kimi-k3.1-bedrock-20261112",
-          "model": "moonshotai.kimi-k3.1",
-          "label": "Kimi K3.1",
-          "color": "#138575",
-          "score": 0.92
-        },
-        {
-          "run": "qwen3-vl-235b-bedrock-20261112",
-          "model": "qwen.qwen3-vl-235b-a22b",
-          "label": "Qwen3-VL-235B",
-          "color": "#864b9a",
-          "score": 0.31
+          "run": "claude-fable-5.2-bedrock-20261119",
+          "model": "anthropic.claude-fable-5-2",
+          "label": "Claude Fable 5.2",
+          "color": "#8b7660",
+          "score": 0.8
         },
         {
           "run": "qwen3-vl-235b-bedrock-native-20261118",
@@ -390,6 +411,34 @@
           "label": "Qwen3-VL-235B (2 retries)",
           "color": "#864b9a",
           "score": 0.81
+        },
+        {
+          "run": "kimi-k3.1-bedrock-20261112",
+          "model": "moonshotai.kimi-k3.1",
+          "label": "Kimi K3.1",
+          "color": "#138575",
+          "score": 0.92
+        },
+        {
+          "run": "gemma3-27b-bedrock-20261112",
+          "model": "google.gemma-3-27b-it",
+          "label": "Gemma 3 27B",
+          "color": "#c05822",
+          "score": 0.16
+        },
+        {
+          "run": "qwen3-vl-235b-bedrock-20261112",
+          "model": "qwen.qwen3-vl-235b-a22b",
+          "label": "Qwen3-VL-235B",
+          "color": "#864b9a",
+          "score": 0.31
+        },
+        {
+          "run": "qwen3-vl-2b-20261112",
+          "model": "Qwen/Qwen3-VL-2B-Instruct",
+          "label": "Qwen3-VL-2B",
+          "color": "#2563ad",
+          "score": 0.22
         }
       ]
     },
@@ -407,32 +456,11 @@
       "value_format": "percent",
       "models": [
         {
-          "run": "qwen3-vl-2b-20261112",
-          "model": "Qwen/Qwen3-VL-2B-Instruct",
-          "label": "Qwen3-VL-2B",
-          "color": "#2563ad",
-          "score": 0.35
-        },
-        {
-          "run": "gemma3-27b-bedrock-20261112",
-          "model": "google.gemma-3-27b-it",
-          "label": "Gemma 3 27B",
-          "color": "#c05822",
-          "score": 0.53
-        },
-        {
-          "run": "kimi-k3.1-bedrock-20261112",
-          "model": "moonshotai.kimi-k3.1",
-          "label": "Kimi K3.1",
-          "color": "#138575",
-          "score": 0.98
-        },
-        {
-          "run": "qwen3-vl-235b-bedrock-20261112",
-          "model": "qwen.qwen3-vl-235b-a22b",
-          "label": "Qwen3-VL-235B",
-          "color": "#864b9a",
-          "score": 0.41
+          "run": "claude-fable-5.2-bedrock-20261119",
+          "model": "anthropic.claude-fable-5-2",
+          "label": "Claude Fable 5.2",
+          "color": "#8b7660",
+          "score": 0.68
         },
         {
           "run": "qwen3-vl-235b-bedrock-native-20261118",
@@ -447,6 +475,34 @@
           "label": "Qwen3-VL-235B (2 retries)",
           "color": "#864b9a",
           "score": 0.85
+        },
+        {
+          "run": "kimi-k3.1-bedrock-20261112",
+          "model": "moonshotai.kimi-k3.1",
+          "label": "Kimi K3.1",
+          "color": "#138575",
+          "score": 0.98
+        },
+        {
+          "run": "gemma3-27b-bedrock-20261112",
+          "model": "google.gemma-3-27b-it",
+          "label": "Gemma 3 27B",
+          "color": "#c05822",
+          "score": 0.53
+        },
+        {
+          "run": "qwen3-vl-235b-bedrock-20261112",
+          "model": "qwen.qwen3-vl-235b-a22b",
+          "label": "Qwen3-VL-235B",
+          "color": "#864b9a",
+          "score": 0.41
+        },
+        {
+          "run": "qwen3-vl-2b-20261112",
+          "model": "Qwen/Qwen3-VL-2B-Instruct",
+          "label": "Qwen3-VL-2B",
+          "color": "#2563ad",
+          "score": 0.35
         }
       ]
     },
@@ -464,32 +520,11 @@
       "value_format": "percent",
       "models": [
         {
-          "run": "qwen3-vl-2b-20261112",
-          "model": "Qwen/Qwen3-VL-2B-Instruct",
-          "label": "Qwen3-VL-2B",
-          "color": "#2563ad",
-          "score": 0.552665799739922
-        },
-        {
-          "run": "gemma3-27b-bedrock-20261112",
-          "model": "google.gemma-3-27b-it",
-          "label": "Gemma 3 27B",
-          "color": "#c05822",
-          "score": 0.7022106631989596
-        },
-        {
-          "run": "kimi-k3.1-bedrock-20261112",
-          "model": "moonshotai.kimi-k3.1",
-          "label": "Kimi K3.1",
-          "color": "#138575",
-          "score": 0.7568270481144344
-        },
-        {
-          "run": "qwen3-vl-235b-bedrock-20261112",
-          "model": "qwen.qwen3-vl-235b-a22b",
-          "label": "Qwen3-VL-235B",
-          "color": "#864b9a",
-          "score": 0.7386215864759428
+          "run": "claude-fable-5.2-bedrock-20261119",
+          "model": "anthropic.claude-fable-5-2",
+          "label": "Claude Fable 5.2",
+          "color": "#8b7660",
+          "score": 0.8192457737321196
         },
         {
           "run": "qwen3-vl-235b-bedrock-native-20261118",
@@ -504,6 +539,34 @@
           "label": "Qwen3-VL-235B (2 retries)",
           "color": "#864b9a",
           "score": 0.7802340702210663
+        },
+        {
+          "run": "kimi-k3.1-bedrock-20261112",
+          "model": "moonshotai.kimi-k3.1",
+          "label": "Kimi K3.1",
+          "color": "#138575",
+          "score": 0.7568270481144344
+        },
+        {
+          "run": "gemma3-27b-bedrock-20261112",
+          "model": "google.gemma-3-27b-it",
+          "label": "Gemma 3 27B",
+          "color": "#c05822",
+          "score": 0.7022106631989596
+        },
+        {
+          "run": "qwen3-vl-235b-bedrock-20261112",
+          "model": "qwen.qwen3-vl-235b-a22b",
+          "label": "Qwen3-VL-235B",
+          "color": "#864b9a",
+          "score": 0.7386215864759428
+        },
+        {
+          "run": "qwen3-vl-2b-20261112",
+          "model": "Qwen/Qwen3-VL-2B-Instruct",
+          "label": "Qwen3-VL-2B",
+          "color": "#2563ad",
+          "score": 0.552665799739922
         }
       ]
     },
@@ -521,32 +584,11 @@
       "value_format": "percent",
       "models": [
         {
-          "run": "qwen3-vl-2b-20261112",
-          "model": "Qwen/Qwen3-VL-2B-Instruct",
-          "label": "Qwen3-VL-2B",
-          "color": "#2563ad",
-          "score": 0.65
-        },
-        {
-          "run": "gemma3-27b-bedrock-20261112",
-          "model": "google.gemma-3-27b-it",
-          "label": "Gemma 3 27B",
-          "color": "#c05822",
-          "score": 0.56
-        },
-        {
-          "run": "kimi-k3.1-bedrock-20261112",
-          "model": "moonshotai.kimi-k3.1",
-          "label": "Kimi K3.1",
-          "color": "#138575",
-          "score": 0.42700000000000005
-        },
-        {
-          "run": "qwen3-vl-235b-bedrock-20261112",
-          "model": "qwen.qwen3-vl-235b-a22b",
-          "label": "Qwen3-VL-235B",
-          "color": "#864b9a",
-          "score": 0.684
+          "run": "claude-fable-5.2-bedrock-20261119",
+          "model": "anthropic.claude-fable-5-2",
+          "label": "Claude Fable 5.2",
+          "color": "#8b7660",
+          "score": 0.8209999999999996
         },
         {
           "run": "qwen3-vl-235b-bedrock-native-20261118",
@@ -561,6 +603,34 @@
           "label": "Qwen3-VL-235B (2 retries)",
           "color": "#864b9a",
           "score": 0.6489999999999999
+        },
+        {
+          "run": "kimi-k3.1-bedrock-20261112",
+          "model": "moonshotai.kimi-k3.1",
+          "label": "Kimi K3.1",
+          "color": "#138575",
+          "score": 0.42700000000000005
+        },
+        {
+          "run": "gemma3-27b-bedrock-20261112",
+          "model": "google.gemma-3-27b-it",
+          "label": "Gemma 3 27B",
+          "color": "#c05822",
+          "score": 0.56
+        },
+        {
+          "run": "qwen3-vl-235b-bedrock-20261112",
+          "model": "qwen.qwen3-vl-235b-a22b",
+          "label": "Qwen3-VL-235B",
+          "color": "#864b9a",
+          "score": 0.684
+        },
+        {
+          "run": "qwen3-vl-2b-20261112",
+          "model": "Qwen/Qwen3-VL-2B-Instruct",
+          "label": "Qwen3-VL-2B",
+          "color": "#2563ad",
+          "score": 0.65
         }
       ]
     },
@@ -578,32 +648,11 @@
       "value_format": "native",
       "models": [
         {
-          "run": "qwen3-vl-2b-20261112",
-          "model": "Qwen/Qwen3-VL-2B-Instruct",
-          "label": "Qwen3-VL-2B",
-          "color": "#2563ad",
-          "score": 0.3017200104023414
-        },
-        {
-          "run": "gemma3-27b-bedrock-20261112",
-          "model": "google.gemma-3-27b-it",
-          "label": "Gemma 3 27B",
-          "color": "#c05822",
-          "score": 0.42744712991746875
-        },
-        {
-          "run": "kimi-k3.1-bedrock-20261112",
-          "model": "moonshotai.kimi-k3.1",
-          "label": "Kimi K3.1",
-          "color": "#138575",
-          "score": 0.3300951491666937
-        },
-        {
-          "run": "qwen3-vl-235b-bedrock-20261112",
-          "model": "qwen.qwen3-vl-235b-a22b",
-          "label": "Qwen3-VL-235B",
-          "color": "#864b9a",
-          "score": 0.3841172585954187
+          "run": "claude-fable-5.2-bedrock-20261119",
+          "model": "anthropic.claude-fable-5-2",
+          "label": "Claude Fable 5.2",
+          "color": "#8b7660",
+          "score": 0.24616548433715504
         },
         {
           "run": "qwen3-vl-235b-bedrock-native-20261118",
@@ -618,87 +667,133 @@
           "label": "Qwen3-VL-235B (2 retries)",
           "color": "#864b9a",
           "score": 0.3836765849423861
+        },
+        {
+          "run": "kimi-k3.1-bedrock-20261112",
+          "model": "moonshotai.kimi-k3.1",
+          "label": "Kimi K3.1",
+          "color": "#138575",
+          "score": 0.3300951491666937
+        },
+        {
+          "run": "gemma3-27b-bedrock-20261112",
+          "model": "google.gemma-3-27b-it",
+          "label": "Gemma 3 27B",
+          "color": "#c05822",
+          "score": 0.42744712991746875
+        },
+        {
+          "run": "qwen3-vl-235b-bedrock-20261112",
+          "model": "qwen.qwen3-vl-235b-a22b",
+          "label": "Qwen3-VL-235B",
+          "color": "#864b9a",
+          "score": 0.3841172585954187
+        },
+        {
+          "run": "qwen3-vl-2b-20261112",
+          "model": "Qwen/Qwen3-VL-2B-Instruct",
+          "label": "Qwen3-VL-2B",
+          "color": "#2563ad",
+          "score": 0.3017200104023414
         }
       ]
     }
   ],
   "source_sha256": {
-    "benchmarks/src/generate_charts.py": "c619a1c3d7f234b6e4838626d6e31c74e2fe79afe13220d6381500dfb5e8084a",
-    "benchmarks/src/generate_report.py": "08de772208bb1d88acb7d328607da88b9f46f631035bb6f17a520d6c6b82410e",
+    "benchmarks/src/generate_charts.py": "3ede7d84ae388c0f0268446632eacafef34847c35cc5e4542e86501228eea317",
+    "benchmarks/src/generate_report.py": "a68372658bf70d01fe1307d7548a4ab221a42f1239f61917a84117deb24307b3",
     "benchmarks/src/chart_style.py": "c4718d00f605bcb610207e7ddb67a4cee6c19057ade7cd78fdcfe5414f2d05f0",
     "benchmarks/src/task_registry.py": "0e4c9349d51d308385d1868a2d399f5db597abb01f3eac484f90822765e8eb1d",
     "benchmarks/src/artifacts.py": "c9e999e3e724d79ab6c8e55c17bff1f47d4d36b4e77e2a63da766ea0b2aae947"
   },
   "reports_sha256": {
-    "qwen3-vl-2b-20261112/classify.json": "d014576a177f107770dd04d95da99bc8f1114dfa8ab3fb22f4b5de9374db9ac7",
-    "gemma3-27b-bedrock-20261112/classify.json": "dc3ae033747cbc3722130ea88fc2e1ea846523c6fcf3bea3197b001f8e1d86d8",
-    "kimi-k3.1-bedrock-20261112/classify.json": "9fbaa366fefad21ccc614ddc178513d496ec61678600b4de0923dca4756baf32",
-    "qwen3-vl-235b-bedrock-20261112/classify.json": "9975961ce8a47ef8afa85aed41bd65b816e5e9eb3a29c1055a5c963e7bd22d9c",
+    "claude-fable-5.2-bedrock-20261119/classify.json": "a8a84fde7a9716274fbdcc5b6a90cf7fce70ffbf58a007e09a77446668652448",
     "qwen3-vl-235b-bedrock-native-20261118/classify.json": "17b53896d5c1a5cc9973b78587a1391551fb2adc6bd6d7e4a44525d0ac647f80",
     "qwen3-vl-235b-bedrock-retries-2-20261117/classify.json": "9748b8bd5e6f98b1133dbb405aec88a586bb33368cd745ce569521ee5c5ae154",
-    "qwen3-vl-2b-20261112/detect.json": "af7856df09e5a1f82fcde6f91b69a72355b9de1daa3b8c5ef29e005f80090e4b",
-    "gemma3-27b-bedrock-20261112/detect.json": "175fd22c0c165f7524e26b836a057a91f250efda795ac96b781360347c5f93fd",
-    "kimi-k3.1-bedrock-20261112/detect.json": "b67b64d5b4647600c163b6ca908c4bd8d7e1c738b7b3a7d3d341b222d978f541",
-    "qwen3-vl-235b-bedrock-20261112/detect.json": "8ec28277e0f89519c8b2d4d822ae4bca6a528a874c5bb0a7327a09c7c2fbc418",
+    "kimi-k3.1-bedrock-20261112/classify.json": "9fbaa366fefad21ccc614ddc178513d496ec61678600b4de0923dca4756baf32",
+    "gemma3-27b-bedrock-20261112/classify.json": "dc3ae033747cbc3722130ea88fc2e1ea846523c6fcf3bea3197b001f8e1d86d8",
+    "qwen3-vl-235b-bedrock-20261112/classify.json": "9975961ce8a47ef8afa85aed41bd65b816e5e9eb3a29c1055a5c963e7bd22d9c",
+    "qwen3-vl-2b-20261112/classify.json": "d014576a177f107770dd04d95da99bc8f1114dfa8ab3fb22f4b5de9374db9ac7",
+    "claude-fable-5.2-bedrock-20261119/detect.json": "577b4a5cf8032c35237891def93ed8a3b58bc2bf97a44d89be068685242c3061",
     "qwen3-vl-235b-bedrock-native-20261118/detect.json": "6466f87de1dab741f3629dccccde0c29cbc0def6ac17cef46e4b9e760997d33b",
     "qwen3-vl-235b-bedrock-retries-2-20261117/detect.json": "7c091644d8c681197fce72e7d26767a2bca5dd4ca0d9196dc0d4d73f466a2306",
-    "qwen3-vl-2b-20261112/ground_box.json": "883721a556e8bdce5a8a14b278e173775d8e95aa235445a2df62e554444892fc",
-    "gemma3-27b-bedrock-20261112/ground_box.json": "9fd3f208338d57b0bf1aa7ef6489bb9fc1e0b38cca74309cb6b14a50f38fa76f",
-    "kimi-k3.1-bedrock-20261112/ground_box.json": "3a74a9e65cb369679f05cedd6596c4c1f5fa645b45ae15fe740c4f20ef8c2928",
-    "qwen3-vl-235b-bedrock-20261112/ground_box.json": "bcc203b395ee181046041b453dd02821477d3b9c68c790ee020cd23bf03eb28d",
+    "kimi-k3.1-bedrock-20261112/detect.json": "b67b64d5b4647600c163b6ca908c4bd8d7e1c738b7b3a7d3d341b222d978f541",
+    "gemma3-27b-bedrock-20261112/detect.json": "175fd22c0c165f7524e26b836a057a91f250efda795ac96b781360347c5f93fd",
+    "qwen3-vl-235b-bedrock-20261112/detect.json": "8ec28277e0f89519c8b2d4d822ae4bca6a528a874c5bb0a7327a09c7c2fbc418",
+    "qwen3-vl-2b-20261112/detect.json": "af7856df09e5a1f82fcde6f91b69a72355b9de1daa3b8c5ef29e005f80090e4b",
+    "claude-fable-5.2-bedrock-20261119/ground_box.json": "dc9987a9ad0d1ecea874a444b7604a0f52a74f23d51ee5cd658764a73bcbade9",
     "qwen3-vl-235b-bedrock-native-20261118/ground_box.json": "128d1fa6ff1106e8772d5b0689a0407b9222f14349808a759ffb5a69c508f895",
     "qwen3-vl-235b-bedrock-retries-2-20261117/ground_box.json": "d96d741900c9c6db8482e9f4c66d88124429360489b088311f3144f9fd043e99",
-    "qwen3-vl-2b-20261112/ground_point.json": "a942ef992f1d550b7213d1308fab59e1900d81ed6204a79384235f81ee435d81",
-    "gemma3-27b-bedrock-20261112/ground_point.json": "5c9c9a18610c2bcc519c4e62006a0d9b56f74e4ba6a57450b767c85390721e99",
-    "kimi-k3.1-bedrock-20261112/ground_point.json": "e6fd43e1f6cc6524168d643629d343b84028fdba038ab5756c2cd41aa09cde51",
-    "qwen3-vl-235b-bedrock-20261112/ground_point.json": "5e5a84894d1b0f48fa16cbcf4fb3b71c242f11b38181fc0094b58111d58d89b4",
+    "kimi-k3.1-bedrock-20261112/ground_box.json": "3a74a9e65cb369679f05cedd6596c4c1f5fa645b45ae15fe740c4f20ef8c2928",
+    "gemma3-27b-bedrock-20261112/ground_box.json": "9fd3f208338d57b0bf1aa7ef6489bb9fc1e0b38cca74309cb6b14a50f38fa76f",
+    "qwen3-vl-235b-bedrock-20261112/ground_box.json": "bcc203b395ee181046041b453dd02821477d3b9c68c790ee020cd23bf03eb28d",
+    "qwen3-vl-2b-20261112/ground_box.json": "883721a556e8bdce5a8a14b278e173775d8e95aa235445a2df62e554444892fc",
+    "claude-fable-5.2-bedrock-20261119/ground_point.json": "ad86ee9f14d07b2baf92d6eea6202d04c63a89e94cb59520fbc634fed97ba9ee",
     "qwen3-vl-235b-bedrock-native-20261118/ground_point.json": "847c00a8fb39853e73b013b4de515a6dcbcc94f4f519fe2d59b60355555d544c",
     "qwen3-vl-235b-bedrock-retries-2-20261117/ground_point.json": "d8b2d4fb39185d19df54e9ff182f6eeda52df67d98c990ccbe58c4707f4a1a6a",
-    "qwen3-vl-2b-20261112/attributes.json": "a725a9259c10aa092fd3cb7a2a63028384ff7aca3526c32d79945256a613d0fc",
-    "gemma3-27b-bedrock-20261112/attributes.json": "13418dd3862752b9a8dcaa0f1847d2c281198b25794d2f5b3fa0ca3e5936518d",
-    "kimi-k3.1-bedrock-20261112/attributes.json": "cd2988b3c3196b8be1a93472f3e6e9ba4a1348affbb494c8a375be959b915191",
-    "qwen3-vl-235b-bedrock-20261112/attributes.json": "d15ff8a5d9899e35e83ac3c832fdf1c5591731085aeaba2885b87a8511e4689f",
+    "kimi-k3.1-bedrock-20261112/ground_point.json": "e6fd43e1f6cc6524168d643629d343b84028fdba038ab5756c2cd41aa09cde51",
+    "gemma3-27b-bedrock-20261112/ground_point.json": "5c9c9a18610c2bcc519c4e62006a0d9b56f74e4ba6a57450b767c85390721e99",
+    "qwen3-vl-235b-bedrock-20261112/ground_point.json": "5e5a84894d1b0f48fa16cbcf4fb3b71c242f11b38181fc0094b58111d58d89b4",
+    "qwen3-vl-2b-20261112/ground_point.json": "a942ef992f1d550b7213d1308fab59e1900d81ed6204a79384235f81ee435d81",
+    "claude-fable-5.2-bedrock-20261119/attributes.json": "fe5c7b235d7a64c46e5fbe174eabd82ee01b5925aa893a05eb2127e415a4a1e3",
     "qwen3-vl-235b-bedrock-native-20261118/attributes.json": "cb489582d976e2978c4440afbcc963df8b242f362185faf69543659232cd04bf",
     "qwen3-vl-235b-bedrock-retries-2-20261117/attributes.json": "8a4b87539e0abd78af80e6bb98d301b18d9553b643dc890ea56a3f23426e4117",
-    "qwen3-vl-2b-20261112/answer.json": "2ca4de9c9a03176b65bc9c666aff9a1b0306dcc7403da0c99dd0e04f4dceb1d8",
-    "gemma3-27b-bedrock-20261112/answer.json": "0bfd10c06a6c0aa5b2c1b7638a05cb7b7ac8cf2ad4d3e63641984f50d40fce1d",
-    "kimi-k3.1-bedrock-20261112/answer.json": "48cc372ed7b0af50312ed5abb9ae1a8ced96f22c6b2fc56cbd0f1892a4a2de2e",
-    "qwen3-vl-235b-bedrock-20261112/answer.json": "ccd34767ebfb8c4c5e0d1114fa4ace894997d05f5078b3d7c4c94ba909ad9918",
+    "kimi-k3.1-bedrock-20261112/attributes.json": "cd2988b3c3196b8be1a93472f3e6e9ba4a1348affbb494c8a375be959b915191",
+    "gemma3-27b-bedrock-20261112/attributes.json": "13418dd3862752b9a8dcaa0f1847d2c281198b25794d2f5b3fa0ca3e5936518d",
+    "qwen3-vl-235b-bedrock-20261112/attributes.json": "d15ff8a5d9899e35e83ac3c832fdf1c5591731085aeaba2885b87a8511e4689f",
+    "qwen3-vl-2b-20261112/attributes.json": "a725a9259c10aa092fd3cb7a2a63028384ff7aca3526c32d79945256a613d0fc",
+    "claude-fable-5.2-bedrock-20261119/answer.json": "158da0869ec7e4e830902dda29ad6181c854ba70eb48b682ac8ac0157d577ea0",
     "qwen3-vl-235b-bedrock-native-20261118/answer.json": "6e3cd12b4d1623ded056e0d4b30c66fa193bae9bb24f48e16b91a6e1c26bb60b",
     "qwen3-vl-235b-bedrock-retries-2-20261117/answer.json": "dd9df1bde069074b9e7e215e735791f085b08a308e553b8995d3bc4db28f4b57",
-    "qwen3-vl-2b-20261112/describe.json": "4b14f3a5fd67396cca4863efeb7890bfe8fea43b917b708e4a7300351eb7eaaa",
-    "gemma3-27b-bedrock-20261112/describe.json": "4e80bfc013c9883380ca6dcf8dcef68464eb8c550f4bf85759f3730d61ffcbc3",
-    "kimi-k3.1-bedrock-20261112/describe.json": "e7b28b9e3d54d033d66379a6ee5c53a4fa217e193bf07a3454ad4aec0ebed91d",
-    "qwen3-vl-235b-bedrock-20261112/describe.json": "0e40f77e1867cc7bd95aa64a77cbdfc78cae4e72588d69614d58fd1c29898daf",
+    "kimi-k3.1-bedrock-20261112/answer.json": "48cc372ed7b0af50312ed5abb9ae1a8ced96f22c6b2fc56cbd0f1892a4a2de2e",
+    "gemma3-27b-bedrock-20261112/answer.json": "0bfd10c06a6c0aa5b2c1b7638a05cb7b7ac8cf2ad4d3e63641984f50d40fce1d",
+    "qwen3-vl-235b-bedrock-20261112/answer.json": "ccd34767ebfb8c4c5e0d1114fa4ace894997d05f5078b3d7c4c94ba909ad9918",
+    "qwen3-vl-2b-20261112/answer.json": "2ca4de9c9a03176b65bc9c666aff9a1b0306dcc7403da0c99dd0e04f4dceb1d8",
+    "claude-fable-5.2-bedrock-20261119/describe.json": "9380ae1b8dd7e6edbc260fff0c04912111e63fec0c1f0ccbaf4a13777c625b13",
     "qwen3-vl-235b-bedrock-native-20261118/describe.json": "089111fefd7228e8c6c22fb88129170a1c7dd1ed466b464922ee72c4f9b2ef32",
-    "qwen3-vl-235b-bedrock-retries-2-20261117/describe.json": "2d2880a1551d7852a9eeee6c6edddf92916701a2ab237a6fa6d442ddedd925d3"
+    "qwen3-vl-235b-bedrock-retries-2-20261117/describe.json": "2d2880a1551d7852a9eeee6c6edddf92916701a2ab237a6fa6d442ddedd925d3",
+    "kimi-k3.1-bedrock-20261112/describe.json": "e7b28b9e3d54d033d66379a6ee5c53a4fa217e193bf07a3454ad4aec0ebed91d",
+    "gemma3-27b-bedrock-20261112/describe.json": "4e80bfc013c9883380ca6dcf8dcef68464eb8c550f4bf85759f3730d61ffcbc3",
+    "qwen3-vl-235b-bedrock-20261112/describe.json": "0e40f77e1867cc7bd95aa64a77cbdfc78cae4e72588d69614d58fd1c29898daf",
+    "qwen3-vl-2b-20261112/describe.json": "4b14f3a5fd67396cca4863efeb7890bfe8fea43b917b708e4a7300351eb7eaaa"
+  },
+  "run_metadata_sha256": {
+    "claude-fable-5.2-bedrock-20261119/completed.json": "90f8a89a1d47cfdb0c8402a593ed66b3c0536c4f48888dacbd48b6159ced2735",
+    "gemma3-27b-bedrock-20261112/completed.json": "9509eea4f78d29473281d2bb4ec69374a5011bd2b9609f61c13871b411f78f12",
+    "kimi-k3.1-bedrock-20261112/completed.json": "dca7fe212fccef73d5c3319edd184348d5d1064c4c2adbbc1539c97c6ad93ca4",
+    "qwen3-vl-235b-bedrock-20261112/completed.json": "dff70b2d286984c582167a60bcb3e6e50490d5b13b60b6661460888be526ee3b",
+    "qwen3-vl-235b-bedrock-native-20261118/completed.json": "fb2b1fa003adcb454d7dbe036a0244e9f137bcacc7800b7e88fde8d93d70566f",
+    "qwen3-vl-235b-bedrock-retries-2-20261117/completed.json": "762fa7ac30fc10cbbb71a7e00a8b708f33b705f5fcf806ddcbdf1087d9853b8b",
+    "qwen3-vl-2b-20261112/completed.json": "375e8cd67916b773a4f5a890bc70c953bc556f1dc2c550bc81dd89e19eda80b7"
   },
   "figures_sha256": {
-    "model-profiles/qwen3-vl-2b-20261112.png": "36afacc472791cf1759ff542b57cc8ff8769f254c732a93941acff37eaa20b4e",
-    "model-profiles/qwen3-vl-2b-20261112.svg": "6331bf4f4fba574292ed5db3fbb255196462660eae9e7e7637613a5cf9ac2259",
-    "model-profiles/gemma3-27b-bedrock-20261112.png": "5ef2256b742ef21917b4bcb4e13215b4f9dbf72dd158bc8076fffa05924336e3",
-    "model-profiles/gemma3-27b-bedrock-20261112.svg": "554f6ffc4115554eb4ed986d94275808d9cc293d67ff60488e902297a974be74",
-    "model-profiles/kimi-k3.1-bedrock-20261112.png": "2703de7b737f19fcfd87e26b1f1ac66ee489262619884d7304f76ae9ed2ca992",
-    "model-profiles/kimi-k3.1-bedrock-20261112.svg": "a514f22e091b521352a1b291266868affd5c1d90104707f36f8a801f2c98730b",
-    "model-profiles/qwen3-vl-235b-bedrock-20261112.png": "1eebe836feff5c1c2f0be96266e02ff9660e8809ac94d56468650ff82cfc9207",
-    "model-profiles/qwen3-vl-235b-bedrock-20261112.svg": "bed022e260de07ae93d0e075ae00e1b487847294cfa50fc83bdde574b1c1abec",
+    "model-profiles/claude-fable-5.2-bedrock-20261119.png": "09c3e4ff2e4db7df1692a1147469be9dc0a28a3200a17c6c9d4e202ba6c62804",
+    "model-profiles/claude-fable-5.2-bedrock-20261119.svg": "afd1b993c355288448f223762ed475867216a3fbbb3e123e33851c4cfe5968d9",
     "model-profiles/qwen3-vl-235b-bedrock-native-20261118.png": "d45f783ea89c5a317cb494d24c31ae7e1d096e1e8a4b65042aef41173ea60890",
     "model-profiles/qwen3-vl-235b-bedrock-native-20261118.svg": "80958efb2aaa37935db9eaca641cc8feb67039e46950f171963bb114625ab7e2",
     "model-profiles/qwen3-vl-235b-bedrock-retries-2-20261117.png": "a832e60c62c75a8f1f1a34c6473099cb054fee859f8b5e9872ce5a5b5d871608",
     "model-profiles/qwen3-vl-235b-bedrock-retries-2-20261117.svg": "ad9ba29bcded76a0b98e0f1008a6ef7e224f61122210427c8fcbfb695f27e68b",
-    "task-comparisons/classify.png": "8419c5d702aae0275530b931edf90174c1f59504003fec60f494d9e77b61579a",
-    "task-comparisons/classify.svg": "f3eb0d28fab22b311357e219c6192885d73dadaaa230b29f9200c935232a6bbf",
-    "task-comparisons/detect.png": "cbc3cf4ed57e3adf4a3212e200519c61b011b16c5b9b615d859710763fa0246d",
-    "task-comparisons/detect.svg": "197583fe0d4db973eef49e3f9f0c61e6fa410ec3787aa3ab4b6b43fb52f0b68a",
-    "task-comparisons/ground_box.png": "551cab7c7a42594b4be157faf68abf322e5c60c1b489c81cc56441022ad5917d",
-    "task-comparisons/ground_box.svg": "f3f910f5027c6a1a11d23e6a735475ea1f18a0d4503543a2bbc8bf9d16c2dabf",
-    "task-comparisons/ground_point.png": "ea783c1acb159ed686a41031462a1e444a80bdc88d04b7a13f2c092a52a04137",
-    "task-comparisons/ground_point.svg": "5a4412562a5b49979550549893ab153337ebc62ee02c8e3acae01ecbc8ce0031",
-    "task-comparisons/attributes.png": "67d7e4a692f937234cf9d53b9a00a68ff4467a2ab9f2d0db1ea6012544efac64",
-    "task-comparisons/attributes.svg": "0ab37fce1b818ea9a1019c55ad33dbb3f3828315942a520d9f8cd3ef215a17fd",
-    "task-comparisons/answer.png": "c6c6124aa0db5426878fcbc974399044141a6ba4a5177aab4990af198ebfffe6",
-    "task-comparisons/answer.svg": "7390e7bf22525bade1914e2d41697d7cf55a408c68a6eb00445d8011ca00c2d6",
-    "task-comparisons/describe.png": "52cc1c685dc9e2436eab1e3ddaafc08218910dd2ad0d174f57d2e4e3e837ec42",
-    "task-comparisons/describe.svg": "6e6aba89a929f58493ffbac3c0d17a38cfed12466607e188443aa5ab0b373adc"
+    "model-profiles/kimi-k3.1-bedrock-20261112.png": "2703de7b737f19fcfd87e26b1f1ac66ee489262619884d7304f76ae9ed2ca992",
+    "model-profiles/kimi-k3.1-bedrock-20261112.svg": "a514f22e091b521352a1b291266868affd5c1d90104707f36f8a801f2c98730b",
+    "model-profiles/gemma3-27b-bedrock-20261112.png": "5ef2256b742ef21917b4bcb4e13215b4f9dbf72dd158bc8076fffa05924336e3",
+    "model-profiles/gemma3-27b-bedrock-20261112.svg": "554f6ffc4115554eb4ed986d94275808d9cc293d67ff60488e902297a974be74",
+    "model-profiles/qwen3-vl-235b-bedrock-20261112.png": "1eebe836feff5c1c2f0be96266e02ff9660e8809ac94d56468650ff82cfc9207",
+    "model-profiles/qwen3-vl-235b-bedrock-20261112.svg": "bed022e260de07ae93d0e075ae00e1b487847294cfa50fc83bdde574b1c1abec",
+    "model-profiles/qwen3-vl-2b-20261112.png": "36afacc472791cf1759ff542b57cc8ff8769f254c732a93941acff37eaa20b4e",
+    "model-profiles/qwen3-vl-2b-20261112.svg": "6331bf4f4fba574292ed5db3fbb255196462660eae9e7e7637613a5cf9ac2259",
+    "task-comparisons/classify.png": "e567b69ddf67877c0769228e8bae18a036b53c2624f5e3f00553e9bca7738c8e",
+    "task-comparisons/classify.svg": "2883981da0de6a7c84eb9db6ee4eed8528b035ad4e0ff9bcf0a4dcbba01ae007",
+    "task-comparisons/detect.png": "83d613d7ac059670646083761b30cd4a1dfe99d1abaa9fe2aeb670f86f1348de",
+    "task-comparisons/detect.svg": "6fdc7ffeef47cf2ccd5f1bccc5c3778f3123ce35fd54c571e6d3a756a719df03",
+    "task-comparisons/ground_box.png": "14cd55dde314bb7e25fd408b24e605ee0b5893111e8061d078e538472618919b",
+    "task-comparisons/ground_box.svg": "bcf93af2ba44c01b05066c03f97d3614919ae911eba077d06b3000d399a9e493",
+    "task-comparisons/ground_point.png": "495922a98f7a84a92d3703983c2f369a6ec549aa95487bca18d66e273cc72d50",
+    "task-comparisons/ground_point.svg": "b1e33aedd33963c6ebe91d858d74b952eb7c41f77acfd7e9521105a1accfcb73",
+    "task-comparisons/attributes.png": "f17d0f57e65ca88e3b091f2c507da27bdb132103e850c068051f163e11e86564",
+    "task-comparisons/attributes.svg": "13b462f6aed50bc2b12d474a431f3278db4574caeb2f9b48abed3ade8df41a95",
+    "task-comparisons/answer.png": "00f145da2b7e6ade612f4a5c62acec65e77d5afcab6301f717fc9ac9e0cc02fb",
+    "task-comparisons/answer.svg": "0ccf9721382a76ca1e745065ff2a986b710f5d9c3451edba659794ecffd4b74e",
+    "task-comparisons/describe.png": "43fa58a0262965f2b5c9fc9d982b63d10267c2206f92a0c5874290c0f69bc6cb",
+    "task-comparisons/describe.svg": "574c7f4e6a9ef644c9b745d92a8a843a7911cbce17f190860a636a485c8bd1bb"
   }
 }

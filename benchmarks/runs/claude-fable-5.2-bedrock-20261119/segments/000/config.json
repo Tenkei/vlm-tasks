@@ -1,0 +1,37 @@
+{
+  "model": "anthropic.claude-fable-5-2",
+  "inference_profile": "global.anthropic.claude-fable-5-2",
+  "profile": "benchmark",
+  "region": "ap-northeast-1",
+  "temperature": null,
+  "temperature_note": "Fable requires temperature 1 or omitted; use provider default sampling",
+  "thinking": "high",
+  "thinking_note": "Adaptive thinking is always enabled; high is the documented default effort and reasoning shares the output budget",
+  "max_new_tokens": 4096,
+  "output_mode": "prompted",
+  "retries": 0,
+  "samples_per_task": 10,
+  "tasks": [
+    "classify",
+    "detect",
+    "ground_box",
+    "ground_point",
+    "attributes",
+    "answer",
+    "describe"
+  ],
+  "tokenizer_version": "3.4.1",
+  "match_iou": 0.5,
+  "sdk_total_max_attempts": 1,
+  "pricing": {
+    "source": "https://aws.amazon.com/bedrock/pricing/",
+    "source_section": "Anthropic Claude Fable 5.2: Global cross-region inference, Standard tier; output includes reasoning",
+    "retrieved_at": "2026-11-19",
+    "rates_usd_per_million_tokens": {
+      "input": "8.00",
+      "output": "40.00",
+      "cache_read": "0.20",
+      "cache_write": "10.00"
+    }
+  }
+}
