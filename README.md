@@ -46,8 +46,6 @@ in your application.
 Built-in validation helps you measure prediction quality on labeled datasets
 and compare models on your own data.
 
-## Available tasks
-
 | Task                 | What it does                                                                    |
 |----------------------|---------------------------------------------------------------------------------|
 | `Classify`           | Choose exactly one label, such as cat or dog.                                   |
@@ -113,7 +111,7 @@ print(result.attributes)  # {'material': 'wood', 'condition': 'clean'}
 print(result.attributes["material"])  # wood
 ```
 
-See [available tasks](#available-tasks) for the full list and the
+See the [task table](#why-vlm-tasks) for the full list and the
 [API reference](docs/reference.md#operators) for task options.
 
 ## Use cases
