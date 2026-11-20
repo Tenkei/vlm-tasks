@@ -34,7 +34,7 @@ def test_bedrock_benchmark_counts_invalid_output_and_preserves_prompt_schema(mod
     pricing = None
     if "kimi-k3.1" in model_id:
         from pathlib import Path
-        pricing = json.loads(Path("benchmarks/configs/kimi-k3.1-bedrock.json").read_text())["pricing"]
+        pricing = json.loads(Path("benchmarks/setup/model-configs/kimi-k3.1-bedrock.json").read_text())["pricing"]
     model = build_model({"temperature": temperature, "max_new_tokens": 4096, "pricing": pricing}, client, model_id)
     stream = StringIO()
     backend = InfrastructureCheckedBackend(PydanticAIBackend(model, retries=0), stream)

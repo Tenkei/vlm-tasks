@@ -1,0 +1,14 @@
+{
+  "order": 6,
+  "dataset": "vqav2",
+  "operator": "Answer",
+  "title": "VQA",
+  "metrics": [
+    [
+      "vqa_accuracy",
+      "VQA Acc"
+    ]
+  ],
+  "primary_metric": "vqa_accuracy",
+  "chart_metric_label": "VQA Acc"
+}

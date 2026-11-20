@@ -48,7 +48,8 @@ packages = ["src/ml_pipes"]
 include = [
     "/LICENSE", "/README.md", "/RELEASING.md", "/SECURITY.md",
     "/pyproject.toml", "/src/ml_pipes", "/docs", "/examples", "/tests",
-    "/benchmarks/__init__.py", "/benchmarks/src/*.py", "/benchmarks/configs/*.json",
+    "/benchmarks/__init__.py", "/benchmarks/src/*.py",
+    "/benchmarks/setup/model-configs/*.json", "/benchmarks/setup/task-specs/*.json",
     "/benchmarks/methodology.md",
     "/.github/CONTRIBUTING.md",
 ]

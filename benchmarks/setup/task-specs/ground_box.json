@@ -1,0 +1,27 @@
+{
+  "order": 3,
+  "dataset": "refcocog",
+  "operator": "Ground",
+  "title": "Grounding",
+  "metrics": [
+    [
+      "accuracy_iou_0.5",
+      "Acc@0.5"
+    ],
+    [
+      "accuracy_iou_0.75",
+      "Acc@0.75"
+    ],
+    [
+      "accuracy_iou_0.9",
+      "Acc@0.9"
+    ],
+    [
+      "mean_iou",
+      "Mean IoU"
+    ]
+  ],
+  "primary_metric": "accuracy_iou_0.5",
+  "chart_metric_label": "Acc@0.5",
+  "geometry": "box"
+}

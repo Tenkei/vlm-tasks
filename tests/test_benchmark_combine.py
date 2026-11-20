@@ -127,7 +127,7 @@ def test_combination_does_not_write_inside_an_original_run(consecutive_runs):
         combine(sources, prepared, sources[0] / "combined")
 
 
-@pytest.mark.parametrize("defect", ["order", "config", "usage", "indices", "model", "processor", "backend", "incomplete", "scorer"])
+@pytest.mark.parametrize("defect", ["order", "config", "usage", "indices", "model", "processor", "backend", "incomplete", "scorer", "task_spec"])
 def test_combination_refuses_incompatible_or_unverifiable_segments(consecutive_runs, defect):
     sources, _, manifest = consecutive_runs
     if defect == "order":
@@ -135,7 +135,7 @@ def test_combination_refuses_incompatible_or_unverifiable_segments(consecutive_r
     else:
         name = {"config": "config", "usage": "classify", "indices": "classify",
                 "model": "model", "processor": "model", "backend": "classify",
-                "incomplete": "completed", "scorer": "environment"}[defect]
+                "incomplete": "completed", "scorer": "environment", "task_spec": "environment"}[defect]
         path = sources[1] / f"{name}.json"
         content = json.loads(path.read_text())
         if defect == "config":
@@ -155,6 +155,8 @@ def test_combination_refuses_incompatible_or_unverifiable_segments(consecutive_r
             content["tasks"] = []
         elif defect == "scorer":
             content["source_sha256"]["benchmarks/src/evaluation.py"] = "changed"
+        elif defect == "task_spec":
+            content["source_sha256"]["benchmarks/setup/task-specs/describe.json"] = "changed"
         elif defect == "indices":
             journal = sources[1] / "classify.jsonl"
             calls = [json.loads(line) for line in journal.read_text().splitlines()]

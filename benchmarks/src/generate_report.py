@@ -10,7 +10,7 @@ from pathlib import Path
 import re
 
 from .artifacts import digest, utc_now, write_json
-from .task_registry import DATASETS, METRICS, TASK_SECTIONS
+from .task_registry import DATASETS, METRICS, TASK_SECTIONS, task_spec_hashes
 
 TASK_ANCHORS = {task: (variation or title).lower().replace(" ", "-")
                 for title, variations in TASK_SECTIONS for task, variation in variations}
@@ -406,8 +406,11 @@ def generate_report(directory):
     write_json(output / "report-manifest.json", {
         "generated_at": utc_now(),
         "summarizer_sha256": digest(Path(__file__).read_bytes()),
-        "source_sha256": {f"benchmarks/src/{name}": digest(Path(__file__).with_name(name).read_bytes())
-                          for name in ("generate_report.py", "task_registry.py", "artifacts.py")},
+        "source_sha256": {
+            **{f"benchmarks/src/{name}": digest(Path(__file__).with_name(name).read_bytes())
+               for name in ("generate_report.py", "task_registry.py", "artifacts.py")},
+            **task_spec_hashes(),
+        },
         "reports_sha256": report_hashes,
         "run_metadata_sha256": metadata_hashes,
     })

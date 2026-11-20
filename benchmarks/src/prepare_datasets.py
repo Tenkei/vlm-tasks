@@ -15,7 +15,7 @@ from .task_registry import DATASETS
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--config", type=Path, default=Path("benchmarks/configs/qwen3-vl-2b-transformers.json"))
+    parser.add_argument("--config", type=Path, default=Path("benchmarks/setup/model-configs/qwen3-vl-2b-transformers.json"))
     parser.add_argument("--output", type=Path, default=Path("benchmarks/.cache/prepared-datasets-100"))
     parser.add_argument("--sources", type=Path, help="Optional dataset-name -> local loader kwargs JSON; paths relative to cwd")
     args = parser.parse_args(argv)

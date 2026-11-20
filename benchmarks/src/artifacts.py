@@ -50,6 +50,7 @@ def provenance():
     paths = sorted((ROOT / "src/ml_pipes/vlm").rglob("*.py"))
     paths += sorted((ROOT / "benchmarks").glob("*.py"))
     paths += sorted((ROOT / "benchmarks/src").rglob("*.py"))
+    paths += sorted((ROOT / "benchmarks/setup/task-specs").glob("*.json"))
     return {
         "git_head": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
         "source_sha256": {str(p.relative_to(ROOT)): digest(p.read_bytes()) for p in paths},

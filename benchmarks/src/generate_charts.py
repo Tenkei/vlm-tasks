@@ -8,7 +8,7 @@ from pathlib import Path
 from .artifacts import digest, save_svg, utc_now, write_json
 from .chart_style import model_color
 from .generate_report import MODEL_LABELS, format_number, generate_report, load_task_reports, ordered_runs, profile_label, run_metadata_hashes
-from .task_registry import AXES
+from .task_registry import AXES, task_spec_hashes
 
 
 def build_profiles(reports):
@@ -171,9 +171,12 @@ def generate_charts(directory):
                  for task, metric, label, metric_label in AXES],
         "models": profiles,
         "task_comparisons": task_comparisons,
-        "source_sha256": {f"benchmarks/src/{name}": digest(Path(__file__).with_name(name).read_bytes())
-                          for name in ("generate_charts.py", "generate_report.py", "chart_style.py",
-                                       "task_registry.py", "artifacts.py")},
+        "source_sha256": {
+            **{f"benchmarks/src/{name}": digest(Path(__file__).with_name(name).read_bytes())
+               for name in ("generate_charts.py", "generate_report.py", "chart_style.py",
+                            "task_registry.py", "artifacts.py")},
+            **task_spec_hashes(),
+        },
         "reports_sha256": {str(path.relative_to(directory)): digest(path.read_bytes()) for path, _ in reports},
         "run_metadata_sha256": run_metadata_hashes(reports),
         "figures_sha256": {path.relative_to(output).as_posix(): digest(path.read_bytes())

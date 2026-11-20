@@ -153,7 +153,7 @@ def inference_target(client, config, details):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--config", type=Path, default=Path("benchmarks/configs/qwen3-vl-235b-a22b-bedrock.json"))
+    parser.add_argument("--config", type=Path, default=Path("benchmarks/setup/model-configs/qwen3-vl-235b-a22b-bedrock.json"))
     parser.add_argument("--prepared", type=Path, default=Path("benchmarks/.cache/prepared-datasets-100"))
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--resume", action="store_true", help="Continue untouched tasks after a task-boundary interruption")

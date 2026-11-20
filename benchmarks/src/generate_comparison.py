@@ -10,7 +10,7 @@ from .artifacts import digest, save_svg, utc_now, write_json
 from .chart_style import next_color
 from .generate_charts import build_profiles, configure_plotting, draw_profile
 from .generate_report import MODEL_LABELS, TABLE_HEADER, comparison_table, load_task_reports, profile_label, summarize_task_report
-from .task_registry import AXES
+from .task_registry import AXES, task_spec_hashes
 
 
 def model_catalog(reports):
@@ -142,9 +142,12 @@ def generate_comparison(directory, names, output=None):
         "radial_range": [0, 100], "score_multiplier": 100,
         "axes": [{"task": task, "metric": metric, "label": label, "metric_label": metric_label}
                  for task, metric, label, metric_label in AXES],
-        "source_sha256": {f"benchmarks/src/{name}": digest(Path(__file__).with_name(name).read_bytes())
-                          for name in ("generate_comparison.py", "generate_charts.py", "generate_report.py", "chart_style.py",
-                                       "task_registry.py", "artifacts.py")},
+        "source_sha256": {
+            **{f"benchmarks/src/{name}": digest(Path(__file__).with_name(name).read_bytes())
+               for name in ("generate_comparison.py", "generate_charts.py", "generate_report.py", "chart_style.py",
+                            "task_registry.py", "artifacts.py")},
+            **task_spec_hashes(),
+        },
         "inputs_sha256": {path.relative_to(directory).as_posix(): digest(path.read_bytes())
                           for path in sorted(sources)},
         "artifacts_sha256": {name: digest((output / name).read_bytes())

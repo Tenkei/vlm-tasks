@@ -31,7 +31,8 @@ def test_provenance_finds_repository_sources_after_layout_change(monkeypatch):
     assert artifacts.ROOT == root
     assert provenance["git_head"] == "revision"
     assert {"benchmarks/__init__.py", "benchmarks/src/artifacts.py", "benchmarks/src/run_transformers.py",
-            "benchmarks/src/task_registry.py", "src/ml_pipes/vlm/ops.py"} <= provenance["source_sha256"].keys()
+            "benchmarks/src/task_registry.py", "benchmarks/setup/task-specs/describe.json",
+            "src/ml_pipes/vlm/ops.py"} <= provenance["source_sha256"].keys()
     for filename, expected in provenance["source_sha256"].items():
         assert "source_snapshots" not in filename and "/runs/" not in filename
         assert artifacts.digest((root / filename).read_bytes()) == expected
@@ -422,6 +423,7 @@ def test_report_repeats_the_same_observations_in_model_and_task_views(tmp_path):
     assert page.rfind("## Table field guide") > page.rfind("</details>")
     metadata = json.loads((tmp_path / "reports/report-manifest.json").read_text())
     assert "benchmarks/src/task_registry.py" in metadata["source_sha256"]
+    assert "benchmarks/setup/task-specs/describe.json" in metadata["source_sha256"]
     assert (tmp_path / "reports/metrics.csv").is_file()
     assert not (runs / "metrics.csv").exists()
     assert "reports/charts/model-profiles/first.png" in page
@@ -504,6 +506,7 @@ def test_report_views_share_newest_run_order_using_recorded_dates(comparison_run
     assert [profile["run"] for profile in build_profiles(reports)] == expected
     generate_charts(comparison_runs)
     charts = json.loads((tmp_path / "reports/charts/manifest.json").read_text())
+    assert "benchmarks/setup/task-specs/describe.json" in charts["source_sha256"]
     assert [model["run"] for model in charts["models"]] == expected
     assert all([model["run"] for model in task["models"]] == expected for task in charts["task_comparisons"])
     rows = list(csv.DictReader((tmp_path / "reports/metrics.csv").open()))
@@ -671,6 +674,7 @@ def test_comparison_colors_match_overview_after_adding_an_unrelated_model(compar
             run: colors[run] for run in names
         }
         assert "benchmarks/src/chart_style.py" in manifest["source_sha256"]
+        assert "benchmarks/setup/task-specs/describe.json" in manifest["source_sha256"]
         svg = (output / "comparison.svg").read_text()
         assert all(f"stroke: {colors[run]}" in svg for run in names)
     assert manifest_path.read_bytes() == before

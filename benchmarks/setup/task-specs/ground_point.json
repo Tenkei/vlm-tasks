@@ -1,0 +1,15 @@
+{
+  "order": 4,
+  "dataset": "refcocog",
+  "operator": "Ground",
+  "title": "Grounding",
+  "metrics": [
+    [
+      "point_in_box_accuracy",
+      "Point-in-box Acc"
+    ]
+  ],
+  "primary_metric": "point_in_box_accuracy",
+  "chart_metric_label": "Point-in-box Acc",
+  "geometry": "point"
+}

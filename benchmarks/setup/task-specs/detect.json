@@ -1,0 +1,22 @@
+{
+  "order": 2,
+  "dataset": "coco128",
+  "operator": "Detect",
+  "title": "Detection",
+  "metrics": [
+    [
+      "precision",
+      "P@0.5"
+    ],
+    [
+      "recall",
+      "R@0.5"
+    ],
+    [
+      "f1",
+      "F1@0.5"
+    ]
+  ],
+  "primary_metric": "f1",
+  "chart_metric_label": "F1@0.5"
+}

@@ -17,7 +17,7 @@ from .task_registry import DATASETS
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--config", type=Path, default=Path("benchmarks/configs/qwen3-vl-2b-transformers.json"))
+    parser.add_argument("--config", type=Path, default=Path("benchmarks/setup/model-configs/qwen3-vl-2b-transformers.json"))
     parser.add_argument("--prepared", type=Path, default=Path("benchmarks/.cache/prepared-datasets-100"))
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--tasks", nargs="+", choices=DATASETS, help="Run selected tasks in a fresh output directory")

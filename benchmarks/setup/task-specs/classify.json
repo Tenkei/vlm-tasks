@@ -1,0 +1,14 @@
+{
+  "order": 1,
+  "dataset": "cifar10",
+  "operator": "Classify",
+  "title": "Classification",
+  "metrics": [
+    [
+      "accuracy_top1",
+      "Top-1 Acc"
+    ]
+  ],
+  "primary_metric": "accuracy_top1",
+  "chart_metric_label": "Top-1 Acc"
+}

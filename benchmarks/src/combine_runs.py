@@ -62,6 +62,7 @@ def checked_segments(sources, manifest):
         environment = json.loads((source / "environment.json").read_text())
         for name, expected_hash in environment["source_sha256"].items():
             if (name.startswith("src/ml_pipes/vlm/")
+                    or name.startswith("benchmarks/setup/task-specs/")
                     or name in ("benchmarks/src/evaluation.py", "benchmarks/src/task_registry.py")):
                 if digest((ROOT / name).read_bytes()) != expected_hash:
                     raise ValueError(f"Scoring source changed since segment inference: {name}")

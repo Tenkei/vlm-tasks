@@ -2,10 +2,17 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import json
+from pathlib import Path
+
+from .artifacts import ROOT, digest
+
+TASK_SPECS_DIRECTORY = ROOT / "benchmarks/setup/task-specs"
 
 
 @dataclass(frozen=True)
 class TaskSpec:
+    order: int
     dataset: str
     operator: str
     title: str
@@ -24,51 +31,35 @@ class TaskSpec:
         return f"{self.title} ({self.variation})" if self.variation else self.title
 
 
+def load_task_specs(directory=TASK_SPECS_DIRECTORY):
+    """Load one task per JSON file, preserving the explicit benchmark order."""
+    tasks, orders = {}, set()
+    for path in sorted(Path(directory).glob("*.json")):
+        try:
+            data = json.loads(path.read_text())
+            data["metrics"] = tuple(tuple(metric) for metric in data["metrics"])
+            spec = TaskSpec(**data)
+            if type(spec.order) is not int or spec.order < 1 or spec.order in orders:
+                raise ValueError("order must be a unique positive integer")
+            if any(len(metric) != 2 for metric in spec.metrics) or spec.primary_metric not in dict(spec.metrics):
+                raise ValueError("metrics must contain named pairs including primary_metric")
+        except (KeyError, TypeError, ValueError) as exc:
+            raise ValueError(f"Invalid task spec {path}: {exc}") from exc
+        tasks[path.stem] = spec
+        orders.add(spec.order)
+    if not tasks:
+        raise ValueError(f"No task specs found in {directory}")
+    return dict(sorted(tasks.items(), key=lambda item: item[1].order))
+
+
+def task_spec_hashes():
+    """Include task-definition data in run and reporting provenance."""
+    return {path.relative_to(ROOT).as_posix(): digest(path.read_bytes())
+            for path in sorted(TASK_SPECS_DIRECTORY.glob("*.json"))}
+
+
 # Primary chart metrics have a natural [0, 1] range, independent of observed models.
-TASKS = {
-    "classify": TaskSpec(
-        dataset="cifar10", operator="Classify", title="Classification",
-        metrics=(("accuracy_top1", "Top-1 Acc"),),
-        primary_metric="accuracy_top1", chart_metric_label="Top-1 Acc",
-    ),
-    "detect": TaskSpec(
-        dataset="coco128", operator="Detect", title="Detection",
-        metrics=(("precision", "P@0.5"), ("recall", "R@0.5"), ("f1", "F1@0.5")),
-        primary_metric="f1", chart_metric_label="F1@0.5",
-    ),
-    "ground_box": TaskSpec(
-        dataset="refcocog", operator="Ground", title="Grounding", geometry="box",
-        metrics=(("accuracy_iou_0.5", "Acc@0.5"), ("accuracy_iou_0.75", "Acc@0.75"),
-                 ("accuracy_iou_0.9", "Acc@0.9"), ("mean_iou", "Mean IoU")),
-        primary_metric="accuracy_iou_0.5", chart_metric_label="Acc@0.5",
-    ),
-    "ground_point": TaskSpec(
-        dataset="refcocog", operator="Ground", title="Grounding", geometry="point",
-        metrics=(("point_in_box_accuracy", "Point-in-box Acc"),),
-        primary_metric="point_in_box_accuracy", chart_metric_label="Point-in-box Acc",
-    ),
-    "attributes": TaskSpec(
-        dataset="ovad", operator="Attributes", title="Attributes",
-        metrics=(("accuracy", "Acc"), ("mean_attribute_accuracy", "Mean Acc"),
-                 ("macro_f1", "Macro F1")),
-        primary_metric="accuracy", chart_metric_label="Acc",
-    ),
-    "answer": TaskSpec(
-        dataset="vqav2", operator="Answer", title="VQA",
-        metrics=(("vqa_accuracy", "VQA Acc"),),
-        primary_metric="vqa_accuracy", chart_metric_label="VQA Acc",
-    ),
-    "describe": TaskSpec(
-        dataset="coco_captions2017", operator="Describe", title="Captioning",
-        metrics=(("cider", "CIDEr"), ("bleu_1", "BLEU-1"), ("bleu_2", "BLEU-2"),
-                 ("bleu_3", "BLEU-3"), ("bleu_4", "BLEU-4"), ("rouge_l", "ROUGE-L")),
-        primary_metric="rouge_l", chart_metric_label="ROUGE-L",
-        context=(
-            "Write exactly one sentence of 10 to 15 words describing the main visible "
-            "subject and action. Do not add additional sentences."
-        ),
-    ),
-}
+TASKS = load_task_specs()
 
 DATASETS = {name: spec.dataset for name, spec in TASKS.items()}
 METRICS = {name: spec.metrics for name, spec in TASKS.items()}

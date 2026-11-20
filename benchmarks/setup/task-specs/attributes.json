@@ -1,0 +1,22 @@
+{
+  "order": 5,
+  "dataset": "ovad",
+  "operator": "Attributes",
+  "title": "Attributes",
+  "metrics": [
+    [
+      "accuracy",
+      "Acc"
+    ],
+    [
+      "mean_attribute_accuracy",
+      "Mean Acc"
+    ],
+    [
+      "macro_f1",
+      "Macro F1"
+    ]
+  ],
+  "primary_metric": "accuracy",
+  "chart_metric_label": "Acc"
+}
