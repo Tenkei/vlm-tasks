@@ -6,7 +6,9 @@ from pathlib import Path
 import pytest
 
 from benchmarks.src import task_registry
-from benchmarks.src.artifacts import check_run_setup, model_config_revision, revision_fields, save_run_setup
+from benchmarks.src.artifacts import (
+    check_run_setup, model_config_revision, revision_fields, run_config_path, run_task_spec_path, save_run_setup,
+)
 from benchmarks.src.task_registry import TASKS
 
 
@@ -14,10 +16,13 @@ def test_run_setup_saves_selected_specs_and_preserves_checkpoint_revision(tmp_pa
     config = {"model": "test", "revision": 3, "checkpoint_revision": "hf-checkpoint",
               "tasks": ["classify", "describe"]}
     save_run_setup(tmp_path, config)
-    assert json.loads((tmp_path / "config.json").read_text()) == config
-    assert {path.stem for path in (tmp_path / "task-specs").glob("*.json")} == {"classify", "describe"}
+    assert not (tmp_path / "config.json").exists()
+    assert not (tmp_path / "task-specs").exists()
+    assert json.loads((tmp_path / "setup_snapshots/model.json").read_text()) == config
+    assert {path.stem for path in (tmp_path / "setup_snapshots").glob("*.json")} == {"model", "classify", "describe"}
+    assert not (tmp_path / "setup_snapshots/task-specs").exists()
     for task in config["tasks"]:
-        assert json.loads((tmp_path / "task-specs" / f"{task}.json").read_text()) == json.loads(json.dumps(asdict(TASKS[task])))
+        assert json.loads((tmp_path / "setup_snapshots" / f"{task}.json").read_text()) == json.loads(json.dumps(asdict(TASKS[task])))
         assert revision_fields(task, config) == {
             "task_spec_revision": TASKS[task].revision, "model_config_revision": 3,
         }
@@ -41,16 +46,25 @@ def test_legacy_config_does_not_silently_receive_a_revision():
         model_config_revision({"tasks": ["classify"]})
 
 
+@pytest.mark.parametrize("layout", ["setup_snapshots", ""])
 @pytest.mark.parametrize("change", ["model_revision", "model_setting", "task_revision", "task_context", "missing_spec"])
-def test_setup_check_rejects_changed_revisions_or_definitions(tmp_path, monkeypatch, change):
+def test_setup_check_rejects_changed_revisions_or_definitions(tmp_path, monkeypatch, change, layout):
     config = {"revision": 1, "tasks": ["describe"], "temperature": 0}
     save_run_setup(tmp_path, config)
+    if not layout:
+        (tmp_path / "task-specs").mkdir()
+        for path in (tmp_path / "setup_snapshots").iterdir():
+            target = (tmp_path / "config.json" if path.name == "model.json"
+                      else tmp_path / "task-specs" / path.name)
+            path.rename(target)
+        (tmp_path / "setup_snapshots").rmdir()
+    check_run_setup(tmp_path, config)
     if change == "model_revision":
         config = {**config, "revision": 2}
     elif change == "model_setting":
         config = {**config, "temperature": 1}
     elif change == "missing_spec":
-        (tmp_path / "task-specs/describe.json").unlink()
+        run_task_spec_path(tmp_path, "describe").unlink()
     else:
         settings = {"revision": 2} if change == "task_revision" else {"context": "A changed prompt."}
         monkeypatch.setattr(task_registry, "TASKS", {**TASKS, "describe": replace(TASKS["describe"], **settings)})
@@ -58,6 +72,15 @@ def test_setup_check_rejects_changed_revisions_or_definitions(tmp_path, monkeypa
     with pytest.raises(ValueError, match="differs|no saved task spec"):
         check_run_setup(tmp_path, config)
     assert {path: path.read_bytes() for path in before} == before
+
+
+def test_missing_snapshot_config_does_not_fall_back_to_root_config(tmp_path):
+    config = {"revision": 1, "tasks": ["classify"]}
+    save_run_setup(tmp_path, config)
+    (tmp_path / "config.json").write_text(json.dumps(config))
+    run_config_path(tmp_path).unlink()
+    with pytest.raises(FileNotFoundError):
+        check_run_setup(tmp_path, config)
 
 
 def test_setup_files_declare_independent_positive_revisions():

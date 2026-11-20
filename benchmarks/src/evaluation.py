@@ -7,7 +7,8 @@ from time import perf_counter
 from ml_pipes import vlm
 
 from .artifacts import (
-    check_run_setup, digest, encoded, revision_fields, sample_record, serialize,
+    check_run_setup, digest, encoded, revision_fields, run_config_path,
+    run_setup_directory, sample_record, serialize,
 )
 from .task_registry import DATASETS, TASKS
 
@@ -89,11 +90,11 @@ def remaining_tasks(output, config, manifest):
     """Resume at a task boundary; never repeat recorded model requests."""
     if (output / "completed.json").exists():
         raise ValueError("This benchmark is already complete")
-    if json.loads((output / "config.json").read_text()) != config:
+    if json.loads(run_config_path(output).read_text()) != config:
         raise ValueError("Resume configuration differs from the saved run")
     if json.loads((output / "manifest.json").read_text()) != manifest:
         raise ValueError("Resume prepared data differs from the saved run")
-    versioned = (output / "task-specs").is_dir() or isinstance(config.get("revision"), int)
+    versioned = (run_setup_directory(output) / "task-specs").is_dir() or isinstance(config.get("revision"), int)
     if versioned:
         check_run_setup(output, config)
     pending = []

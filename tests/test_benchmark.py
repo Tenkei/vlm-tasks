@@ -431,13 +431,15 @@ def test_report_repeats_the_same_observations_in_model_and_task_views(tmp_path):
     assert "runs/first/classify.json" in page
 
 
-def test_token_budget_report_accepts_a_relocated_baseline(tmp_path):
+@pytest.mark.parametrize("layout", ["setup_snapshots", ""])
+def test_token_budget_report_accepts_a_relocated_baseline(tmp_path, layout):
     from benchmarks.src.artifacts import write_json
     from benchmarks.src.report_token_budget import main
 
     baseline = tmp_path / "runs/model"
     experiment = tmp_path / "experiments/token-budget/model"
-    write_json(baseline / "config.json", {"max_new_tokens": 4096})
+    filename = "model.json" if layout else "config.json"
+    write_json(baseline / layout / filename, {"max_new_tokens": 4096})
     write_json(experiment / "selection.json", {
         "baseline": "original/path/no-longer-present", "baseline_limit": 4096,
         "rerun_limit": 8192, "samples": {},
@@ -569,6 +571,31 @@ def test_local_comparison_selects_only_two_models_and_preserves_overview(compari
         assert digest((output / name).read_bytes()) == expected
     svg = (output / "comparison.svg").read_text()
     assert "Qwen3-VL-2B" in svg and "Qwen3-VL-235B" in svg
+
+
+def test_reports_and_comparisons_read_mixed_setup_layouts(comparison_runs, tmp_path):
+    pytest.importorskip("matplotlib")
+    from benchmarks.src.artifacts import run_config_path
+    from benchmarks.src.generate_comparison import generate_comparison
+    from benchmarks.src.generate_report import generate_report
+
+    run = comparison_runs / "small"
+    snapshots = run / "setup_snapshots"
+    snapshots.mkdir()
+    (run / "config.json").rename(snapshots / "model.json")
+    rows = generate_report(comparison_runs)
+    assert {row["run"] for row in rows} == {"small", "gemma", "large"}
+
+    output = tmp_path / "mixed-layout-comparison"
+    page = generate_comparison(comparison_runs, ["small", "large"], output).read_text()
+    assert "small/setup_snapshots/model.json" in page
+    assert "large/config.json" in page
+    manifest = json.loads((output / "manifest.json").read_text())
+    for name in ("small", "large"):
+        path = run_config_path(comparison_runs / name)
+        key = path.relative_to(comparison_runs).as_posix()
+        assert key in manifest["inputs_sha256"]
+    assert not (run / "config.json").exists()
 
 
 @pytest.mark.parametrize("names, message", [

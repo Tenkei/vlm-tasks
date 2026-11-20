@@ -230,12 +230,20 @@ def test_official_rate_override_prices_cached_input_and_total_output():
     assert priced_usage(usage, pricing) == Decimal("0.00696")
 
 
-def test_resume_skips_completed_tasks_and_refuses_to_repeat_interrupted_requests(tmp_path):
-    from benchmarks.src.artifacts import revision_fields, save_run_setup
+@pytest.mark.parametrize("layout", ["setup_snapshots", ""])
+def test_resume_skips_completed_tasks_and_refuses_to_repeat_interrupted_requests(tmp_path, layout):
+    from benchmarks.src.artifacts import revision_fields, run_task_spec_path, save_run_setup
 
     config = {"model": "google.gemma-3-27b-it", "revision": 1,
               "tasks": ["classify", "describe"], "samples_per_task": 2}
     save_run_setup(tmp_path, config)
+    if not layout:
+        (tmp_path / "task-specs").mkdir()
+        for path in (tmp_path / "setup_snapshots").iterdir():
+            target = (tmp_path / "config.json" if path.name == "model.json"
+                      else tmp_path / "task-specs" / path.name)
+            path.rename(target)
+        (tmp_path / "setup_snapshots").rmdir()
     manifest = {"datasets": {"cifar10": {"fingerprint_sha256": "frozen"}}}
     for name, value in (("manifest", manifest), ("classify", {
         "model": config["model"], "task": "classify", "metrics": {"samples": 2},
@@ -250,7 +258,7 @@ def test_resume_skips_completed_tasks_and_refuses_to_repeat_interrupted_requests
         remaining_tasks(tmp_path, {**config, "model": "different"}, manifest)
     with pytest.raises(ValueError, match="prepared data differs"):
         remaining_tasks(tmp_path, config, {})
-    path = tmp_path / "task-specs/describe.json"
+    path = run_task_spec_path(tmp_path, "describe")
     original = path.read_bytes()
     spec = json.loads(original)
     path.write_text(json.dumps({**spec, "revision": 2}))

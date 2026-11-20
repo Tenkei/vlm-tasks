@@ -10,7 +10,7 @@ from time import perf_counter
 
 from ml_pipes import vlm
 
-from .artifacts import provenance, utc_now, write_json
+from .artifacts import provenance, run_config_path, utc_now, write_json
 from .evaluation import RecordingBackend, RecordingModel, ReplayBackend, evaluate, load_prepared, usage_summary
 from .task_registry import DATASETS, METRICS
 
@@ -73,7 +73,7 @@ def main(argv=None):
         raise FileExistsError(f"Use a new rerun directory: {args.output}")
     if not (args.baseline / "completed.json").is_file():
         raise ValueError("Complete the baseline first so all capped samples are captured")
-    config = json.loads((args.baseline / "config.json").read_text())
+    config = json.loads(run_config_path(args.baseline).read_text())
     selected = selected_calls(args.baseline, config)
     manifest = json.loads((args.baseline / "manifest.json").read_text())
     limit = config["max_new_tokens"] * 2
@@ -85,7 +85,7 @@ def main(argv=None):
                              "sample": manifest["datasets"][DATASETS[task]]["samples"][r["index"]]}
                             for r in records] for task, records in selected.items()},
     })
-    write_json(args.output / "config.json", {**config, "max_new_tokens": limit, "tasks": list(selected),
+    write_json(args.output / "setup_snapshots/model.json", {**config, "max_new_tokens": limit, "tasks": list(selected),
                                              "baseline_samples_per_task": config["samples_per_task"],
                                              "samples_per_task": {task: len(records) for task, records in selected.items()},
                                              "experiment": "double token budget on capped baseline samples"})

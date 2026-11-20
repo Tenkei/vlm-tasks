@@ -9,7 +9,7 @@ import json
 from pathlib import Path
 import re
 
-from .artifacts import digest, utc_now, write_json
+from .artifacts import digest, run_config_path, utc_now, write_json
 from .task_registry import DATASETS, METRICS, TASK_SECTIONS, task_spec_hashes
 
 TASK_ANCHORS = {task: (variation or title).lower().replace(" ", "-")
@@ -89,9 +89,9 @@ def load_task_reports(directory):
     directory = Path(directory)
     reports = []
     for run in sorted(directory.iterdir()):
-        if not run.is_dir() or not (run / "config.json").is_file():
+        if not run.is_dir() or not run_config_path(run).is_file():
             continue
-        config = json.loads((run / "config.json").read_text())
+        config = json.loads(run_config_path(run).read_text())
         for task in config["tasks"]:
             path = run / f"{task}.json"
             if path.is_file():
@@ -237,7 +237,7 @@ def task_sections(table_rows, charts):
 def summarize_task_report(path, report, report_link):
     """Share metric formatting and usage accounting across benchmark reports."""
     task, m, usage = report["task"], report["metrics"], report["usage"]
-    config = json.loads((path.parent / "config.json").read_text())
+    config = json.loads(run_config_path(path.parent).read_text())
     calls_path = path.with_suffix(".jsonl")
     at_cap = samples_at_cap = None
     if calls_path.is_file():

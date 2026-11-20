@@ -44,8 +44,8 @@ def test_runners_save_config_and_task_revisions_before_inference(tmp_path, monke
             self.model = model
 
         def __call__(self, request):
-            assert (output / "config.json").is_file()
-            assert (output / "task-specs/classify.json").is_file()
+            assert (output / "setup_snapshots/model.json").is_file()
+            assert (output / "setup_snapshots/classify.json").is_file()
             model.attempted_requests += 1
             model.generations.append({
                 "input_tokens": 10, "output_tokens": 5, "raw_text": '{"labels":["cat"]}',
@@ -94,8 +94,11 @@ def test_runners_save_config_and_task_revisions_before_inference(tmp_path, monke
         monkeypatch.setattr(runner, "RecordingModel", lambda *args, **kwargs: model)
 
     assert runner.main(["--config", str(config_path), "--prepared", str(prepared), "--output", str(output)]) == 0
-    assert json.loads((output / "config.json").read_text()) == config
-    task_spec = json.loads((output / "task-specs/classify.json").read_text())
+    assert json.loads((output / "setup_snapshots/model.json").read_text()) == config
+    assert not (output / "config.json").exists()
+    assert not (output / "task-specs").exists()
+    assert not (output / "setup_snapshots/task-specs").exists()
+    task_spec = json.loads((output / "setup_snapshots/classify.json").read_text())
     report = json.loads((output / "classify.json").read_text())
     assert report["task_spec_revision"] == task_spec["revision"] == 1
     assert report["model_config_revision"] == 4

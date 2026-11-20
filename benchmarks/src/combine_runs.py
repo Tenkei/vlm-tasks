@@ -10,7 +10,8 @@ import shutil
 from time import perf_counter
 
 from .artifacts import (
-    ROOT, check_run_setup, digest, encoded, provenance, revision_fields, save_run_setup, utc_now, write_json,
+    ROOT, check_run_setup, digest, encoded, provenance, revision_fields, run_config_path,
+    run_setup_directory, save_run_setup, utc_now, write_json,
 )
 from .evaluation import ReplayBackend, evaluate, load_prepared
 from .task_registry import DATASETS
@@ -31,8 +32,8 @@ def checked_segments(sources, manifest):
     reference_backend = None
     for source in sources:
         source = Path(source)
-        config = json.loads((source / "config.json").read_text())
-        versioned = (source / "task-specs").is_dir() or isinstance(config.get("revision"), int)
+        config = json.loads(run_config_path(source).read_text())
+        versioned = (run_setup_directory(source) / "task-specs").is_dir() or isinstance(config.get("revision"), int)
         if versioned:
             check_run_setup(source, config)
         count = config["samples_per_task"]
@@ -111,10 +112,10 @@ def combine(sources, prepared, output):
     segments = checked_segments(sources, manifest)
     config = {**segments[0]["config"], "samples_per_task": manifest["samples_per_task"]}
     loaded = load_prepared(prepared, manifest, config["tasks"])
-    if (segments[0]["source"] / "task-specs").is_dir() or isinstance(config.get("revision"), int):
+    if (run_setup_directory(segments[0]["source"]) / "task-specs").is_dir() or isinstance(config.get("revision"), int):
         save_run_setup(output, config)
     else:
-        write_json(output / "config.json", config)
+        write_json(output / "setup_snapshots/model.json", config)
     write_json(output / "manifest.json", manifest)
     packages = {d.metadata["Name"]: d.version for d in metadata.distributions() if d.metadata["Name"]}
     write_json(output / "environment.json", {

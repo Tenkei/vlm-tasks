@@ -6,7 +6,7 @@ from os.path import relpath
 from pathlib import Path
 from urllib.parse import quote
 
-from .artifacts import digest, save_svg, utc_now, write_json
+from .artifacts import digest, run_config_path, save_svg, utc_now, write_json
 from .chart_style import next_color
 from .generate_charts import build_profiles, configure_plotting, draw_profile
 from .generate_report import MODEL_LABELS, TABLE_HEADER, comparison_table, load_task_reports, profile_label, summarize_task_report
@@ -90,7 +90,7 @@ def generate_comparison(directory, names, output=None):
     for model in models:
         run = model["run"]
         lines += [f"- **{model['label']}**: `{model['model']}` · "
-                  f"[Run configuration]({link(directory / run / 'config.json')}) (`{run}`)"]
+                  f"[Run configuration]({link(run_config_path(directory / run))}) (`{run}`)"]
     lines += [
         "", f"![{title}](comparison.png)", "",
         "[PNG](comparison.png) · [SVG](comparison.svg)", "",
@@ -134,7 +134,7 @@ def generate_comparison(directory, names, output=None):
         plt.close(fig)
     (output / "README.md").write_text("\n".join(lines))
     sources = {path for path, _ in reports}
-    sources.update(directory / run / "config.json" for run in selected)
+    sources.update(run_config_path(directory / run) for run in selected)
     sources.update(path.with_suffix(".jsonl") for path, _ in reports if path.with_suffix(".jsonl").is_file())
     write_json(output / "manifest.json", {
         "generated_at": utc_now(), "models": models,

@@ -49,6 +49,26 @@ def revision_fields(task, config):
             "model_config_revision": model_config_revision(config)}
 
 
+def run_setup_directory(run):
+    """Locate saved definitions, retaining support for the original run layout."""
+    run = Path(run)
+    snapshots = run / "setup_snapshots"
+    return snapshots if snapshots.exists() else run
+
+
+def run_config_path(run):
+    setup = run_setup_directory(run)
+    filename = "config.json" if setup == Path(run) else "model.json"
+    return setup / filename
+
+
+def run_task_spec_path(run, task):
+    setup = run_setup_directory(run)
+    if setup == Path(run):
+        setup = setup / "task-specs"
+    return setup / f"{task}.json"
+
+
 def save_run_setup(output, config):
     """Save the selected definitions once, before inference starts."""
     from .task_registry import TASKS
@@ -56,24 +76,23 @@ def save_run_setup(output, config):
     output = Path(output)
     model_config_revision(config)
     specs = {task: asdict(TASKS[task]) for task in config["tasks"]}
-    paths = [output / "config.json", *(output / "task-specs" / f"{task}.json" for task in specs)]
-    if any(path.exists() for path in paths):
+    snapshots = output / "setup_snapshots"
+    if snapshots.exists() or (output / "config.json").exists() or (output / "task-specs").exists():
         raise FileExistsError(f"Run setup already exists: {output}")
-    write_json(output / "config.json", config)
+    write_json(snapshots / "model.json", config)
     for task, spec in specs.items():
-        write_json(output / "task-specs" / f"{task}.json", spec)
+        write_json(snapshots / f"{task}.json", spec)
 
 
 def check_run_setup(output, config):
     """Reject changed config or task definitions without rewriting saved setup."""
     from .task_registry import TASKS
 
-    output = Path(output)
     model_config_revision(config)
-    if json.loads((output / "config.json").read_text()) != config:
+    if json.loads(run_config_path(output).read_text()) != config:
         raise ValueError("Run configuration differs from the saved run")
     for task in config["tasks"]:
-        path = output / "task-specs" / f"{task}.json"
+        path = run_task_spec_path(output, task)
         if not path.is_file():
             raise ValueError(f"Run has no saved task spec: {task}; use the recorded source version for historical runs")
         if encoded(json.loads(path.read_text())) != encoded(asdict(TASKS[task])):

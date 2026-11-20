@@ -7,7 +7,7 @@ from pathlib import Path
 
 from datasets import load_from_disk
 
-from .artifacts import digest, encoded, sample_record, utc_now, write_json
+from .artifacts import digest, encoded, run_config_path, sample_record, utc_now, write_json
 from .evaluation import ReplayBackend, evaluate, usage_summary
 from .run_token_budget import write_comparison
 from .task_registry import DATASETS
@@ -22,7 +22,7 @@ def main(argv=None):
     args = parser.parse_args(argv)
     selection = json.loads((args.experiment / "selection.json").read_text())
     baseline = args.baseline or Path(selection["baseline"])
-    config = json.loads((baseline / "config.json").read_text())
+    config = json.loads(run_config_path(baseline).read_text())
     comparison = {
         "status": "stopped_by_user", "recorded_at": utc_now(),
         "baseline_limit": selection["baseline_limit"], "rerun_limit": selection["rerun_limit"],

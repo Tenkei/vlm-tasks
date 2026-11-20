@@ -193,15 +193,29 @@ task spec revision when changing task instructions or evaluation rules.
 Transformers configs use
 `checkpoint_revision` separately to pin the Hugging Face model checkpoint.
 
-New runs save the model config in `config.json` and selected task definitions
-in `task-specs/<task>.json`. Each task report stores these as
+New runs keep their input definitions under `setup_snapshots/`, separate from
+runtime metadata and results:
+
+```text
+runs/<run>/
+├── setup_snapshots/
+│   ├── model.json
+│   └── <task>.json
+├── model.json
+├── <task>.json
+└── <task>.jsonl
+```
+
+Each task report stores the definition revisions as
 `model_config_revision` and `task_spec_revision`. The task report
 `revision` field continues to identify the model checkpoint.
 Resume checks require matching saved definitions as well as revision numbers;
 combining versioned runs preserves these snapshots and revision values.
 
 Existing archives without revision metadata remain unversioned. Reporting
-still reads them; use their recorded source version for historical inference.
+and run tools also read the earlier root-level `config.json` and `task-specs/`
+layout without rewriting archives. Use their recorded source version for
+historical inference.
 
 ### Native JSON Schema runs
 
@@ -444,7 +458,8 @@ the original caption instructions without making new model requests.
 To recreate an earlier report's layout and rendering, use a separate checkout
 at that Git revision and the package versions recorded in its chart manifest.
 To rerun inference instead, follow [Runs](#runs) with the run's saved
-`config.json` and recorded source version rather than current model templates.
+`setup_snapshots/model.json` (`config.json` in older runs) and recorded
+source version rather than current model templates.
 
 ## Runs
 
@@ -888,8 +903,8 @@ For partial results after interruption, see [Token-budget reports](#token-budget
 | `benchmarks/src/generate_comparison.py` | On-demand local report for two selected model runs |
 | `benchmarks/src/run_token_budget.py` | Paired 2×-budget reruns of capped samples |
 | `benchmarks/src/report_token_budget.py` | Report completed token-budget records after stopping inference |
-| `runs/<run>/config.json` | Model config snapshot, including `revision`, requested tasks, sample count and inference settings |
-| `runs/<run>/task-specs/<task>.json` | Selected task definition snapshot, including `revision` |
+| `runs/<run>/setup_snapshots/model.json` | Model config snapshot, including `revision`, requested tasks, sample count and inference settings |
+| `runs/<run>/setup_snapshots/<task>.json` | Selected task definition snapshot, including `revision` |
 | `runs/<run>/manifest.json` | Dataset identities, targets and image hashes |
 | `runs/<run>/environment.json`, `requirements.txt` | Python/platform/package versions, git revision and source hashes |
 | `runs/<run>/model.json` | Actual model/processor/generation configuration |

@@ -5,7 +5,10 @@ import datasets
 from PIL import Image
 import pytest
 
-from benchmarks.src.artifacts import digest, encoded, revision_fields, sample_record, save_run_setup, write_json
+from benchmarks.src.artifacts import (
+    digest, encoded, revision_fields, run_config_path, run_task_spec_path,
+    sample_record, save_run_setup, write_json,
+)
 from benchmarks.src.combine_runs import checked_segments, combine, global_sample
 from benchmarks.src.evaluation import evaluate, usage_summary as local_usage_summary
 from benchmarks.src.usage import combine_usage
@@ -89,13 +92,22 @@ def consecutive_runs(tmp_path, request):
     return sources, prepared, frozen
 
 
-def test_combination_rescores_failures_without_requests_and_preserves_original_usage(consecutive_runs, tmp_path):
+@pytest.mark.parametrize("legacy_layout", [False, True])
+def test_combination_rescores_failures_without_requests_and_preserves_original_usage(consecutive_runs, tmp_path, legacy_layout):
     sources, prepared, _ = consecutive_runs
+    if legacy_layout:
+        (sources[0] / "task-specs").mkdir()
+        for path in (sources[0] / "setup_snapshots").iterdir():
+            target = (sources[0] / "config.json" if path.name == "model.json"
+                      else sources[0] / "task-specs" / path.name)
+            path.rename(target)
+        (sources[0] / "setup_snapshots").rmdir()
     output = combine(sources, prepared, tmp_path / "combined")
     report = json.loads((output / "classify.json").read_text())
     assert report["metrics"]["samples"] == 3
     assert report["task_spec_revision"] == report["model_config_revision"] == 1
-    assert (output / "task-specs/classify.json").read_bytes() == (sources[0] / "task-specs/classify.json").read_bytes()
+    assert (output / "setup_snapshots/classify.json").read_bytes() == run_task_spec_path(sources[0], "classify").read_bytes()
+    assert not (output / "config.json").exists()
     assert report["metrics"]["accuracy_top1"] == pytest.approx(1 / 3)
     assert report["metrics"]["failures"] == 1
     assert report["speed_ms_per_sample"]["inference"] == 3000
@@ -129,7 +141,7 @@ def test_combination_preserves_unversioned_legacy_records(consecutive_runs, tmp_
     sources, prepared, _ = consecutive_runs
     checkpoint = None
     for source in sources:
-        config = json.loads((source / "config.json").read_text())
+        config = json.loads(run_config_path(source).read_text())
         del config["revision"]
         report = json.loads((source / "classify.json").read_text())
         if report.get("backend", "transformers") == "transformers":
@@ -139,13 +151,14 @@ def test_combination_preserves_unversioned_legacy_records(consecutive_runs, tmp_
         write_json(source / "config.json", config)
         del report["model_config_revision"], report["task_spec_revision"]
         write_json(source / "classify.json", report)
-        (source / "task-specs/classify.json").unlink()
-        (source / "task-specs").rmdir()
+        (source / "setup_snapshots/classify.json").unlink()
+        (source / "setup_snapshots/model.json").unlink()
+        (source / "setup_snapshots").rmdir()
     output = combine(sources, prepared, tmp_path / "legacy-combined")
-    assert json.loads((output / "config.json").read_text()).get("revision") == checkpoint
+    assert json.loads(run_config_path(output).read_text()).get("revision") == checkpoint
     assert json.loads((output / "classify.json").read_text()).get("revision") == checkpoint
     assert "task_spec_revision" not in json.loads((output / "classify.json").read_text())
-    assert not (output / "task-specs").exists()
+    assert not (output / "setup_snapshots/classify.json").exists()
 
 
 def test_combination_does_not_write_inside_an_original_run(consecutive_runs):
@@ -163,7 +176,7 @@ def test_combination_refuses_incompatible_or_unverifiable_segments(consecutive_r
         name = {"config": "config", "usage": "classify", "indices": "classify",
                 "model": "model", "processor": "model", "backend": "classify",
                 "incomplete": "completed", "scorer": "environment", "task_spec": "environment"}[defect]
-        path = sources[1] / f"{name}.json"
+        path = run_config_path(sources[1]) if name == "config" else sources[1] / f"{name}.json"
         content = json.loads(path.read_text())
         if defect == "config":
             content["max_new_tokens"] = 8192
