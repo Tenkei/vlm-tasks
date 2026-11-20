@@ -278,6 +278,62 @@ def test_shared_evaluation_preserves_task_variants_and_scoring(monkeypatch, tmp_
     assert options == {"dataset": dataset, "cache_dir": tmp_path, **scoring}
 
 
+@pytest.mark.parametrize("overrides, context", [
+    ({}, "Write exactly one sentence of 10 to 15 words describing the main visible "
+         "subject and action. Do not add additional sentences."),
+    ({"describe": None}, None),
+    ({"describe": "Write one detailed paragraph.", "classify": "Unrelated classification context"},
+     "Write one detailed paragraph."),
+])
+def test_benchmark_caption_context_changes_only_instructions(tmp_path, monkeypatch, overrides, context):
+    from benchmarks.src.evaluation import evaluate
+    from ml_pipes import vlm
+    from ml_pipes.vlm.validation._caption_tokenizer import CaptionTokenizer
+
+    def prepare(tokenizer):
+        tokenizer.metadata = {"tokenizer_version": tokenizer.version, "java_version": "offline test"}
+        return tokenizer
+
+    monkeypatch.setattr(CaptionTokenizer, "prepare", prepare)
+    monkeypatch.setattr(CaptionTokenizer, "tokenize",
+                        lambda self, texts: [text.lower().replace(".", "").strip() for text in texts])
+    dataset = [
+        {"image": np.zeros((2, 3, 3), dtype=np.uint8), "image_id": index, "captions": references}
+        for index, references in enumerate([
+            ["a cat sits on a mat", "a cat on a mat"],
+            ["two dogs play outside", "two dogs play outside"],
+            ["an airplane flies above water"],
+        ])
+    ]
+
+    def backend(calls):
+        def predict(request):
+            calls.append(request)
+            return vlm.ModelResponse({"description": "a cat sits on a mat"})
+        return predict
+
+    original_calls, benchmark_calls = [], []
+    config = {"tokenizer_version": "3.4.1"}
+    baseline = vlm.Describe(backend(original_calls)).val(
+        dataset=dataset, cache_dir=tmp_path / "cache", tokenizer_version="3.4.1",
+    )
+    changed = evaluate("describe", backend(benchmark_calls), dataset, {
+        **config, "task_context": overrides,
+    }, tmp_path / "cache")
+    assert changed.results_dict == baseline.results_dict
+    assert changed.dataset_counts == baseline.dataset_counts
+    assert len(benchmark_calls) == len(original_calls) == 3
+    for before, after in zip(original_calls, benchmark_calls):
+        expected = before.instruction
+        if context is not None:
+            expected = expected.replace("\nProvide a prediction", f"\nContext: {context}\nProvide a prediction")
+        assert after.instruction == expected
+        assert after.response_spec.schema == before.response_spec.schema
+        assert "Unrelated classification context" not in after.instruction
+        assert "a cat sits on a mat" not in after.instruction
+        assert "two dogs play outside" not in after.instruction
+
+
 @pytest.mark.parametrize("changed", ["image", "target", "features"])
 def test_frozen_data_verification_detects_changes_and_loads_shared_data_once(monkeypatch, tmp_path, changed):
     import datasets

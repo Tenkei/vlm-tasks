@@ -136,12 +136,20 @@ class ReplayBackend:
 
 def task_settings(task_name):
     spec = TASKS[task_name]
-    return {"geometry": spec.geometry} if spec.geometry else {}
+    settings = {}
+    if spec.geometry:
+        settings["geometry"] = spec.geometry
+    if spec.context is not None:
+        settings["context"] = spec.context
+    return settings
 
 
 def evaluate(task_name, backend, dataset, config, cache):
     """Use the same public validator and scoring settings for every backend."""
-    task = getattr(vlm, TASKS[task_name].operator)(backend, **task_settings(task_name))
+    settings = task_settings(task_name)
+    if task_name in config.get("task_context", {}):
+        settings["context"] = config["task_context"][task_name]
+    task = getattr(vlm, TASKS[task_name].operator)(backend, **settings)
     options = {"dataset": dataset, "cache_dir": cache}
     if task_name == "detect":
         options["match_iou"] = config["match_iou"]

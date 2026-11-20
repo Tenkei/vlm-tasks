@@ -96,12 +96,21 @@ run, with repeated images possible within and across tasks.
 | Answer | VQA v2, questions with all ten answer votes | val |
 | Describe | COCO Captions 2017, images with all reference captions | val |
 
-Task settings use library defaults and no extra context. Dataset vocabularies
+Task settings use library defaults, with the shared caption context defined in
+[`src/task_registry.py`](src/task_registry.py) as described below. Dataset vocabularies
 provide classification/detection labels and attribute choices. Grounding
 receives each expression, and Answer receives each question. Caption scoring
 uses Stanford PTBTokenizer 3.4.1 with its pinned SHA-256; CIDEr document
 frequencies are computed over the selected images. Detailed metric and
 dataset adaptation rules are in [validation](../docs/validation.md).
+
+For prompt experiments, configs can override the shared defaults through a
+`task_context` mapping, such as `{"describe": "Write one detailed paragraph."}`.
+Both runners pass each entry to that task's public `context` argument and
+record the resolved instructions in the request journal. An explicit
+`{"describe": null}` omits the context for reproducing earlier prompts.
+Save prompt experiments under `experiments/`, separately from the benchmark
+protocol. Context does not change the response schema or scoring rules.
 
 `ClassifyMultiLabel` has no built-in validation dataset and is excluded. Planned
 tasks such as ReadText are excluded.
@@ -109,6 +118,19 @@ tasks such as ReadText are excluded.
 Each sample starts a fresh conversation. The local model is loaded once, and
 each run executes its configured tasks and samples sequentially. There is no
 separate warmup; the first inference call is included in timing.
+
+### Caption length
+
+COCO Captions 2017 references and our frozen subset average around 10 words.
+For fair model comparisons, the shared benchmark task uses this caption instruction:
+
+> Write exactly one sentence of 10 to 15 words describing the main visible subject and action. Do not add additional sentences.
+
+Captions are scored as generated, without truncation. Models that produce long
+captions despite the instruction remain subject to the standard metrics'
+penalties for excess length and unmatched content.
+
+For earlier results, see [Regenerate historical reports](#regenerate-historical-reports).
 
 ## Failures and usage
 
@@ -324,6 +346,17 @@ the rendering. The report generator embeds charts only when their report
 hashes and run order match the current results; regenerate charts after adding
 or changing runs or their completion metadata. To refresh only tables and the field guide, run
 `python -m benchmarks.src.generate_report`.
+
+### Regenerate historical reports
+
+Use the generation commands above with the saved `runs/` archives. Report
+generation reads their metrics and run configs, so it preserves scores from
+the original caption instructions without making new model requests.
+
+To recreate an earlier report's layout and rendering, use a separate checkout
+at that Git revision and the package versions recorded in its chart manifest.
+To rerun inference instead, follow [Reproduce](#reproduce) with the run's saved
+`config.json` and recorded source version rather than current model templates.
 
 ### Compare two models locally
 

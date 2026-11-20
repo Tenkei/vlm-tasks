@@ -13,6 +13,7 @@ class TaskSpec:
     primary_metric: str
     chart_metric_label: str
     geometry: str | None = None
+    context: str | None = None
 
     @property
     def variation(self):
@@ -62,6 +63,10 @@ TASKS = {
         metrics=(("cider", "CIDEr"), ("bleu_1", "BLEU-1"), ("bleu_2", "BLEU-2"),
                  ("bleu_3", "BLEU-3"), ("bleu_4", "BLEU-4"), ("rouge_l", "ROUGE-L")),
         primary_metric="rouge_l", chart_metric_label="ROUGE-L",
+        context=(
+            "Write exactly one sentence of 10 to 15 words describing the main visible "
+            "subject and action. Do not add additional sentences."
+        ),
     ),
 }
 
