@@ -185,6 +185,24 @@ answers. Increasing it is a separate experiment; see
 Correction retries keep the same cap and usually do not resolve cap failures;
 see [Correction retry runs](#correction-retry-runs) for when they are useful.
 
+### Setup revisions
+
+Model configs and task specs each declare a positive integer `revision`.
+Increment the model config revision when changing execution settings, and the
+task spec revision when changing task instructions or evaluation rules.
+Transformers configs use
+`checkpoint_revision` separately to pin the Hugging Face model checkpoint.
+
+New runs save the model config in `config.json` and selected task definitions
+in `task-specs/<task>.json`. Each task report stores these as
+`model_config_revision` and `task_spec_revision`. The task report
+`revision` field continues to identify the model checkpoint.
+Resume checks require matching saved definitions as well as revision numbers;
+combining versioned runs preserves these snapshots and revision values.
+
+Existing archives without revision metadata remain unversioned. Reporting
+still reads them; use their recorded source version for historical inference.
+
 ### Native JSON Schema runs
 
 Set `output_mode` to `"native"` in a Bedrock config to request provider-enforced
@@ -860,7 +878,7 @@ For partial results after interruption, see [Token-budget reports](#token-budget
 | `benchmarks/setup/task-specs/*.json` | Shared task datasets, operators, metrics, ordering and context |
 | `benchmarks/src/task_registry.py` | Load task specs and derive shared dataset mappings, metric labels and chart axes |
 | `benchmarks/src/evaluation.py` | Shared validation, frozen-data verification, response recording and replay |
-| `benchmarks/src/artifacts.py` | JSON artifacts, sample identities, content hashes and source provenance |
+| `benchmarks/src/artifacts.py` | JSON artifacts, setup snapshots and revision checks, sample identities, content hashes and source provenance |
 | `benchmarks/src/run_transformers.py` | Local model setup, inference and task reports |
 | `benchmarks/src/combine_runs.py` | Verify consecutive local or hosted subsets and rescore their saved responses without inference |
 | `benchmarks/src/usage.py` | Reconcile saved request usage and aggregate totals while preserving unavailable and partial costs |
@@ -870,13 +888,14 @@ For partial results after interruption, see [Token-budget reports](#token-budget
 | `benchmarks/src/generate_comparison.py` | On-demand local report for two selected model runs |
 | `benchmarks/src/run_token_budget.py` | Paired 2×-budget reruns of capped samples |
 | `benchmarks/src/report_token_budget.py` | Report completed token-budget records after stopping inference |
-| `runs/<run>/config.json` | Requested task, model, sample-count, token-budget and retry settings; omitted retries default to zero |
+| `runs/<run>/config.json` | Model config snapshot, including `revision`, requested tasks, sample count and inference settings |
+| `runs/<run>/task-specs/<task>.json` | Selected task definition snapshot, including `revision` |
 | `runs/<run>/manifest.json` | Dataset identities, targets and image hashes |
 | `runs/<run>/environment.json`, `requirements.txt` | Python/platform/package versions, git revision and source hashes |
 | `runs/<run>/model.json` | Actual model/processor/generation configuration |
 | `runs/<run>/pricing-source.html`, `pricing-source.json` | Official rate source snapshot and hash when config rates override the pricing package |
 | `runs/<run>/<task>.jsonl` | Ordered requests, raw generated text, usage, predictions and errors; join to manifest by index |
-| `runs/<run>/<task>.json` | Full validation metrics, breakdowns, failures, timings and usage totals |
+| `runs/<run>/<task>.json` | Both setup revisions, full validation metrics, breakdowns, failures, timings and usage totals |
 | `runs/<run>/completed.json` | All configured tasks completed, including retained tasks after a resume |
 | `runs/<run>/continuations/<timestamp>/` | Metadata and source hashes for an explicitly resumed run |
 | `runs/<run>/assembly.json`, `segments/` | Source index ranges, checksums and exact original runs when consecutive subsets are combined |

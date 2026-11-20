@@ -10,7 +10,9 @@ from time import perf_counter
 
 from ml_pipes import vlm
 
-from .artifacts import provenance, utc_now, write_json
+from .artifacts import (
+    model_config_revision, provenance, revision_fields, save_run_setup, utc_now, write_json,
+)
 from .evaluation import RecordingBackend, RecordingModel, evaluate, load_prepared, max_retries, remaining_tasks, task_settings, usage_summary
 from .task_registry import DATASETS
 
@@ -25,6 +27,7 @@ def main(argv=None):
     parser.add_argument("--resume", action="store_true", help="Continue untouched tasks after a task-boundary interruption")
     args = parser.parse_args(argv)
     config = json.loads(args.config.read_text())
+    model_config_revision(config)
     retries = max_retries(config)
     config["tasks"] = args.tasks or config["tasks"]
     if args.output.exists() and not args.resume:
@@ -47,7 +50,7 @@ def main(argv=None):
     if args.resume:
         metadata_output = args.output / "continuations" / utc_now().replace(":", "-")
     else:
-        write_json(args.output / "config.json", config)
+        save_run_setup(args.output, config)
         write_json(args.output / "manifest.json", manifest)
     packages = {dist.metadata["Name"]: dist.version for dist in metadata.distributions() if dist.metadata["Name"]}
     environment = {
@@ -58,9 +61,9 @@ def main(argv=None):
     }
     write_json(metadata_output / "environment.json", environment)
     (metadata_output / "requirements.txt").write_text("\n".join(f"{k}=={v}" for k, v in sorted(packages.items())) + "\n")
-    print(f"Loading {config['model']}@{config['revision']} on {device}", flush=True)
+    print(f"Loading {config['model']}@{config['checkpoint_revision']} on {device}", flush=True)
     started = perf_counter()
-    options = {"revision": config["revision"], "local_files_only": args.offline}
+    options = {"revision": config["checkpoint_revision"], "local_files_only": args.offline}
     processor = AutoProcessor.from_pretrained(config["model"], **options)
     weights = AutoModelForImageTextToText.from_pretrained(
         config["model"], dtype=getattr(torch, config["dtype"]), **options,
@@ -100,7 +103,8 @@ def main(argv=None):
             raise RuntimeError("Benchmark did not evaluate the requested number of samples")
         report = {
             "task": task_name, "dataset": dataset_name, "model": config["model"],
-            "revision": config["revision"], "device": device, "dtype": config["dtype"],
+            **revision_fields(task_name, config),
+            "revision": config["checkpoint_revision"], "device": device, "dtype": config["dtype"],
             "retries": retries,
             "execution_environment": str((metadata_output / "environment.json").relative_to(args.output)),
             "completed_at": utc_now(), "metrics": metrics.results_dict,

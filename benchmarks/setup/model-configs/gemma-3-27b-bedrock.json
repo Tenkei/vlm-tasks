@@ -1,4 +1,5 @@
 {
+  "revision": 1,
   "model": "google.gemma-3-27b-it",
   "profile": "benchmark",
   "region": "us-east-1",

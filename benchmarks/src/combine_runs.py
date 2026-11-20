@@ -9,7 +9,9 @@ import platform
 import shutil
 from time import perf_counter
 
-from .artifacts import ROOT, digest, encoded, provenance, utc_now, write_json
+from .artifacts import (
+    ROOT, check_run_setup, digest, encoded, provenance, revision_fields, save_run_setup, utc_now, write_json,
+)
 from .evaluation import ReplayBackend, evaluate, load_prepared
 from .task_registry import DATASETS
 from .usage import check_journal_usage, combine_usage
@@ -30,6 +32,9 @@ def checked_segments(sources, manifest):
     for source in sources:
         source = Path(source)
         config = json.loads((source / "config.json").read_text())
+        versioned = (source / "task-specs").is_dir() or isinstance(config.get("revision"), int)
+        if versioned:
+            check_run_setup(source, config)
         count = config["samples_per_task"]
         settings = {key: value for key, value in config.items() if key != "samples_per_task"}
         if reference is None:
@@ -81,6 +86,10 @@ def checked_segments(sources, manifest):
                     or report["dataset_fingerprint_sha256"]
                     != frozen["datasets"][DATASETS[task]]["fingerprint_sha256"]):
                 raise ValueError(f"Cannot verify segment task report: {task}")
+            if versioned and any(
+                report.get(key) != value for key, value in revision_fields(task, config).items()
+            ):
+                raise ValueError(f"Cannot verify segment task revisions: {task}")
             check_journal_usage(calls, report["usage"], task=task)
             reports[task], records[task] = report, calls
         segments.append({"source": source, "count": count, "offset": offset,
@@ -102,7 +111,10 @@ def combine(sources, prepared, output):
     segments = checked_segments(sources, manifest)
     config = {**segments[0]["config"], "samples_per_task": manifest["samples_per_task"]}
     loaded = load_prepared(prepared, manifest, config["tasks"])
-    write_json(output / "config.json", config)
+    if (segments[0]["source"] / "task-specs").is_dir() or isinstance(config.get("revision"), int):
+        save_run_setup(output, config)
+    else:
+        write_json(output / "config.json", config)
     write_json(output / "manifest.json", manifest)
     packages = {d.metadata["Name"]: d.version for d in metadata.distributions() if d.metadata["Name"]}
     write_json(output / "environment.json", {

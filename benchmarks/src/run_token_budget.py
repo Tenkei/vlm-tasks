@@ -115,7 +115,8 @@ def main(argv=None):
         "device": device, "packages": {d.metadata["Name"]: d.version for d in metadata.distributions() if d.metadata["Name"]},
         **provenance(),
     })
-    options = {"revision": config["revision"], "local_files_only": args.offline}
+    checkpoint = config["checkpoint_revision"] if "checkpoint_revision" in config else config["revision"]
+    options = {"revision": checkpoint, "local_files_only": args.offline}
     started = perf_counter()
     processor = AutoProcessor.from_pretrained(config["model"], **options)
     weights = AutoModelForImageTextToText.from_pretrained(

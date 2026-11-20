@@ -1,4 +1,5 @@
 {
+  "revision": 1,
   "order": 6,
   "dataset": "vqav2",
   "operator": "Answer",

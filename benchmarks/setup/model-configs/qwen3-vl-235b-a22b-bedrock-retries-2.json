@@ -1,4 +1,5 @@
 {
+  "revision": 1,
   "model": "qwen.qwen3-vl-235b-a22b",
   "profile": "benchmark",
   "region": "ap-northeast-1",

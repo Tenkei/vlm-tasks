@@ -35,6 +35,51 @@ def write_json(path, value):
     pending.replace(path)
 
 
+def model_config_revision(config):
+    revision = config.get("revision")
+    if type(revision) is not int or revision < 1:
+        raise ValueError("Model config revision must be a positive integer")
+    return revision
+
+
+def revision_fields(task, config):
+    from .task_registry import TASKS
+
+    return {"task_spec_revision": TASKS[task].revision,
+            "model_config_revision": model_config_revision(config)}
+
+
+def save_run_setup(output, config):
+    """Save the selected definitions once, before inference starts."""
+    from .task_registry import TASKS
+
+    output = Path(output)
+    model_config_revision(config)
+    specs = {task: asdict(TASKS[task]) for task in config["tasks"]}
+    paths = [output / "config.json", *(output / "task-specs" / f"{task}.json" for task in specs)]
+    if any(path.exists() for path in paths):
+        raise FileExistsError(f"Run setup already exists: {output}")
+    write_json(output / "config.json", config)
+    for task, spec in specs.items():
+        write_json(output / "task-specs" / f"{task}.json", spec)
+
+
+def check_run_setup(output, config):
+    """Reject changed config or task definitions without rewriting saved setup."""
+    from .task_registry import TASKS
+
+    output = Path(output)
+    model_config_revision(config)
+    if json.loads((output / "config.json").read_text()) != config:
+        raise ValueError("Run configuration differs from the saved run")
+    for task in config["tasks"]:
+        path = output / "task-specs" / f"{task}.json"
+        if not path.is_file():
+            raise ValueError(f"Run has no saved task spec: {task}; use the recorded source version for historical runs")
+        if encoded(json.loads(path.read_text())) != encoded(asdict(TASKS[task])):
+            raise ValueError(f"Run task spec differs from the saved run: {task}")
+
+
 def save_svg(figure, path):
     """Save stable SVG metadata and remove whitespace emitted by Matplotlib."""
     path = Path(path)

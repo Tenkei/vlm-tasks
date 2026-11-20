@@ -5,7 +5,7 @@ import datasets
 from PIL import Image
 import pytest
 
-from benchmarks.src.artifacts import digest, encoded, sample_record, write_json
+from benchmarks.src.artifacts import digest, encoded, revision_fields, sample_record, save_run_setup, write_json
 from benchmarks.src.combine_runs import checked_segments, combine, global_sample
 from benchmarks.src.evaluation import evaluate, usage_summary as local_usage_summary
 from benchmarks.src.usage import combine_usage
@@ -39,8 +39,9 @@ def consecutive_runs(tmp_path, request):
     for index, indices in enumerate(([0], [1, 2])):
         data = dataset.select(indices)
         source = tmp_path / f"segment-{index}"
-        config = {"model": "test", "tasks": ["classify"], "samples_per_task": len(data), "max_new_tokens": 4096}
-        write_json(source / "config.json", config)
+        config = {"model": "test", "revision": 1, "tasks": ["classify"],
+                  "samples_per_task": len(data), "max_new_tokens": 4096}
+        save_run_setup(source, config)
         local_manifest = manifest(data)
         write_json(source / "manifest.json", local_manifest)
         model = ({"settings": {"temperature": 0}} if backend_name == "bedrock" else {
@@ -78,6 +79,7 @@ def consecutive_runs(tmp_path, request):
             **({"backend": backend_name} if backend_name == "bedrock" else {}),
             **({"shared_model_load_seconds": model["load_seconds"]} if backend_name == "transformers" else {}),
             "model": "test", "task": "classify", "dataset": "cifar10",
+            **revision_fields("classify", config),
             "metrics": metrics.results_dict, "usage": usage_summary([row["generations"][0] for row in rows], len(rows)),
             "dataset_fingerprint_sha256": local_manifest["datasets"]["cifar10"]["fingerprint_sha256"],
             "speed_ms_per_sample": {"inference": 1000 + index * 3000},
@@ -92,6 +94,8 @@ def test_combination_rescores_failures_without_requests_and_preserves_original_u
     output = combine(sources, prepared, tmp_path / "combined")
     report = json.loads((output / "classify.json").read_text())
     assert report["metrics"]["samples"] == 3
+    assert report["task_spec_revision"] == report["model_config_revision"] == 1
+    assert (output / "task-specs/classify.json").read_bytes() == (sources[0] / "task-specs/classify.json").read_bytes()
     assert report["metrics"]["accuracy_top1"] == pytest.approx(1 / 3)
     assert report["metrics"]["failures"] == 1
     assert report["speed_ms_per_sample"]["inference"] == 3000
@@ -119,6 +123,29 @@ def test_explicit_dataset_ids_are_not_replaced_by_combined_row_numbers():
     sample = {"index": 0, "sample_id": "expression-17", "targets": {"sample_id": "expression-17"}}
     assert global_sample(sample, 10) == {**sample, "index": 10}
     assert sample["index"] == 0
+
+
+def test_combination_preserves_unversioned_legacy_records(consecutive_runs, tmp_path):
+    sources, prepared, _ = consecutive_runs
+    checkpoint = None
+    for source in sources:
+        config = json.loads((source / "config.json").read_text())
+        del config["revision"]
+        report = json.loads((source / "classify.json").read_text())
+        if report.get("backend", "transformers") == "transformers":
+            checkpoint = "hf-checkpoint"
+            config["revision"] = checkpoint
+            report["revision"] = checkpoint
+        write_json(source / "config.json", config)
+        del report["model_config_revision"], report["task_spec_revision"]
+        write_json(source / "classify.json", report)
+        (source / "task-specs/classify.json").unlink()
+        (source / "task-specs").rmdir()
+    output = combine(sources, prepared, tmp_path / "legacy-combined")
+    assert json.loads((output / "config.json").read_text()).get("revision") == checkpoint
+    assert json.loads((output / "classify.json").read_text()).get("revision") == checkpoint
+    assert "task_spec_revision" not in json.loads((output / "classify.json").read_text())
+    assert not (output / "task-specs").exists()
 
 
 def test_combination_does_not_write_inside_an_original_run(consecutive_runs):

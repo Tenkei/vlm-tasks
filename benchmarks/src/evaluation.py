@@ -6,7 +6,9 @@ from time import perf_counter
 
 from ml_pipes import vlm
 
-from .artifacts import digest, encoded, sample_record, serialize
+from .artifacts import (
+    check_run_setup, digest, encoded, revision_fields, sample_record, serialize,
+)
 from .task_registry import DATASETS, TASKS
 
 
@@ -91,6 +93,9 @@ def remaining_tasks(output, config, manifest):
         raise ValueError("Resume configuration differs from the saved run")
     if json.loads((output / "manifest.json").read_text()) != manifest:
         raise ValueError("Resume prepared data differs from the saved run")
+    versioned = (output / "task-specs").is_dir() or isinstance(config.get("revision"), int)
+    if versioned:
+        check_run_setup(output, config)
     pending = []
     for task in config["tasks"]:
         report_path = output / f"{task}.json"
@@ -105,6 +110,10 @@ def remaining_tasks(output, config, manifest):
                     or [call["index"] for call in calls] != list(range(config["samples_per_task"]))
                     or report["dataset_fingerprint_sha256"] != manifest["datasets"][DATASETS[task]]["fingerprint_sha256"]):
                 raise ValueError(f"Cannot verify completed task: {task}")
+            if versioned and any(
+                report.get(key) != value for key, value in revision_fields(task, config).items()
+            ):
+                raise ValueError(f"Cannot verify completed task revisions: {task}")
         else:
             if journal.exists() and journal.stat().st_size:
                 raise ValueError(f"Task {task} has an interrupted request journal; preserve and inspect it before resuming")

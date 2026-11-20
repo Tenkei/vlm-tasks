@@ -1,4 +1,5 @@
 {
+  "revision": 1,
   "order": 7,
   "dataset": "coco_captions2017",
   "operator": "Describe",

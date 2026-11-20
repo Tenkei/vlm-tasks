@@ -12,6 +12,7 @@ TASK_SPECS_DIRECTORY = ROOT / "benchmarks/setup/task-specs"
 
 @dataclass(frozen=True)
 class TaskSpec:
+    revision: int
     order: int
     dataset: str
     operator: str
@@ -39,6 +40,8 @@ def load_task_specs(directory=TASK_SPECS_DIRECTORY):
             data = json.loads(path.read_text())
             data["metrics"] = tuple(tuple(metric) for metric in data["metrics"])
             spec = TaskSpec(**data)
+            if type(spec.revision) is not int or spec.revision < 1:
+                raise ValueError("revision must be a positive integer")
             if type(spec.order) is not int or spec.order < 1 or spec.order in orders:
                 raise ValueError("order must be a unique positive integer")
             if any(len(metric) != 2 for metric in spec.metrics) or spec.primary_metric not in dict(spec.metrics):

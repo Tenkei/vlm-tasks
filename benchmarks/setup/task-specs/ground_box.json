@@ -1,4 +1,5 @@
 {
+  "revision": 1,
   "order": 3,
   "dataset": "refcocog",
   "operator": "Ground",

@@ -1,4 +1,5 @@
 {
+  "revision": 1,
   "order": 5,
   "dataset": "ovad",
   "operator": "Attributes",

@@ -32,9 +32,11 @@ def test_task_specs_load_json_values_in_explicit_order(tmp_path):
 
 @pytest.mark.parametrize("change", [
     {"order": 0}, {"order": True}, {"order": "1"},
+    {"revision": 0}, {"revision": True},
+    {"revision": "1"}, {"revision": None},
     {"primary_metric": "missing"}, {"metrics": [["rouge_l"]]},
 ])
-def test_task_specs_reject_invalid_order_or_metrics(tmp_path, change):
+def test_task_specs_reject_invalid_revision_order_or_metrics(tmp_path, change):
     data = json.loads((TASK_SPECS_DIRECTORY / "describe.json").read_text())
     (tmp_path / "describe.json").write_text(json.dumps({**data, **change}))
     with pytest.raises(ValueError, match="Invalid task spec"):

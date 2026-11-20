@@ -15,7 +15,9 @@ from pydantic_ai.models.bedrock import BedrockConverseModel
 from ml_pipes import vlm
 from ml_pipes.vlm.transformer import _PROMPTED_OUTPUT_TEMPLATE
 
-from .artifacts import provenance, utc_now, write_json
+from .artifacts import (
+    model_config_revision, provenance, revision_fields, save_run_setup, utc_now, write_json,
+)
 from .evaluation import RecordingBackend, evaluate, load_prepared, max_retries, remaining_tasks
 from .task_registry import DATASETS
 
@@ -159,6 +161,7 @@ def main(argv=None):
     parser.add_argument("--resume", action="store_true", help="Continue untouched tasks after a task-boundary interruption")
     args = parser.parse_args(argv)
     config = json.loads(args.config.read_text())
+    model_config_revision(config)
     retries = max_retries(config)
     mode = output_mode(config)
     if args.output.exists() and not args.resume:
@@ -187,7 +190,7 @@ def main(argv=None):
     if args.resume:
         metadata_output = args.output / "continuations" / utc_now().replace(":", "-")
     else:
-        write_json(args.output / "config.json", config)
+        save_run_setup(args.output, config)
         write_json(args.output / "manifest.json", manifest)
     packages = {d.metadata["Name"]: d.version for d in metadata.distributions() if d.metadata["Name"]}
     write_json(metadata_output / "environment.json", {
@@ -228,6 +231,7 @@ def main(argv=None):
             raise RuntimeError("Benchmark did not evaluate the requested number of samples")
         report = {
             "task": task_name, "dataset": DATASETS[task_name], "model": config["model"],
+            **revision_fields(task_name, config),
             "inference_model_id": target,
             "output_mode": mode, "retries": retries,
             "revision": None, "device": f"bedrock/{config['region']}", "dtype": "provider-managed",

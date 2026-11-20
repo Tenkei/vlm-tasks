@@ -231,10 +231,15 @@ def test_official_rate_override_prices_cached_input_and_total_output():
 
 
 def test_resume_skips_completed_tasks_and_refuses_to_repeat_interrupted_requests(tmp_path):
-    config = {"model": "google.gemma-3-27b-it", "tasks": ["classify", "describe"], "samples_per_task": 2}
+    from benchmarks.src.artifacts import revision_fields, save_run_setup
+
+    config = {"model": "google.gemma-3-27b-it", "revision": 1,
+              "tasks": ["classify", "describe"], "samples_per_task": 2}
+    save_run_setup(tmp_path, config)
     manifest = {"datasets": {"cifar10": {"fingerprint_sha256": "frozen"}}}
-    for name, value in (("config", config), ("manifest", manifest), ("classify", {
+    for name, value in (("manifest", manifest), ("classify", {
         "model": config["model"], "task": "classify", "metrics": {"samples": 2},
+        **revision_fields("classify", config),
         "dataset_fingerprint_sha256": "frozen",
     })):
         (tmp_path / f"{name}.json").write_text(json.dumps(value))
@@ -245,6 +250,13 @@ def test_resume_skips_completed_tasks_and_refuses_to_repeat_interrupted_requests
         remaining_tasks(tmp_path, {**config, "model": "different"}, manifest)
     with pytest.raises(ValueError, match="prepared data differs"):
         remaining_tasks(tmp_path, config, {})
+    path = tmp_path / "task-specs/describe.json"
+    original = path.read_bytes()
+    spec = json.loads(original)
+    path.write_text(json.dumps({**spec, "revision": 2}))
+    with pytest.raises(ValueError, match="task spec differs"):
+        remaining_tasks(tmp_path, config, manifest)
+    path.write_bytes(original)
     (tmp_path / "describe.jsonl").write_text('{"index":0}\n')
     with pytest.raises(ValueError, match="interrupted request journal"):
         remaining_tasks(tmp_path, config, manifest)
