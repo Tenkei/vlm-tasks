@@ -4,16 +4,29 @@ This protocol compares configured VLM task pipelines on frozen validation
 samples. Results live in the [benchmark report](README.md); its
 [Table field guide](README.md#table-field-guide) explains metric labels,
 reported columns, units and normalization.
-Python code lives in [`src/`](src/) and model configurations in
-[`configs/`](configs/), alongside the results and this method. The code calls
+Python code lives in [`src/`](src/); model configurations and task specs live
+in [`setup/model-configs/`](setup/model-configs/) and
+[`setup/task-specs/`](setup/task-specs/). The code calls
 the library's public `.val()` method and does not implement alternative task
 scoring. Run the module commands below from the repository root.
+
+## Contents
+
+- [Layout and naming](#layout-and-naming)
+- [Task protocols](#task-protocols)
+- [Run parameters](#run-parameters)
+- [Reporting](#reporting)
+- [Runs](#runs)
+- [Artifacts](#artifacts)
+- [Interpretation limits](#interpretation-limits)
 
 ## Layout and naming
 
 ```text
 benchmarks/
-├── configs/                   # Model configurations
+├── setup/
+│   ├── model-configs/          # Model configurations
+│   └── task-specs/             # Task definitions and shared settings
 ├── src/                       # Preparation, evaluation and report code
 ├── runs/                      # Recorded evaluations, grouped by run ID
 ├── reports/
@@ -33,51 +46,14 @@ One-off investigations and token-budget outputs live in the repository-root
 Python modules use `snake_case` and describe their action or responsibility.
 Model configs use `<model>-<backend>.json`, including model size where relevant;
 variants append a setting such as `-retries-<limit>` or `-native`.
+Task specs use the task ID as their filename, such as `ground_box.json`;
+their `order` field fixes the task and chart-axis order.
 Report folders match the overview's **Model profiles** and **Task comparisons**
 sections. Recorded run IDs, task IDs and original metadata retain their identity
 when directories move. Prepared datasets are cached in
 `.cache/prepared-datasets-100/`; the suffix identifies the configured sample count.
 
-## Benchmark parameters
-
-Each run uses a JSON configuration from [`configs/`](configs/). The sample
-count, output budget, output mode and retry allowance are configurable; the values below
-describe the published runs rather than requirements of the protocol.
-
-| Parameter | Behavior | Published configurations |
-|---|---|---|
-| `model` and backend settings | Select the model and execution environment; record revisions, hardware or provider routing where available | Local Transformers and AWS Bedrock; see each config |
-| `tasks` | Select task variants to evaluate | Seven variants across six vision tasks |
-| `samples_per_task` | Positive sample count, frozen during preparation; the run must match its prepared manifest | 100 per variant |
-| `max_new_tokens` | Maximum generated tokens per request, including each correction attempt | 4,096 |
-| `output_mode` (Bedrock) | `prompted` supplies schema instructions in the prompt; `native` requests provider JSON Schema output. Defaults to `prompted` | Prompted baselines and a separate native Qwen3-VL-235B run |
-| `retries` | Nonnegative maximum correction attempts after the initial request; defaults to `0` when omitted | `0`, plus a separate Qwen3-VL-235B run with `2` |
-| Generation settings | Control decoding where the backend supports it; record differences such as provider-controlled sampling | Local greedy decoding with seed 42; hosted settings vary by model |
-| `thinking` (Bedrock, optional) | Pass PydanticAI's reasoning-effort setting to the provider; reasoning counts toward `max_new_tokens` | Claude Fable 5.2: `high` adaptive effort |
-| `match_iou`, `tokenizer_version` | Fix detection matching and caption tokenization for scoring | `0.5` and Stanford PTBTokenizer `3.4.1` |
-
-The Transformers runner uses prompted JSON output. The Bedrock runner accepts
-prompted or native output; see [Native JSON Schema runs](#native-json-schema-runs).
-The library's output modes are described in
-[output modes and retries](../docs/model-backends.md#output-modes-and-retries).
-Actual generation configuration, processor or provider settings, output
-instructions and retry allowance are saved in each run's `model.json`.
-
-For a model comparison, keep the prepared data, task instructions, response
-schemas, scoring, token budget and retry allowance the same, and record any
-differences. To study a parameter such as retries or token budget, change that
-parameter in a separate config and save a separate run. Output-mode comparisons
-also change how the schema reaches the model and which constraints the provider
-enforces. Retry and token-budget comparisons evaluate different inference budgets
-as well as task quality.
-
-A fixed output cap bounds repetitive generation, but can truncate valid long
-answers. Increasing it is a separate experiment; see
-[token-budget reproduction](#double-the-budget-for-capped-responses).
-Correction retries keep the same cap and usually do not resolve cap failures;
-see [Correction retry runs](#correction-retry-runs) for when they are useful.
-
-## Fixed protocol
+## Task protocols
 
 Select the first `samples_per_task` eligible rows in each default loader's
 source order, with no shuffle or prediction-based filtering. The local seed
@@ -96,21 +72,13 @@ run, with repeated images possible within and across tasks.
 | Answer | VQA v2, questions with all ten answer votes | val |
 | Describe | COCO Captions 2017, images with all reference captions | val |
 
-Task settings use library defaults, with the shared caption context defined in
-[`src/task_registry.py`](src/task_registry.py) as described below. Dataset vocabularies
+Task settings use library defaults, with shared benchmark settings defined in
+[`setup/task-specs/`](setup/task-specs/). Dataset vocabularies
 provide classification/detection labels and attribute choices. Grounding
 receives each expression, and Answer receives each question. Caption scoring
 uses Stanford PTBTokenizer 3.4.1 with its pinned SHA-256; CIDEr document
 frequencies are computed over the selected images. Detailed metric and
 dataset adaptation rules are in [validation](../docs/validation.md).
-
-For prompt experiments, configs can override the shared defaults through a
-`task_context` mapping, such as `{"describe": "Write one detailed paragraph."}`.
-Both runners pass each entry to that task's public `context` argument and
-record the resolved instructions in the request journal. An explicit
-`{"describe": null}` omits the context for reproducing earlier prompts.
-Save prompt experiments under `experiments/`, separately from the benchmark
-protocol. Context does not change the response schema or scoring rules.
 
 `ClassifyMultiLabel` has no built-in validation dataset and is excluded. Planned
 tasks such as ReadText are excluded.
@@ -132,7 +100,7 @@ penalties for excess length and unmatched content.
 
 For earlier results, see [Regenerate historical reports](#regenerate-historical-reports).
 
-## Failures and usage
+### Failures and usage
 
 Model response failures remain in all applicable denominators; validation
 uses its existing failure policy after any correction attempts are exhausted.
@@ -170,14 +138,61 @@ model load time are recorded separately. Hosted timing includes network and
 service time. Batching, concurrency, cold downloads, peak memory and energy
 are not measured.
 
-## Native JSON Schema runs
+## Run parameters
+
+Each run uses a JSON configuration from [`setup/model-configs/`](setup/model-configs/). The sample
+count, output budget, output mode and retry allowance are configurable; the values below
+describe the published runs rather than requirements of the protocol.
+
+| Parameter | Behavior | Published configurations |
+|---|---|---|
+| `model` and backend settings | Select the model and execution environment; record revisions, hardware or provider routing where available | Local Transformers and AWS Bedrock; see each config |
+| `tasks` | Select task variants to evaluate | Seven variants across six vision tasks |
+| `samples_per_task` | Positive sample count, frozen during preparation; the run must match its prepared manifest | 100 per variant |
+| `max_new_tokens` | Maximum generated tokens per request, including each correction attempt | 4,096 |
+| `output_mode` (Bedrock) | `prompted` supplies schema instructions in the prompt; `native` requests provider JSON Schema output. Defaults to `prompted` | Prompted baselines and a separate native Qwen3-VL-235B run |
+| `retries` | Nonnegative maximum correction attempts after the initial request; defaults to `0` when omitted | `0`, plus a separate Qwen3-VL-235B run with `2` |
+| Generation settings | Control decoding where the backend supports it; record differences such as provider-controlled sampling | Local greedy decoding with seed 42; hosted settings vary by model |
+| `thinking` (Bedrock, optional) | Pass PydanticAI's reasoning-effort setting to the provider; reasoning counts toward `max_new_tokens` | Claude Fable 5.2: `high` adaptive effort |
+| `match_iou`, `tokenizer_version` | Fix detection matching and caption tokenization for scoring | `0.5` and Stanford PTBTokenizer `3.4.1` |
+
+The Transformers runner uses prompted JSON output. The Bedrock runner accepts
+prompted or native output; see [Native JSON Schema runs](#native-json-schema-runs).
+The library's output modes are described in
+[output modes and retries](../docs/model-backends.md#output-modes-and-retries).
+Actual generation configuration, processor or provider settings, output
+instructions and retry allowance are saved in each run's `model.json`.
+
+For prompt experiments, configs can override the shared defaults through a
+`task_context` mapping, such as `{"describe": "Write one detailed paragraph."}`.
+Both runners pass each entry to that task's public `context` argument and
+record the resolved instructions in the request journal. An explicit
+`{"describe": null}` omits the context for reproducing earlier prompts.
+Save prompt experiments under `experiments/`, separately from the benchmark
+protocol. Context does not change the response schema or scoring rules.
+
+For a model comparison, keep the prepared data, task instructions, response
+schemas, scoring, token budget and retry allowance the same, and record any
+differences. To study a parameter such as retries or token budget, change that
+parameter in a separate config and save a separate run. Output-mode comparisons
+also change how the schema reaches the model and which constraints the provider
+enforces. Retry and token-budget comparisons evaluate different inference budgets
+as well as task quality.
+
+A fixed output cap bounds repetitive generation, but can truncate valid long
+answers. Increasing it is a separate experiment; see
+[token-budget reproduction](#double-the-budget-for-capped-responses).
+Correction retries keep the same cap and usually do not resolve cap failures;
+see [Correction retry runs](#correction-retry-runs) for when they are useful.
+
+### Native JSON Schema runs
 
 Set `output_mode` to `"native"` in a Bedrock config to request provider-enforced
 JSON Schema output through `outputConfig.textFormat`. Omitting it preserves
 the prompted baseline. Native mode requires support from the exact model,
 API route and installed adapter; a provider model card or SDK capability flag
-alone may be inaccurate. Live image-input probes confirmed support for
-`qwen.qwen3-vl-235b-a22b` in `ap-northeast-1` before this benchmark run.
+alone may be inaccurate. Confirm support with a live image-input probe before
+starting a run.
 
 Native runs use PydanticAI's provider schema transformer rather than the
 prompted baseline's disabled transformer. It adapts the task schema to the
@@ -196,24 +211,10 @@ report labels these profiles `(JSON Schema)`; retry allowance is an independent
 parameter and defaults to zero. There is no dedicated warmup; measured request
 latency includes any provider-side schema compilation incurred during the run.
 
-The [Qwen3-VL-235B native config](configs/qwen3-vl-235b-a22b-bedrock-native.json)
-uses the same frozen 100 samples per task variant, task instructions, original
-schemas, scoring, 4,096-token cap and temperature zero as the prompted baseline,
-with native output enabled and no correction retries. Hosted first-attempt
-responses can vary between runs, even at temperature zero.
+See [Qwen3-VL-235B with native JSON Schema](#qwen3-vl-235b-with-native-json-schema)
+for a concrete run.
 
-After preparing the data and signing in as described under
-[Larger Qwen3 on AWS Bedrock](#larger-qwen3-on-aws-bedrock), reproduce it with:
-
-```bash
-HF_HUB_OFFLINE=0 HF_DATASETS_OFFLINE=0 .venv/bin/python -m benchmarks.src.run_bedrock \
-  --config benchmarks/configs/qwen3-vl-235b-a22b-bedrock-native.json \
-  --prepared benchmarks/.cache/prepared-datasets-100 \
-  --output benchmarks/runs/qwen3-vl-235b-bedrock-native-reproduction
-.venv/bin/python -m benchmarks.src.generate_charts
-```
-
-## Correction retry runs
+### Correction retry runs
 
 Set `retries` in any Transformers or Bedrock benchmark config to allow
 PydanticAI response correction. It is a nonnegative integer and defaults to
@@ -222,7 +223,7 @@ up to two additional attempts, or three model requests per sample. Retries can
 help with invalid responses, but usually do not resolve output-token-limit
 failures because **every attempt retains the same output cap**.
 
-### How correction works
+#### How correction works
 
 When parsing or response validation fails, the backend sends validation
 feedback to the model in the same sample's conversation. The original image,
@@ -241,7 +242,7 @@ failed attempts. Usage and timing cover the whole conversation; see the
 The [backend guide](../docs/model-backends.md#output-modes-and-retries)
 describes the underlying retry API.
 
-### When to use retries
+#### When to use retries
 
 Retries are most useful for occasional format or constraint violations that
 the model can correct from specific validation feedback. Inspect saved failed
@@ -284,21 +285,34 @@ vary even at temperature zero, so differences from an earlier baseline may
 also include initial-response variation. Inspect attempts within each saved
 sample to see what correction changed.
 
-### Example: Qwen3-VL-235B on Bedrock
+See the [Qwen3-VL-235B retry example](#reproduce-the-retry-example) for a
+complete run.
 
-The [two-retry configuration](configs/qwen3-vl-235b-a22b-bedrock-retries-2.json)
-illustrates this parameter. It keeps the baseline's 100 frozen samples per
-task, model settings, first-attempt prompts, nested response schemas, scoring
-and 4,096-token limit per request, while setting `retries` to `2`. All seven
-task variants are evaluated in a fresh run stored separately from the
-zero-retry baseline.
+## Reporting
 
-See the [published overview table](https://github.com/Tenkei/vlm-tasks/blob/main/benchmarks/README.md)
-and the dedicated [Qwen3-VL-235B (2 retries) profile](https://github.com/Tenkei/vlm-tasks/blob/main/benchmarks/README.md#qwen3-vl-235b-2-retries)
-for results, and the [reproduction command](#reproduce-the-retry-example)
-below to run the same configuration.
+Build the overview, charts and model comparisons from saved task reports.
+Reporting makes no model requests.
 
-## Model profile charts
+### Generate reports
+
+Generate PNG and editable SVG files using saved reports only:
+
+```bash
+uv pip install --python .venv/bin/python 'matplotlib==3.11.2'
+.venv/bin/python -m benchmarks.src.generate_charts
+```
+
+The chart generator validates that all seven main metrics are present and
+bounded, writes one profile per model/run and one comparison per task, and
+refreshes the report. It performs no inference. `reports/charts/manifest.json`
+records metric choices, exact scores, sample counts, Matplotlib/NumPy versions,
+and source, report, run-completion metadata and figure hashes. Use those package versions to reproduce
+the rendering. The report generator embeds charts only when their report
+hashes and run order match the current results; regenerate charts after adding
+or changing runs or their completion metadata. To refresh only tables and the field guide, run
+`python -m benchmarks.src.generate_report`.
+
+### Model profile charts
 
 The [radar charts](README.md#model-profiles) show one profile per model/run.
 Each axis uses the task's main metric from the report's overview table.
@@ -330,33 +344,17 @@ colors; if both comparison curves share a color, the second uses the next
 palette entry, wrapping at the end. Manifests record resolved colors and
 source hashes.
 
-Generate PNG and editable SVG files using saved reports only:
+### Task comparison charts
 
-```bash
-uv pip install --python .venv/bin/python 'matplotlib==3.11.2'
-.venv/bin/python -m benchmarks.src.generate_charts
-```
+The [task comparisons](README.md#task-comparisons) show one horizontal bar
+chart per task variant, using the same main metrics, model order and colors
+as the model profiles. Bars use the same fixed 0–100 range (recorded metric
+multiplied by 100); no scores are normalized against the observed models.
 
-The chart generator validates that all seven main metrics are present and
-bounded, writes one profile per model/run and one comparison per task, and
-refreshes the report. It performs no inference. `reports/charts/manifest.json`
-records metric choices, exact scores, sample counts, Matplotlib/NumPy versions,
-and source, report, run-completion metadata and figure hashes. Use those package versions to reproduce
-the rendering. The report generator embeds charts only when their report
-hashes and run order match the current results; regenerate charts after adding
-or changing runs or their completion metadata. To refresh only tables and the field guide, run
-`python -m benchmarks.src.generate_report`.
-
-### Regenerate historical reports
-
-Use the generation commands above with the saved `runs/` archives. Report
-generation reads their metrics and run configs, so it preserves scores from
-the original caption instructions without making new model requests.
-
-To recreate an earlier report's layout and rendering, use a separate checkout
-at that Git revision and the package versions recorded in its chart manifest.
-To rerun inference instead, follow [Reproduce](#reproduce) with the run's saved
-`config.json` and recorded source version rather than current model templates.
+The chart manifest records each task's metric, original scores, displayed
+model labels and filenames. The report pairs charts with full tables and
+links both views through its overview. Shared field definitions live in the
+[Table field guide](README.md#table-field-guide).
 
 ### Compare two models locally
 
@@ -399,19 +397,47 @@ uses the same formatting and usage accounting as the main report, with links
 back to the selected source results. The manifest records selected runs, original
 scores, rendering versions, source and input hashes, and generated file hashes.
 
-### Task comparison charts
+### Token-budget reports
 
-The [task comparisons](README.md#task-comparisons) show one horizontal bar
-chart per task variant, using the same main metrics, model order and colors
-as the model profiles. Bars use the same fixed 0–100 range (recorded metric
-multiplied by 100); no scores are normalized against the observed models.
+If an experiment is stopped, report completed records without loading model
+weights or running further inference:
 
-The chart manifest records each task's metric, original scores, displayed
-model labels and filenames. The report pairs charts with full tables and
-links both views through its overview. Shared field definitions live in the
-[Table field guide](README.md#table-field-guide).
+```bash
+python -m benchmarks.src.report_token_budget \
+  --experiment experiments/token-budget/reproduction \
+  --baseline benchmarks/runs/qwen3-vl-2b-20261112 \
+  --interrupted-requests 1
+```
 
-## Reproduce
+This writes a partial table and `status.json`, distinguishing completed,
+interrupted and unstarted samples. Counts and token totals in that table cover
+completed cases only; interrupted generation usage is unknown. The
+`--interrupted-requests` value records how many active requests were stopped.
+`--baseline` supplies the current run location when its originally recorded
+path predates a directory move. Paths inside original run and experiment
+artifacts are retained as evidence of their execution environment.
+
+### Regenerate historical reports
+
+Use the generation commands above with the saved `runs/` archives. Report
+generation reads their metrics and run configs, so it preserves scores from
+the original caption instructions without making new model requests.
+
+To recreate an earlier report's layout and rendering, use a separate checkout
+at that Git revision and the package versions recorded in its chart manifest.
+To rerun inference instead, follow [Runs](#runs) with the run's saved
+`config.json` and recorded source version rather than current model templates.
+
+## Runs
+
+Expand a setup or run guide below for commands and execution details.
+After inference, use [Generate reports](#generate-reports) to refresh the
+overview and charts.
+
+### Environment setup
+
+<details>
+<summary>View environment setup</summary>
 
 From the repository root, create a Python 3.12 environment and install the
 project and compatible local model dependencies:
@@ -426,11 +452,16 @@ installed versions for the baseline. Use a suitable PyTorch/torchvision pair
 for other hardware and record that difference. Java must be on `PATH` for
 caption scoring. See the [Transformers setup](../docs/huggingface-transformers.md).
 
+</details>
+
 ### Local Qwen3 baseline
+
+<details>
+<summary>View local model setup and commands</summary>
 
 The first published model is `Qwen/Qwen3-VL-2B-Instruct` from Hugging Face,
 revision `89644892e4d85e24eaac8bacfd4f463576704203`. Its configuration is
-[`qwen3-vl-2b-transformers.json`](configs/qwen3-vl-2b-transformers.json):
+[`qwen3-vl-2b-transformers.json`](setup/model-configs/qwen3-vl-2b-transformers.json):
 Transformers, Apple MPS, float16, greedy decoding (`do_sample=False`), seed 42,
 4,096 new tokens per request and zero correction retries. The baseline host
 is an Apple M1 Pro with 32 GiB unified memory running macOS 15.5. Exact
@@ -440,12 +471,11 @@ Prepare data independently of inference. This downloads source annotations,
 the selected images, and the caption tokenizer into the benchmark cache:
 
 ```bash
-python -m benchmarks.src.prepare_datasets --config benchmarks/configs/qwen3-vl-2b-transformers.json \
+python -m benchmarks.src.prepare_datasets --config benchmarks/setup/model-configs/qwen3-vl-2b-transformers.json \
   --output benchmarks/.cache/prepared-datasets-100
-python -m benchmarks.src.run_transformers --config benchmarks/configs/qwen3-vl-2b-transformers.json \
+python -m benchmarks.src.run_transformers --config benchmarks/setup/model-configs/qwen3-vl-2b-transformers.json \
   --prepared benchmarks/.cache/prepared-datasets-100 \
   --output benchmarks/runs/qwen3-vl-2b-reproduction
-python -m benchmarks.src.generate_report
 ```
 
 Both preparation and inference require a new output directory to prevent
@@ -479,13 +509,19 @@ any differences. This runner targets decoder-only models compatible with the
 existing Transformers adapter. Bedrock has a separate runner below. Do not
 average scores across unrelated task metrics.
 
-Task definitions, validation metric labels and chart axes are shared in
-[`task_registry.py`](src/task_registry.py). Both runners and experiment scoring use the same
+Task definitions are shared JSON files in [`setup/task-specs/`](setup/task-specs/).
+[`task_registry.py`](src/task_registry.py) loads their dataset mappings, metric
+labels and chart axes. Both runners and experiment scoring use the same
 validation dispatch, frozen-data checks and response recording in
 [`evaluation.py`](src/evaluation.py). The command modules handle model setup and
 artifact writing. Reporting reads saved results and makes no model calls.
 
+</details>
+
 ### Offline loading and resuming
+
+<details>
+<summary>View offline and resume procedures</summary>
 
 `--offline` on `run_transformers` restricts checkpoint and processor loading
 to cached files. Caption scoring also uses a checksum-verified Stanford
@@ -507,7 +543,12 @@ before inference add no model requests or scored failures. The local runner
 also supports `--tasks TASK ...` for a selected-task run in a fresh output
 directory; retain artifacts from both invocations if using this alternative.
 
+</details>
+
 ### Combine consecutive runs
+
+<details>
+<summary>View combination and rescoring procedure</summary>
 
 [`combine_runs.py`](src/combine_runs.py) joins completed consecutive subsets
 from local or hosted backends. It verifies that the parts cover the full
@@ -529,11 +570,16 @@ in sample order and use a new output directory. The
 [Fable pilot continuation](#continuing-the-pilot-without-repeating-requests)
 below gives a concrete example; the same command accepts local runs.
 
+</details>
+
 ### Larger Qwen3 on AWS Bedrock
+
+<details>
+<summary>View hosted Qwen3 setup and commands</summary>
 
 The hosted comparison uses `qwen.qwen3-vl-235b-a22b` in `ap-northeast-1`, with
 the existing `benchmark` AWS profile. Configuration is in
-[`qwen3-vl-235b-a22b-bedrock.json`](configs/qwen3-vl-235b-a22b-bedrock.json), and execution code is
+[`qwen3-vl-235b-a22b-bedrock.json`](setup/model-configs/qwen3-vl-235b-a22b-bedrock.json), and execution code is
 in [`run_bedrock.py`](src/run_bedrock.py).
 
 Install the optional dependencies and authenticate through the browser:
@@ -543,10 +589,9 @@ uv pip install --python .venv/bin/python \
   'pydantic-ai-slim[bedrock]==2.61.0' 'botocore[crt]'
 aws login --profile benchmark
 .venv/bin/python -m benchmarks.src.run_bedrock \
-  --config benchmarks/configs/qwen3-vl-235b-a22b-bedrock.json \
+  --config benchmarks/setup/model-configs/qwen3-vl-235b-a22b-bedrock.json \
   --prepared benchmarks/.cache/prepared-datasets-100 \
   --output benchmarks/runs/qwen3-vl-235b-bedrock-reproduction
-.venv/bin/python -m benchmarks.src.generate_report
 ```
 
 This uses the same frozen 100 rows for each of the seven task configurations,
@@ -570,40 +615,85 @@ invoices, which the Converse API does not return. Reports record cost coverage
 and unmeasured usage; display conventions are defined in the
 [Table field guide](README.md#table-field-guide).
 
+</details>
+
+### Qwen3-VL-235B with native JSON Schema
+
+<details>
+<summary>View native JSON Schema run</summary>
+
+Live image-input probes confirmed support for
+`qwen.qwen3-vl-235b-a22b` in `ap-northeast-1` before this benchmark run.
+
+The [Qwen3-VL-235B native config](setup/model-configs/qwen3-vl-235b-a22b-bedrock-native.json)
+uses the same frozen 100 samples per task variant, task instructions, original
+schemas, scoring, 4,096-token cap and temperature zero as the prompted baseline,
+with native output enabled and no correction retries. Hosted first-attempt
+responses can vary between runs, even at temperature zero.
+
+Use the environment, prepared data and AWS login from
+[Larger Qwen3 on AWS Bedrock](#larger-qwen3-on-aws-bedrock), with a fresh output directory:
+
+```bash
+HF_HUB_OFFLINE=0 HF_DATASETS_OFFLINE=0 .venv/bin/python -m benchmarks.src.run_bedrock \
+  --config benchmarks/setup/model-configs/qwen3-vl-235b-a22b-bedrock-native.json \
+  --prepared benchmarks/.cache/prepared-datasets-100 \
+  --output benchmarks/runs/qwen3-vl-235b-bedrock-native-reproduction
+```
+
+</details>
+
 ### Reproduce the retry example
 
-To reproduce the [Qwen3-VL-235B retry example](#example-qwen3-vl-235b-on-bedrock),
-use the same environment, prepared datasets and AWS login as above, with its
+<details>
+<summary>View Qwen3-VL-235B retry run</summary>
+
+The [two-retry configuration](setup/model-configs/qwen3-vl-235b-a22b-bedrock-retries-2.json)
+illustrates this parameter. It keeps the baseline's 100 frozen samples per
+task, model settings, first-attempt prompts, nested response schemas, scoring
+and 4,096-token limit per request, while setting `retries` to `2`. All seven
+task variants are evaluated in a fresh run stored separately from the
+zero-retry baseline.
+
+See the [published overview table](https://github.com/Tenkei/vlm-tasks/blob/main/benchmarks/README.md)
+and the dedicated [Qwen3-VL-235B (2 retries) profile](https://github.com/Tenkei/vlm-tasks/blob/main/benchmarks/README.md#qwen3-vl-235b-2-retries)
+for results.
+
+Use the environment, prepared datasets and AWS login from
+[Larger Qwen3 on AWS Bedrock](#larger-qwen3-on-aws-bedrock), with the
 separate config and a fresh output directory:
 
 ```bash
 HF_HUB_OFFLINE=0 HF_DATASETS_OFFLINE=0 .venv/bin/python -m benchmarks.src.run_bedrock \
-  --config benchmarks/configs/qwen3-vl-235b-a22b-bedrock-retries-2.json \
+  --config benchmarks/setup/model-configs/qwen3-vl-235b-a22b-bedrock-retries-2.json \
   --prepared benchmarks/.cache/prepared-datasets-100 \
   --output benchmarks/runs/qwen3-vl-235b-bedrock-retries-2-reproduction
-.venv/bin/python -m benchmarks.src.generate_charts
 ```
 
+</details>
+
 ### Gemma 3 27B and Kimi K3.1 on AWS Bedrock
+
+<details>
+<summary>View model configurations and commands</summary>
 
 The additional runs use the same frozen data, task prompts, schemas,
 4,096-token budget and scoring settings as the Qwen baseline:
 
 | Model | Config | Invocation route |
 |---|---|---|
-| Gemma 3 27B | [`gemma-3-27b-bedrock.json`](configs/gemma-3-27b-bedrock.json) | `google.gemma-3-27b-it`, on demand, US East (N. Virginia) |
-| Kimi K3.1 | [`kimi-k3.1-bedrock.json`](configs/kimi-k3.1-bedrock.json) | `global.moonshotai.kimi-k3.1`, global inference profile from Tokyo |
+| Gemma 3 27B | [`gemma-3-27b-bedrock.json`](setup/model-configs/gemma-3-27b-bedrock.json) | `google.gemma-3-27b-it`, on demand, US East (N. Virginia) |
+| Kimi K3.1 | [`kimi-k3.1-bedrock.json`](setup/model-configs/kimi-k3.1-bedrock.json) | `global.moonshotai.kimi-k3.1`, global inference profile from Tokyo |
 
 ```bash
 .venv/bin/python -m benchmarks.src.run_bedrock \
-  --config benchmarks/configs/gemma-3-27b-bedrock.json \
+  --config benchmarks/setup/model-configs/gemma-3-27b-bedrock.json \
   --prepared benchmarks/.cache/prepared-datasets-100 \
   --output benchmarks/runs/gemma3-27b-bedrock-reproduction
 .venv/bin/python -m benchmarks.src.run_bedrock \
-  --config benchmarks/configs/kimi-k3.1-bedrock.json \
+  --config benchmarks/setup/model-configs/kimi-k3.1-bedrock.json \
   --prepared benchmarks/.cache/prepared-datasets-100 \
   --output benchmarks/runs/kimi-k3.1-bedrock-reproduction
-.venv/bin/python -m benchmarks.src.generate_charts
 ```
 
 The runner verifies that an inference profile is active and routes exclusively
@@ -624,11 +714,11 @@ checksum-verified tokenizer, data and model settings:
 
 ```bash
 HF_HUB_OFFLINE=0 HF_DATASETS_OFFLINE=0 .venv/bin/python -m benchmarks.src.run_bedrock \
-  --config benchmarks/configs/gemma-3-27b-bedrock.json \
+  --config benchmarks/setup/model-configs/gemma-3-27b-bedrock.json \
   --prepared benchmarks/.cache/prepared-datasets-100 \
   --output benchmarks/runs/gemma3-27b-bedrock-20261112 --resume
 HF_HUB_OFFLINE=0 HF_DATASETS_OFFLINE=0 .venv/bin/python -m benchmarks.src.run_bedrock \
-  --config benchmarks/configs/kimi-k3.1-bedrock.json \
+  --config benchmarks/setup/model-configs/kimi-k3.1-bedrock.json \
   --prepared benchmarks/.cache/prepared-datasets-100 \
   --output benchmarks/runs/kimi-k3.1-bedrock-20261112 --resume
 ```
@@ -662,12 +752,17 @@ network and service time. This compares complete task configurations across
 model sizes and backends; matching samples and prompts does not make their
 hardware, tokenization or provider preprocessing identical.
 
+</details>
+
 ### Claude Fable 5.2 on AWS Bedrock
 
-[`claude-fable-5.2-bedrock.json`](configs/claude-fable-5.2-bedrock.json)
+<details>
+<summary>View Fable configuration and commands</summary>
+
+[`claude-fable-5.2-bedrock.json`](setup/model-configs/claude-fable-5.2-bedrock.json)
 uses 100 samples per variant, prompted JSON, zero correction retries and the
 same 4,096-token output budget and scoring rules. The initial
-[`pilot config`](configs/claude-fable-5.2-bedrock-pilot.json) uses the first
+[`pilot config`](setup/model-configs/claude-fable-5.2-bedrock-pilot.json) uses the first
 10 rows per variant; its standalone results remain under `experiments/`.
 
 Fable is invoked through `global.anthropic.claude-fable-5-2` from Tokyo.
@@ -686,13 +781,17 @@ For a fresh reproduction, use the normal runner on the full frozen dataset:
 
 ```bash
 HF_HUB_OFFLINE=0 HF_DATASETS_OFFLINE=0 .venv/bin/python -m benchmarks.src.run_bedrock \
-  --config benchmarks/configs/claude-fable-5.2-bedrock.json \
+  --config benchmarks/setup/model-configs/claude-fable-5.2-bedrock.json \
   --prepared benchmarks/.cache/prepared-datasets-100 \
   --output benchmarks/runs/claude-fable-5.2-bedrock-reproduction
-.venv/bin/python -m benchmarks.src.generate_charts
 ```
 
-#### Continuing the pilot without repeating requests
+</details>
+
+### Continuing the pilot without repeating requests
+
+<details>
+<summary>View Fable continuation and offline assembly</summary>
 
 The recorded run retains the initial 10 responses per variant and evaluates
 only rows 11–100 in the continuation: 70 existing requests plus 630 new ones.
@@ -713,7 +812,12 @@ HF_HUB_OFFLINE=0 HF_DATASETS_OFFLINE=0 .venv/bin/python -m benchmarks.src.combin
   --output experiments/claude-fable-5.2-offline-reproduction/runs/claude-fable-5.2
 ```
 
+</details>
+
 ### Double the budget for capped responses
+
+<details>
+<summary>View token-budget experiment</summary>
 
 After a local Transformers baseline completes, rerun samples that reached its
 output cap with twice the configured allowance. Save the experiment under
@@ -739,35 +843,22 @@ This is a conditional analysis of capped samples; its scores do not replace
 the 100-sample comparison. It runs after the baseline to avoid concurrent GPU
 use affecting timings.
 
-If an experiment is stopped, report completed records without loading model
-weights or running further inference:
+For partial results after interruption, see [Token-budget reports](#token-budget-reports).
 
-```bash
-python -m benchmarks.src.report_token_budget \
-  --experiment experiments/token-budget/reproduction \
-  --baseline benchmarks/runs/qwen3-vl-2b-20261112 \
-  --interrupted-requests 1
-```
-
-This writes a partial table and `status.json`, distinguishing completed,
-interrupted and unstarted samples. Counts and token totals in that table cover
-completed cases only; interrupted generation usage is unknown. The
-`--interrupted-requests` value records how many active requests were stopped.
-`--baseline` supplies the current run location when its originally recorded
-path predates a directory move. Paths inside original run and experiment
-artifacts are retained as evidence of their execution environment.
+</details>
 
 ## Artifacts
 
 | Artifact | Contents |
 |---|---|
-| `benchmarks/configs/qwen3-vl-2b-transformers.json` | Fixed baseline configuration |
-| `benchmarks/configs/qwen3-vl-235b-a22b-bedrock.json`, `benchmarks/src/run_bedrock.py` | Hosted Qwen3 configuration, execution and usage collection |
-| `benchmarks/configs/qwen3-vl-235b-a22b-bedrock-retries-2.json` | Example of a separate correction-retry configuration |
-| `benchmarks/configs/gemma-3-27b-bedrock.json`, `benchmarks/configs/kimi-k3.1-bedrock.json` | Additional hosted model configurations, routing and pricing settings |
-| `benchmarks/configs/claude-fable-5.2-bedrock.json` | Fable model configuration, required reasoning settings and recorded pricing |
+| `benchmarks/setup/model-configs/qwen3-vl-2b-transformers.json` | Fixed baseline configuration |
+| `benchmarks/setup/model-configs/qwen3-vl-235b-a22b-bedrock.json`, `benchmarks/src/run_bedrock.py` | Hosted Qwen3 configuration, execution and usage collection |
+| `benchmarks/setup/model-configs/qwen3-vl-235b-a22b-bedrock-retries-2.json` | Example of a separate correction-retry configuration |
+| `benchmarks/setup/model-configs/gemma-3-27b-bedrock.json`, `benchmarks/setup/model-configs/kimi-k3.1-bedrock.json` | Additional hosted model configurations, routing and pricing settings |
+| `benchmarks/setup/model-configs/claude-fable-5.2-bedrock.json` | Fable model configuration, required reasoning settings and recorded pricing |
 | `benchmarks/src/prepare_datasets.py` | Dataset preparation and sample freezing |
-| `benchmarks/src/task_registry.py` | Shared task definitions, datasets, metric labels and chart axes |
+| `benchmarks/setup/task-specs/*.json` | Shared task datasets, operators, metrics, ordering and context |
+| `benchmarks/src/task_registry.py` | Load task specs and derive shared dataset mappings, metric labels and chart axes |
 | `benchmarks/src/evaluation.py` | Shared validation, frozen-data verification, response recording and replay |
 | `benchmarks/src/artifacts.py` | JSON artifacts, sample identities, content hashes and source provenance |
 | `benchmarks/src/run_transformers.py` | Local model setup, inference and task reports |
@@ -800,8 +891,8 @@ artifacts are retained as evidence of their execution environment.
 Keep the source revision and files matching the recorded SHA-256 hashes.
 Sources changed after inference are preserved in the runs' `source_snapshots/`
 or the matching continuation's snapshots, retaining the files identified by
-each environment's hashes. Generated tables and charts record their current
-reporting source hashes separately, including the shared task definitions.
+each environment's hashes. Run provenance includes the task-spec JSON hashes. Generated tables and charts
+record their reporting source hashes separately, including those task specs.
 Benchmark code, configs and this method are included in source distributions;
 downloaded data, run archives and generated charts remain repository artifacts.
 The seed and greedy decoding do not promise bitwise-identical results across
@@ -809,11 +900,14 @@ hardware, dtype, kernels or dependency changes.
 
 ## Interpretation limits
 
-These ordered prefixes provide a small repeatable baseline. They are not random
-or representative estimates of full benchmark performance. Several VQA
-questions, attributes or referring expressions share images. CIFAR-10 images
-are only 32×32, COCO128 contains training images, and OVAD categorical scoring
-differs from official attribute mAP. Point containment does not measure box
-quality. Caption scores depend on tokenization and selected-reference IDF
-scope. Compare models within the same task and dataset fingerprint, and retain
-failure counts and measured-usage coverage alongside quality scores.
+- **Sample selection:** ordered prefixes provide a small, repeatable baseline;
+  they are not random or representative estimates of full benchmark performance.
+- **Shared images:** several VQA questions, attribute samples or referring
+  expressions can use the same image.
+- **Classification:** CIFAR-10 images are only 32×32 pixels.
+- **Detection:** COCO128 contains training images.
+- **Attributes:** OVAD categorical scoring differs from official attribute mAP.
+- **Grounding:** point containment does not measure box quality.
+- **Captioning:** scores depend on tokenization and selected-reference IDF scope.
+- **Comparisons:** compare models within the same task and dataset fingerprint,
+  and retain failure counts and measured-usage coverage alongside quality scores.
